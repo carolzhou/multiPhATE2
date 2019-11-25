@@ -39,18 +39,17 @@ DEBUG = False
 
 p_comment = re.compile('^#')
 
-KEGG_VIRUS_BASE_DIR = os.environ["KEGG_VIRUS_BASE_DIR"]
-NCBI_VIRUS_BASE_DIR = os.environ["NCBI_VIRUS_BASE_DIR"]
-PHANTOME_BASE_DIR   = os.environ["PHANTOME_BASE_DIR"]
-NCBI_TAXON_DIR      = os.environ["NCBI_TAXON_DIR"]
-PVOGS_BASE_DIR      = os.environ["PVOGS_BASE_DIR"]
-PSAT_OUT_DIR = ""  # now being set by set method via parameter
+KEGG_VIRUS_BASE_DIR = os.environ["PHATE_KEGG_VIRUS_BASE_DIR"]
+NCBI_VIRUS_BASE_DIR = os.environ["PHATE_NCBI_VIRUS_BASE_DIR"]
+PHANTOME_BASE_DIR   = os.environ["PHATE_PHANTOME_BASE_DIR"]
+NCBI_TAXON_DIR      = os.environ["PHATE_NCBI_TAXON_DIR"]
+PVOGS_BASE_DIR      = os.environ["PHATE_PVOGS_BASE_DIR"]
 
 # Verbosity
-CLEAN_RAW_DATA      = os.environ["CLEAN_RAW_DATA"]
-PHATE_WARNINGS      = os.environ["PHATE_WARNINGS"]
-PHATE_MESSAGES      = os.environ["PHATE_MESSAGES"]
-PHATE_PROGRESS      = os.environ["PHATE_PROGRESS"]
+CLEAN_RAW_DATA      = os.environ["PHATE_CLEAN_RAW_DATA"]
+PHATE_WARNINGS      = os.environ["PHATE_PHATE_WARNINGS"]
+PHATE_MESSAGES      = os.environ["PHATE_PHATE_MESSAGES"]
+PHATE_PROGRESS      = os.environ["PHATE_PHATE_PROGRESS"]
 
 # External links
 NCBI_TAXON_LINK = "https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id="
@@ -290,8 +289,6 @@ class annotationRecord(object):
         self.annotationList = self.removeRedundancy(self.annotationList)
         self.updatePSATcount()
 
-        if PHATE_PROGRESS == 'True':
-            print("Annotation module says: PSAT annotations complete.")
         return 
 
     def updatePSATcount(self):

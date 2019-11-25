@@ -3,6 +3,12 @@
 # Module:  phate_hmm.py
 #
 # This class performs hmm searches against various protein- or phage-related databases. 
+# 
+# Programmer's Notes:
+# Currently this code runs only jackhmmer searches against blast databases.
+# The next version of this code needs to distinguish between jackhmmer search of blast
+# databses and hmm searches against hmm profile databases. This may require a complete
+# overhaul of the structure of this module.
 #
 # Programmer:  C Zhou
 # 
@@ -29,37 +35,37 @@ DEBUG = True
 #DEBUG = False
 
 # Get environment variables (set in phate_runPipeline.py)
-#*** Note: hmm databases are same as blast databases
+#*** Note: hmm databases are same as blast databases for now
 #*** Need to distinguish between searching a blast DB with hmm program vs. searching hmm profiles
 
-HMM_HOME                      = os.environ["HMM_HOME"]
-KEGG_VIRUS_HMM_HOME           = os.environ["KEGG_VIRUS_BLAST_HOME"]
-NCBI_VIRUS_PROTEIN_HMM_HOME   = os.environ["NCBI_VIRUS_PROTEIN_BLAST_HOME"]
-PHANTOME_HMM_HOME             = os.environ["PHANTOME_BLAST_HOME"]
-UNIPARC_VIRUS_HMM_HOME        = os.environ["UNIPARC_VIRUS_BLAST_HOME"]
-NR_HMM_HOME                   = os.environ["NR_BLAST_HOME"]
-PVOGS_HMM_HOME                = os.environ["PVOGS_BLAST_HOME"]
-REFSEQ_PROTEIN_HMM_HOME       = os.environ["REFSEQ_PROTEIN_BLAST_HOME"]
-REFSEQ_GENE_HMM_HOME          = os.environ["REFSEQ_GENE_BLAST_HOME"]
-SWISSPROT_HMM_HOME            = os.environ["SWISSPROT_BLAST_HOME"]
-PFAM_HMM_HOME                 = os.environ["PFAM_BLAST_HOME"]
-SMART_HMM_HOME                = os.environ["SMART_BLAST_HOME"]
-UNIPROT_HMM_HOME              = os.environ["UNIPROT_BLAST_HOME"]
+HMM_HOME                      = os.environ["PHATE_HMM_HOME"]
+KEGG_VIRUS_HMM_HOME           = os.environ["PHATE_KEGG_VIRUS_BLAST_HOME"]
+NCBI_VIRUS_PROTEIN_HMM_HOME   = os.environ["PHATE_NCBI_VIRUS_PROTEIN_BLAST_HOME"]
+PHANTOME_HMM_HOME             = os.environ["PHATE_PHANTOME_BLAST_HOME"]
+NR_HMM_HOME                   = os.environ["PHATE_NR_BLAST_HOME"]
+PVOGS_HMM_HOME                = os.environ["PHATE_PVOGS_BLAST_HOME"]
+REFSEQ_PROTEIN_HMM_HOME       = os.environ["PHATE_REFSEQ_PROTEIN_BLAST_HOME"]
+REFSEQ_GENE_HMM_HOME          = os.environ["PHATE_REFSEQ_GENE_BLAST_HOME"]
+SWISSPROT_HMM_HOME            = os.environ["PHATE_SWISSPROT_BLAST_HOME"]
+PFAM_HMM_HOME                 = os.environ["PHATE_PFAM_BLAST_HOME"]
+SMART_HMM_HOME                = os.environ["PHATE_SMART_BLAST_HOME"]
+PHAGE_ENZYME_HMM_HOME         = os.environ["PHATE_PHAGE_ENZYME_BLAST_HOME"]
+UNIPROT_HMM_HOME              = os.environ["PHATE_UNIPROT_BLAST_HOME"]
 
 # Verbosity and output/error capture
-CLEAN_RAW_DATA                = os.environ["CLEAN_RAW_DATA"]
-PHATE_WARNINGS                = os.environ["PHATE_WARNINGS"]
-PHATE_MESSAGES                = os.environ["PHATE_MESSAGES"]
-PHATE_PROGRESS                = os.environ["PHATE_PROGRESS"]
-PHATE_ERR                     = os.environ["PHATE_ERR"]
-PHATE_OUT                     = os.environ["PHATE_OUT"]
+CLEAN_RAW_DATA                = os.environ["PHATE_CLEAN_RAW_DATA"]
+PHATE_WARNINGS                = os.environ["PHATE_PHATE_WARNINGS"]
+PHATE_MESSAGES                = os.environ["PHATE_PHATE_MESSAGES"]
+PHATE_PROGRESS                = os.environ["PHATE_PHATE_PROGRESS"]
+PHATE_ERR                     = os.environ["PHATE_PHATE_ERR"]
+PHATE_OUT                     = os.environ["PHATE_PHATE_OUT"]
 
 # Other configurables 
 
 GENE_CALL_DIR            = ""  # set by set method, via parameter list
 HMM_OUT_DIR              = ""  # set by set method, via parameter list
 PVOGS_OUT_DIR            = ""  # set by set method, via parameter list
-PVOGS_FASTA_DB_NAME      = "pVOGs.fasta"
+PVOGS_FASTA_DB_NAME      = "pVOGs.fasta"   #*** CHECK THIS
 
 HIT_COUNT_MAX  = 50  # Put a limit on the number of hits that should be processed; let's not go over this
 MAX_SEQ_HITS   = 5   # HMM search can return many hits; report only top number designated; set default here
@@ -90,10 +96,10 @@ class multiHMM(object):
         self.REFSEQ_GENE_HMM          = False     # ditto 
         self.PHANTOME_HMM             = False     # ditto
         self.PVOGS_HMM                = False     # ditto
-        self.UNIPARC_HMM              = False     # ditto # not yet in service
         self.SWISSPROT_HMM            = False     # ditto 
         self.PFAM_HMM                 = False     # ditto
         self.SMART_HMM                = False     # ditto
+        self.PHAGE_ENZYME_HMM         = False     # ditto
         self.UNIPROT_HMM              = False     # ditto
 
     ##### SET AND GET PARAMETERS
@@ -124,14 +130,14 @@ class multiHMM(object):
                 self.PHANTOME_HMM = paramset["phantomeHmm"]
             if 'pvogsHmm' in list(paramset.keys()):
                 self.PVOGS_HMM = paramset["pvogsHmm"]
-            if 'uniparcHmm' in list(paramset.keys()):
-                self.UNIPARC_HMM = paramset["uniparcHmm"]
             if 'swissprotHmm' in list(paramset.keys()):
                 self.SWISSPROT_HMM = paramset["swissprotHmm"]
             if 'pfamHmm' in list(paramset.keys()):
                 self.PFAM_HMM = paramset["pfamHmm"]
             if 'smartHmm' in list(paramset.keys()):
                 self.SMART_HMM = paramset["smartHmm"]
+            if 'phageEnzymeHmm' in list(paramset.keys()):
+                self.PHAGE_ENZYME_HMM = paramset["phageEnzymeHmm"]
 
     def setHmmProgram(self,hmmProgram): #*** Only jackhmmer is currently in service
         if(hmmProgram.lower() == 'hmmalign'):
@@ -593,17 +599,6 @@ class multiHMM(object):
                     outfile = self.hmmOutDir + self.hmmProgram + "_kegg_" + str(count)
                     self.hmm1fasta(fasta,outfile,database,dbName)
 
-            if self.UNIPARC_HMM: 
-                database = UNIPARC_VIRUS_BLAST_HOME # same database as blast uses
-                dbName   = 'uniparc'
-                count = 0
-                if PHATE_PROGRESS == 'True':
-                    print("Hmm module says: Running UNIPARC hmm search:", database, dbName)
-                for fasta in fastaSet.fastaList:
-                    count += 1
-                    outfile = self.hmmOutDir + self.hmmProgram + "_uniparc_" + str(count)
-                    self.hmm1fasta(fasta,outfile,database,dbName)   #*** CONTROL
-
             if self.SWISSPROT_HMM: 
                 database = SWISSPROT_BLAST_HOME # same database as blast uses
                 dbName   = 'swissprot'
@@ -613,6 +608,17 @@ class multiHMM(object):
                 for fasta in fastaSet.fastaList:
                     count += 1
                     outfile = self.hmmOutDir + self.hmmProgram + "_swissprot_" + str(count)
+                    self.hmm1fasta(fasta,outfile,database,dbName)   #*** CONTROL
+
+            if self.PHAGE_ENZYME_HMM: 
+                database = PHAGE_ENZYME_BLAST_HOME # same database as blast uses
+                dbName   = 'swissprot'
+                count = 0
+                if PHATE_PROGRESS == 'True':
+                    print("Hmm module says: Running phage enzyme hmm search:", database, dbName)
+                for fasta in fastaSet.fastaList:
+                    count += 1
+                    outfile = self.hmmOutDir + self.hmmProgram + "_phageEnz_" + str(count)
                     self.hmm1fasta(fasta,outfile,database,dbName)   #*** CONTROL
 
             if self.PVOGS_HMM:  
@@ -731,7 +737,6 @@ class multiHMM(object):
         print("   REFSEQ_GENE_HMM:       ", self.REFSEQ_GENE_HMM)
         print("   PHANTOME_HMM:          ", self.PHANTOME_HMM)
         print("   PVOGS_HMM:             ", self.PVOGS_HMM)
-        print("   UNIPARC_HMM:           ", self.UNIPARC_HMM)
         print("   SWISSPROT_HMM:         ", self.SWISSPROT_HMM)
         print("   PFAM_HMM:              ", self.PFAM_HMM)
         print("   UNIPROT_HMM:           ", self.UNIPROT_HMM)
@@ -750,7 +755,6 @@ class multiHMM(object):
         fileHandle.write("%s\n" % ("  REFSEQ_GENE_HMM: ",self.REFSEQ_GENE_HMM))
         fileHandle.write("%s\n" % ("  PHANTOME_HMM: ",self.PHANTOME_HMM))
         fileHandle.write("%s\n" % ("  PVOGS_HMM: ",self.PVOGS_HMM))
-        fileHandle.write("%s\n" % ("  UNIPARC_HMM: ",self.UNIPARC_HMM))
         fileHandle.write("%s\n" % ("  SWISSPROT_HMM: ",self.SWISSPROT_HMM))
         fileHandle.write("%s\n" % ("  PFAM_HMM: ",self.PFAM_HMM))
         fileHandle.write("%s\n" % ("  UNIPROT_HMM: ",self.UNIPROT_HMM))

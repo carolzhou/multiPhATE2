@@ -40,17 +40,17 @@ import phate_annotation
 import re, os, copy
 import subprocess
  
-BLAST_HOME          = os.environ["BLAST_HOME"] 
-EMBOSS_PHATE_HOME   = os.environ["EMBOSS_PHATE_HOME"] 
+BLAST_HOME          = os.environ["PHATE_BLAST_HOME"] 
+EMBOSS_PHATE_HOME   = os.environ["PHATE_EMBOSS_PHATE_HOME"] 
 CODE_BASE_DIR       = ""
 OUTPUT_DIR          = ""
 
 # Verbosity
 
-CLEAN_RAW_DATA   = os.environ["CLEAN_RAW_DATA"]
-PHATE_WARNINGS   = os.environ["PHATE_WARNINGS"]
-PHATE_MESSAGES   = os.environ["PHATE_MESSAGES"]
-PHATE_PROGRESS   = os.environ["PHATE_PROGRESS"]
+CLEAN_RAW_DATA   = os.environ["PHATE_CLEAN_RAW_DATA"]
+PHATE_WARNINGS   = os.environ["PHATE_PHATE_WARNINGS"]
+PHATE_MESSAGES   = os.environ["PHATE_PHATE_MESSAGES"]
+PHATE_PROGRESS   = os.environ["PHATE_PHATE_PROGRESS"]
 
 DEBUG            = False
 #DEBUG           = True 
@@ -73,15 +73,15 @@ class genome(object):
     # The chromosome's contig set, gene set, and protein set are each represented by multi-fasta objects.
 
     def __init__(self):
-        self.filename       = ""          # name of file that contains the genome sequence
-        self.genomeType     = "unknown" # typically, "chromosome", "plasmid", "virus", "segmented", "satellite"
-        self.name           = "unknown" # common name (e.g., Drosophila)
-        self.genomeName     = "unkknown" # more specific name (e.g., 'Yp phage YP123')
-        self.species        = "unknown" # Latin name (e.g., Drosophila melanogaster)
-        self.annotationList = []    # using phate_annotation.py classes
-        self.contigSet      = phate_fastaSequence.multiFasta()
-        self.geneSet        = phate_fastaSequence.multiFasta()
-        self.proteinSet     = phate_fastaSequence.multiFasta()
+        self.filename                = ""          # name of file that contains the genome sequence
+        self.genomeType              = "unknown" # typically, "chromosome", "plasmid", "virus", "segmented", "satellite"
+        self.name                    = "unknown" # common name (e.g., Drosophila)
+        self.genomeName              = "unkknown" # more specific name (e.g., 'Yp phage YP123')
+        self.species                 = "unknown" # Latin name (e.g., Drosophila melanogaster)
+        self.annotationList          = []    # using phate_annotation.py classes
+        self.contigSet               = phate_fastaSequence.multiFasta()
+        self.geneSet                 = phate_fastaSequence.multiFasta()
+        self.proteinSet              = phate_fastaSequence.multiFasta()
         self.contigSet.moleculeType  = 'contig'
         self.contigSet.sequenceType  = 'nt'
         self.geneSet.moleculeType    = 'gene'
@@ -93,8 +93,8 @@ class genome(object):
             "jobName"  : "",        # PSAT job name
             "fileName" : "",        # PSAT output file path/name
             }
-        self.codeBaseDir = ""       # needs to be set
-        self.outputDir   = ""       # needs to be set
+        self.codeBaseDir             = ""       # needs to be set
+        self.outputDir               = ""       # needs to be set
 
     # GET and SET
  

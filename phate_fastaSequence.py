@@ -95,10 +95,10 @@ p_startCodon = re.compile('atg')  # standard start codon sequence (recall: stori
 
 # Verbosity
 
-CLEAN_RAW_DATA  = os.environ["CLEAN_RAW_DATA"]
-PHATE_WARNINGS  = os.environ["PHATE_WARNINGS"]
-PHATE_MESSAGES  = os.environ["PHATE_MESSAGES"]
-PHATE_PROGRESS  = os.environ["PHATE_PROGRESS"]
+CLEAN_RAW_DATA  = os.environ["PHATE_CLEAN_RAW_DATA"]
+PHATE_WARNINGS  = os.environ["PHATE_PHATE_WARNINGS"]
+PHATE_MESSAGES  = os.environ["PHATE_PHATE_MESSAGES"]
+PHATE_PROGRESS  = os.environ["PHATE_PHATE_PROGRESS"]
 
 #######################################################################################
 

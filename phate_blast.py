@@ -43,34 +43,50 @@ import phate_annotation
 
 # Get environment variables (set in phate_runPipeline.py)
 
-BLAST_HOME                    = os.environ["BLAST_HOME"]
-KEGG_VIRUS_BLAST_HOME         = os.environ["KEGG_VIRUS_BLAST_HOME"]
-NCBI_VIRUS_BLAST_HOME         = os.environ["NCBI_VIRUS_BLAST_HOME"]
-NCBI_VIRUS_PROTEIN_BLAST_HOME = os.environ["NCBI_VIRUS_PROTEIN_BLAST_HOME"]
-PHANTOME_BLAST_HOME           = os.environ["PHANTOME_BLAST_HOME"]
-UNIPARC_VIRUS_BLAST_HOME      = os.environ["UNIPARC_VIRUS_BLAST_HOME"]
-NR_BLAST_HOME                 = os.environ["NR_BLAST_HOME"]
-PVOGS_BLAST_HOME              = os.environ["PVOGS_BLAST_HOME"]
-REFSEQ_PROTEIN_BLAST_HOME     = os.environ["REFSEQ_PROTEIN_BLAST_HOME"]
-REFSEQ_GENE_BLAST_HOME        = os.environ["REFSEQ_GENE_BLAST_HOME"]
-SWISSPROT_BLAST_HOME          = os.environ["SWISSPROT_BLAST_HOME"]
+#EMBOSS_PHATE_HOME             = os.environ["PHATE_EMBOSS_PHATE_HOME"]
+BLAST_HOME                    = os.environ["PHATE_BLAST_HOME"]
+NCBI_VIRUS_GENOME_BLAST_HOME  = os.environ["PHATE_NCBI_VIRUS_GENOME_BLAST_HOME"]
+NCBI_VIRUS_PROTEIN_BLAST_HOME = os.environ["PHATE_NCBI_VIRUS_PROTEIN_BLAST_HOME"]
+REFSEQ_PROTEIN_BLAST_HOME     = os.environ["PHATE_REFSEQ_PROTEIN_BLAST_HOME"]
+REFSEQ_GENE_BLAST_HOME        = os.environ["PHATE_REFSEQ_GENE_BLAST_HOME"]
+PVOGS_BLAST_HOME              = os.environ["PHATE_PVOGS_BLAST_HOME"]
+PHANTOME_BLAST_HOME           = os.environ["PHATE_PHANTOME_BLAST_HOME"]
+KEGG_VIRUS_BLAST_HOME         = os.environ["PHATE_KEGG_VIRUS_BLAST_HOME"]
+SWISSPROT_BLAST_HOME          = os.environ["PHATE_SWISSPROT_BLAST_HOME"]
+PHAGE_ENZYME_BLAST_HOME       = os.environ["PHATE_PHAGE_ENZYME_BLAST_HOME"]
+PFAM_BLAST_HOME               = os.environ["PHATE_PFAM_BLAST_HOME"]
+SMART_BLAST_HOME              = os.environ["PHATE_SWISSPROT_BLAST_HOME"]
+UNIPROT_BLAST_HOME            = os.environ["PHATE_UNIPROT_BLAST_HOME"]
+NR_BLAST_HOME                 = os.environ["PHATE_NR_BLAST_HOME"]
+NCBI_TAXON_DIR                = os.environ["PHATE_NCBI_TAXON_DIR"]
+CUSTOM_GENOME_BLAST_HOME      = os.environ["PHATE_CUSTOM_GENOME_BLAST_HOME"]
+CUSTOM_GENE_BLAST_HOME        = os.environ["PHATE_CUSTOM_GENE_BLAST_HOME"]
+CUSTOM_PROTEIN_BLAST_HOME     = os.environ["PHATE_CUSTOM_PROTEIN_BLAST_HOME"]
+
+# Blast parameters
+MIN_BLASTP_IDENTITY           = os.environ["PHATE_MIN_BLASTP_IDENTITY"]   # Sets a lower limit
+MIN_BLASTN_IDENTITY           = os.environ["PHATE_MIN_BLASTN_IDENTITY"]   # Sets a lower limit
+MAX_BLASTP_HIT_COUNT          = os.environ["PHATE_MAX_BLASTP_HIT_COUNT"]  # Sets an upper limit
+MAX_BLASTN_HIT_COUNT          = os.environ["PHATE_MAX_BLASTN_HIT_COUNT"]  # Sets an upper limit
+BLASTP_IDENTITY_DEFAULT       = os.environ["PHATE_BLASTP_IDENTITY_DEFAULT"]
+BLASTN_IDENTITY_DEFAULT       = os.environ["PHATE_BLASTN_IDENTITY_DEFAULT"]
+BLASTP_HIT_COUNT_DEFAULT      = os.environ["PHATE_BLASTP_HIT_COUNT_DEFAULT"]
+BLASTN_HIT_COUNT_DEFAULT      = os.environ["PHATE_BLASTN_HIT_COUNT_DEFAULT"]
+SCORE_EDGE_MAX                = float(os.environ["PHATE_SCORE_EDGE_MAX"]) 
+OVERHANG_MAX                  = int(os.environ["PHATE_OVERHANG_MAX"]) 
+HIT_COUNT_MAX                 = int(os.environ["PHATE_HIT_COUNT_MAX"])    # Limit set in multiPhate.py
 
 # Verbosity
-CLEAN_RAW_DATA                = os.environ["CLEAN_RAW_DATA"]
-PHATE_WARNINGS                = os.environ["PHATE_WARNINGS"]
-PHATE_MESSAGES                = os.environ["PHATE_MESSAGES"]
-PHATE_PROGRESS                = os.environ["PHATE_PROGRESS"]
+CLEAN_RAW_DATA                = os.environ["PHATE_CLEAN_RAW_DATA"]
+PHATE_WARNINGS                = os.environ["PHATE_PHATE_WARNINGS"]
+PHATE_MESSAGES                = os.environ["PHATE_PHATE_MESSAGES"]
+PHATE_PROGRESS                = os.environ["PHATE_PHATE_PROGRESS"]
 
 # Other configurables 
 
 GENE_CALL_DIR            = ""  # set by set method, via parameter list
 BLAST_OUT_DIR            = ""  # set by set method, via parameter list
 PVOGS_OUT_DIR            = ""  # set by set method, via parameter list
-PVOGS_FASTA_DB_NAME      = "pVOGs.fasta"
-
-SCORE_EDGE_MAX = 1.0
-OVERHANG_MAX   = 100
-HIT_COUNT_MAX  = 10  # Put a limit on the number of hits that should be processed
 
 #DEBUG  = True 
 DEBUG  = False 
@@ -91,16 +107,15 @@ class multiBlast(object):
         self.identitySelect           = 70        # default: Selects best hit if meets or exceeds this value (for phage maybe set much lower)
         self.evalueSelect             = 0.01      # default: Selects best hit if meets or exceeds this value (for phage maybe set to 10)
         self.topHitCount              = 3         # default: Number of best hits to record
-        self.scoreEdge                = 0.1       # default: BLAST recommended default
-        self.overhang                 = 0.1       # default: BLAST recommended default
-        #self.outputFormat            = XML       # default: XML output
+        self.scoreEdge                = SCORE_EDGE_MAX # default: BLAST recommended default
+        self.overhang                 = OVERHANG_MAX   # default: BLAST recommended default
         self.outputFormat             = 5         # default: XML output
         self.blastAnnotations         = []        # List of phate_annotation objects; blast output get temporarily stored here
         # move to hit class:  self.topHitList     = []        # 
         self.geneCallDir              = ""        # needs to be set
         self.blastOutDir              = ""        # needs to be set
         self.pVOGsOutDir              = ""        # needs to be set
-        self.NCBI_VIRUS_BLAST         = False     # assume not running this blast process, unless changed by parameter set method
+        self.NCBI_VIRUS_GENOME_BLAST  = False     # assume not running this blast process, unless changed by parameter set method
         self.NCBI_VIRUS_PROTEIN_BLAST = False     # ditto 
         self.NR_BLAST                 = False     # ditto 
         self.KEGG_VIRUS_BLAST         = False     # ditto
@@ -108,8 +123,8 @@ class multiBlast(object):
         self.REFSEQ_GENE_BLAST        = False     # ditto # not yet in service
         self.PHANTOME_BLAST           = False     # ditto
         self.PVOGS_BLAST              = False     # ditto
-        self.UNIPARC_BLAST            = False     # ditto # not yet in service
         self.SWISSPROT_BLAST          = False     # ditto # not yet in service
+        self.PHAGE_ENZYME_BLAST       = False     # ditto # not yet in service
 
     ##### SET AND GET PARAMETERS
 
@@ -140,7 +155,7 @@ class multiBlast(object):
             if 'pvogsOutDir' in list(paramset.keys()):
                 self.setPVOGsOutDir(paramset['pvogsOutDir'])
             if 'ncbiVirusBlast' in list(paramset.keys()):
-                self.NCBI_VIRUS_BLAST = paramset["ncbiVirusBlast"]
+                self.NCBI_VIRUS_GENOME_BLAST = paramset["ncbiVirusGenomeBlast"]
             if 'ncbiVirusProteinBlast' in list(paramset.keys()):
                 self.NCBI_VIRUS_PROTEIN_BLAST = paramset["ncbiVirusProteinBlast"]
             if 'nrBlast' in list(paramset.keys()):
@@ -155,10 +170,10 @@ class multiBlast(object):
                 self.PHANTOME_BLAST = paramset["phantomeBlast"]
             if 'pvogsBlast' in list(paramset.keys()):
                 self.PVOGS_BLAST = paramset["pvogsBlast"]
-            if 'uniparcBlast' in list(paramset.keys()):
-                self.UNIPARC_BLAST = paramset["uniparcBlast"]
             if 'swissprotBlast' in list(paramset.keys()):
                 self.SWISSPROT_BLAST = paramset["swissprotBlast"]
+            if 'phageEnzymeBlast' in list(paramset.keys()):
+                self.PHAGE_ENZYME_BLAST = paramset["phageEnzymeBlast"]
 
     def setBlastFlavor(self,flavor):
         if(flavor.lower() == 'blastp'):
@@ -519,8 +534,8 @@ class multiBlast(object):
         database = ''
 
         if GENOME:
-            if self.NCBI_VIRUS_BLAST:
-                database = NCBI_VIRUS_BLAST_HOME
+            if self.NCBI_VIRUS_GENOME_BLAST:
+                database = NCBI_VIRUS_GENOME_BLAST_HOME
                 dbName   = 'ncbi'
                 count = 0
                 if PHATE_PROGRESS == 'True':
@@ -598,17 +613,6 @@ class multiBlast(object):
                     outfile = self.blastOutDir + self.blastFlavor + "_kegg_" + str(count)
                     self.blast1fasta(fasta,outfile,database,dbName)
 
-            if self.UNIPARC_BLAST: 
-                database = UNIPARC_VIRUS_BLAST_HOME
-                dbName   = 'uniparc'
-                count = 0
-                if PHATE_PROGRESS == 'True':
-                    print("Blast module says: Running UNIPARC blast:", database, dbName)
-                for fasta in fastaSet.fastaList:
-                    count += 1
-                    outfile = self.blastOutDir + self.blastFlavor + "_uniparc_" + str(count)
-                    self.blast1fasta(fasta,outfile,database,dbName)   #*** CONTROL
-
             if self.SWISSPROT_BLAST: 
                 database = SWISSPROT_BLAST_HOME
                 dbName   = 'swissprot'
@@ -618,6 +622,17 @@ class multiBlast(object):
                 for fasta in fastaSet.fastaList:
                     count += 1
                     outfile = self.blastOutDir + self.blastFlavor + "_swissprot_" + str(count)
+                    self.blast1fasta(fasta,outfile,database,dbName)   #*** CONTROL
+
+            if self.PHAGE_ENZYME_BLAST: 
+                database = PHAGE_ENZYME_BLAST_HOME
+                dbName   = 'phageEnzyme'
+                count = 0
+                if PHATE_PROGRESS == 'True':
+                    print("Blast module says: Running phageEnzyme blast:", database, dbName)
+                for fasta in fastaSet.fastaList:
+                    count += 1
+                    outfile = self.blastOutDir + self.blastFlavor + "_phageEnz_" + str(count)
                     self.blast1fasta(fasta,outfile,database,dbName)   #*** CONTROL
 
             if self.PVOGS_BLAST:  

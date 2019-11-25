@@ -10,8 +10,8 @@
 #
 # Programmer: CEZhou
 #
-# Date: 02 October 2017
-# Version 1.0
+# Date: 21 November 2019
+# Version 1.5
 #
 ################################################################
 
@@ -21,7 +21,6 @@
 import sys, os, re, string, copy
 import time, datetime
 from subprocess import call
-#import logging
 
 # DEBUG control
 DEBUG = True
@@ -40,7 +39,7 @@ GENOME_IDENTITY_MIN    = 20
 GENOME_IDENTITY_SELECT = 20
 GENETIC_CODE           = 11
 HMM_PROGRAM            = 'jackhmmer'        # Default; can be configured by user
-HMM_DATABASE           = 'ncbiVirusProtein' # Default; can be configured by user
+HMM_DATABASE           = 'pvogsHmm'         # Default; can be configured by user
 
 # Constants
 CODE_BASE = "phate_sequenceAnnotation_main"
@@ -51,40 +50,85 @@ OUTFILE = CODE_BASE + ".out"
 GFFFILE = CODE_BASE + ".gff"
 
 # Get environment variables (set by phate_runPipeline.py)
-PIPELINE_DIR                  = os.environ["PIPELINE_DIR"]
-BLAST_HOME                    = os.environ["BLAST_HOME"] 
-KEGG_VIRUS_BLAST_HOME         = os.environ["KEGG_VIRUS_BLAST_HOME"]
-NCBI_VIRUS_BLAST_HOME         = os.environ["NCBI_VIRUS_BLAST_HOME"]
-NCBI_VIRUS_PROTEIN_BLAST_HOME = os.environ["NCBI_VIRUS_PROTEIN_BLAST_HOME"]
-REFSEQ_PROTEIN_BLAST_HOME     = os.environ["REFSEQ_PROTEIN_BLAST_HOME"]
-REFSEQ_GENE_BLAST_HOME        = os.environ["REFSEQ_GENE_BLAST_HOME"]
-PHANTOME_BLAST_HOME           = os.environ["PHANTOME_BLAST_HOME"]
-PVOGS_BASE_DIR                = os.environ["PVOGS_BASE_DIR"]
-PVOGS_BLAST_HOME              = os.environ["PVOGS_BLAST_HOME"]
-UNIPARC_VIRUS_BLAST_HOME      = os.environ["UNIPARC_VIRUS_BLAST_HOME"]
-SWISSPROT_BLAST_HOME          = os.environ["SWISSPROT_BLAST_HOME"]
-NR_BLAST_HOME                 = os.environ["NR_BLAST_HOME"]
-EMBOSS_PHATE_HOME             = os.environ["EMBOSS_PHATE_HOME"]
-NCBI_TAXON_DIR                = os.environ["NCBI_TAXON_DIR"]
-PSAT_OUT_DIR                  = os.environ["PSAT_OUT_DIR"]
-CODE_BASE_DIR                 = os.environ["PIPELINE_DIR"]
-MIN_BLASTP_IDENTITY           = os.environ["MIN_BLASTP_IDENTITY"]   # Sets a lower limit
-MIN_BLASTN_IDENTITY           = os.environ["MIN_BLASTN_IDENTITY"]   # Sets a lower limit
-MAX_BLASTP_HIT_COUNT          = os.environ["MAX_BLASTP_HIT_COUNT"]  # Sets an upper limit
-MAX_BLASTN_HIT_COUNT          = os.environ["MAX_BLASTN_HIT_COUNT"]  # Sets an upper limit
-BLASTP_IDENTITY_DEFAULT       = os.environ["BLASTP_IDENTITY_DEFAULT"]
-BLASTN_IDENTITY_DEFAULT       = os.environ["BLASTN_IDENTITY_DEFAULT"]
-BLASTP_HIT_COUNT_DEFAULT      = os.environ["BLASTP_HIT_COUNT_DEFAULT"]
-BLASTN_HIT_COUNT_DEFAULT      = os.environ["BLASTN_HIT_COUNT_DEFAULT"]
-HMM_HOME                      = os.environ["HMM_HOME"]
+# These are required by this code and modules that are imported (below)
+# General
+PIPELINE_DIR                  = os.environ["PHATE_PIPELINE_DIR"]
+CODE_BASE_DIR                 = os.environ["PHATE_PIPELINE_DIR"]
+BASE_DIR                      = os.environ["PHATE_BASE_DIR"]
+DATABASE_DIR                  = os.environ["PHATE_DATABASE_DIR"]
+SOFTWARE_DIR                  = os.environ["PHATE_SOFTWARE_DIR"]
+
+# Codes
+BLAST_HOME                    = os.environ["PHATE_BLAST_HOME"]
+EMBOSS_HOME                   = os.environ["PHATE_EMBOSS_PHATE_HOME"]
+PHANOTATE_HOME                = os.environ["PHATE_PHANOTATE_PATH"]
+PRODIGAL_HOME                 = os.environ["PHATE_PRODIGAL_PATH"]
+GLIMMER_HOME                  = os.environ["PHATE_GLIMMER_PATH"]
+GENEMARKS_HOME                = os.environ["PHATE_GENEMARKS_PATH"]
+CGC_HOME                      = os.environ["PHATE_CGC_PATH"]
+tRNAscanSE_HOME               = os.environ["PHATE_tRNAscanSE_HOME"]
+HMMER_HOME                    = os.environ["PHATE_HMMER_HOME"]
+
+# BLAST parameters - needed to formulate parameters input to blast module
+MIN_BLASTP_IDENTITY           = os.environ["PHATE_MIN_BLASTP_IDENTITY"]   # Sets a lower limit
+MIN_BLASTN_IDENTITY           = os.environ["PHATE_MIN_BLASTN_IDENTITY"]   # Sets a lower limit
+MAX_BLASTP_HIT_COUNT          = os.environ["PHATE_MAX_BLASTP_HIT_COUNT"]  # Sets an upper limit
+MAX_BLASTN_HIT_COUNT          = os.environ["PHATE_MAX_BLASTN_HIT_COUNT"]  # Sets an upper limit
+BLASTP_IDENTITY_DEFAULT       = os.environ["PHATE_BLASTP_IDENTITY_DEFAULT"]
+BLASTN_IDENTITY_DEFAULT       = os.environ["PHATE_BLASTN_IDENTITY_DEFAULT"]
+BLASTP_HIT_COUNT_DEFAULT      = os.environ["PHATE_BLASTP_HIT_COUNT_DEFAULT"]
+BLASTN_HIT_COUNT_DEFAULT      = os.environ["PHATE_BLASTN_HIT_COUNT_DEFAULT"]
+
+# BLAST database locations 
+NCBI_VIRUS_BASE_DIR           = os.environ["PHATE_NCBI_VIRUS_BASE_DIR"]
+NCBI_VIRUS_GENOME_BLAST_HOME  = os.environ["PHATE_NCBI_VIRUS_GENOME_BLAST_HOME"]
+NCBI_VIRUS_PROTEIN_BLAST_HOME = os.environ["PHATE_NCBI_VIRUS_PROTEIN_BLAST_HOME"]
+REFSEQ_PROTEIN_BASE_DIR       = os.environ["PHATE_REFSEQ_PROTEIN_BASE_DIR"]
+REFSEQ_PROTEIN_BLAST_HOME     = os.environ["PHATE_REFSEQ_PROTEIN_BLAST_HOME"]
+REFSEQ_GENE_BASE_DIR          = os.environ["PHATE_REFSEQ_GENE_BASE_DIR"]
+REFSEQ_GENE_BLAST_HOME        = os.environ["PHATE_REFSEQ_GENE_BLAST_HOME"]
+PVOGS_BASE_DIR                = os.environ["PHATE_PVOGS_BASE_DIR"]
+PVOGS_BLAST_HOME              = os.environ["PHATE_PVOGS_BLAST_HOME"]
+PHANTOME_BASE_DIR             = os.environ["PHATE_PHANTOME_BASE_DIR"]
+PHANTOME_BLAST_HOME           = os.environ["PHATE_PHANTOME_BLAST_HOME"]
+KEGG_VIRUS_BASE_DIR           = os.environ["PHATE_KEGG_VIRUS_BASE_DIR"]
+KEGG_VIRUS_BLAST_HOME         = os.environ["PHATE_KEGG_VIRUS_BLAST_HOME"]
+SWISSPROT_BASE_DIR            = os.environ["PHATE_SWISSPROT_BASE_DIR"]
+SWISSPROT_BLAST_HOME          = os.environ["PHATE_SWISSPROT_BLAST_HOME"]
+PFAM_BASE_DIR                 = os.environ["PHATE_PFAM_BASE_DIR"]
+PFAM_BLAST_HOME               = os.environ["PHATE_PFAM_BLAST_HOME"]
+SMART_BASE_DIR                = os.environ["PHATE_SWISSPROT_BASE_DIR"]
+SMART_BLAST_HOME              = os.environ["PHATE_SWISSPROT_BLAST_HOME"]
+PHAGE_ENZYME_BASE_DIR         = os.environ["PHATE_PHAGE_ENZYME_BASE_DIR"]
+PHAGE_ENZYME_BLAST_HOME       = os.environ["PHATE_PHAGE_ENZYME_BLAST_HOME"]
+UNIPROT_BASE_DIR              = os.environ["PHATE_UNIPROT_BASE_DIR"]
+UNIPROT_BLAST_HOME            = os.environ["PHATE_UNIPROT_BLAST_HOME"]
+NR_BLAST_BASE_DIR             = os.environ["PHATE_NR_BLAST_BASE_DIR"]
+NR_BLAST_HOME                 = os.environ["PHATE_NR_BLAST_HOME"]
+NCBI_TAXON_DIR                = os.environ["PHATE_NCBI_TAXON_DIR"]
+CUSTOM_GENOME_BLAST_HOME      = os.environ["PHATE_CUSTOM_GENOME_BLAST_HOME"]
+CUSTOM_GENE_BLAST_HOME        = os.environ["PHATE_CUSTOM_GENE_BLAST_HOME"]
+CUSTOM_PROTEIN_BLAST_HOME     = os.environ["PHATE_CUSTOM_PROTEIN_BLAST_HOME"]
+
+# HMM database locations
+HMM_HOME                      = os.environ["PHATE_HMM_HOME"]
+REFSEQ_PROTEIN_HMM_HOME       = os.environ["PHATE_REFSEQ_PROTEIN_BLAST_HOME"]
+REFSEQ_GENE_HMM_HOME          = os.environ["PHATE_REFSEQ_GENE_BLAST_HOME"]
+PVOGS_HMM_HOME                = os.environ["PHATE_PVOGS_BLAST_HOME"]
+PHANTOME_HMM_HOME             = os.environ["PHATE_PHANTOME_HMM_HOME"]
+SWISSPROT_HMM_HOME            = os.environ["PHATE_SWISSPROT_BLAST_HOME"]
+PFAM_HMM_HOME                 = os.environ["PHATE_PFAM_BLAST_HOME"]
+SMART_HMM_HOME                = os.environ["PHATE_SMART_BLAST_HOME"]
+PHAGE_ENZYME_HMM_HOME         = os.environ["PHATE_PHAGE_ENZYME_BLAST_HOME"]
+UNIPROT_HMM_HOME              = os.environ["PHATE_UNIPROT_BLAST_HOME"]
+NR_HMM_HOME                   = os.environ["PHATE_NR_HMM_HOME"]
+CUSTOM_HMM_HOME               = os.environ["PHATE_CUSTOM_HMM_HOME"]
 
 # Verbosity
-CLEAN_RAW_DATA                = os.environ["CLEAN_RAW_DATA"]
-PHATE_WARNINGS                = os.environ["PHATE_WARNINGS"]
-PHATE_MESSAGES                = os.environ["PHATE_MESSAGES"]
-PHATE_PROGRESS                = os.environ["PHATE_PROGRESS"]
-
-# Now import subordinate modules that need to read the above env vars
+CLEAN_RAW_DATA                = os.environ["PHATE_CLEAN_RAW_DATA"]
+PHATE_WARNINGS                = os.environ["PHATE_PHATE_WARNINGS"]
+PHATE_MESSAGES                = os.environ["PHATE_PHATE_MESSAGES"]
+PHATE_PROGRESS                = os.environ["PHATE_PHATE_PROGRESS"]
 
 import phate_fastaSequence  # generic fasta sequence module
 import phate_genomeSequence # manages genomes to be annotated
@@ -102,14 +146,12 @@ infile_genome   = ""         # user-provided file containing the genome sequence
 infile_geneCall = ""         # gene-call file (output from a gene caller; PHANOTATE for now)
 infile_gene     = ""         # genes to be blasted (not yet in service)
 infile_protein  = ""         # user-provided file containing protein fasta sequences
-infile_psat     = ""         # user-provided file containing PSAT annotation output
 
 ##### USER-SPECIFIED META-DATA and PARAMTERS
 
 genomeType      = GENOME_TYPE              # user-provided, typically 'phage'
-name            = "unknown"                # user-provided, name of current genome, e.g., 'LYP215'
-species         = "unknown"                # user-provided, e.g., 'YpPhage_LYP215'
-contigName      = "unknown"                # #*** temporary; needed due to  not listing contig name
+genomeName      = "unknown"                # user-provided, name of current genome, e.g., 'LYP215'
+genomeSpecies   = "unknown"                # user-provided, e.g., 'YpPhage_LYP215'
 configFile      = "unknown"                # must be passed by calling code (phate_runPipeline.py)
 geneCaller      = GENE_CALLER              # default, unless changed
 blastpIdentity  = BLASTP_IDENTITY_DEFAULT  # integer percent identity cutoff
@@ -123,7 +165,8 @@ hmmDatabase     = HMM_DATABASE             # default, unless changed by input pa
 ##### BOOLEANS
 
 # Databases: assume turned 'off', unless input string indicates otherwise
-NCBI_VIRUS_BLAST         = False
+# BLAST
+NCBI_VIRUS_GENOME_BLAST  = False
 NCBI_VIRUS_PROTEIN_BLAST = False
 NR_BLAST                 = False
 KEGG_VIRUS_BLAST         = False
@@ -131,9 +174,12 @@ REFSEQ_PROTEIN_BLAST     = False
 REFSEQ_GENE_BLAST        = False
 PHANTOME_BLAST           = False
 PVOGS_BLAST              = False
-UNIPARC_BLAST            = False
 SWISSPROT_BLAST          = False
-NCBI_VIRUS_HMM           = False
+PFAM_BLAST               = False
+SMART_BLAST              = False
+PHAGE_ENZYME_BLAST       = False
+# HMM
+NCBI_VIRUS_GENOME_HMM    = False
 NCBI_VIRUS_PROTEIN_HMM   = False
 NR_HMM                   = False
 KEGG_VIRUS_HMM           = False
@@ -141,10 +187,10 @@ REFSEQ_PROTEIN_HMM       = False
 REFSEQ_GENE_HMM          = False
 PHANTOME_HMM             = False
 PVOGS_HMM                = False
-UNIPARC_HMM              = False
 SWISSPROT_HMM            = False
 PFAM_HMM                 = False
 SMART_HMM                = False
+PHAGE_ENZYME_HMM         = False
 
 ##### PATTERNS and CONTROL
 
@@ -160,14 +206,13 @@ p_geneticCodeParam          = re.compile('^-e')   # genetic code
 p_geneCallFileParam         = re.compile('^-f')   # gene calls file
 p_contigNameParam           = re.compile('^-C')   # Contig name #*** TEMPORARY until code handles draft genomes 
 p_genomeTypeParam           = re.compile('^-t')   # genome type (e.g., 'phage', 'bacterium')
-p_nameParam                 = re.compile('^-n')   # genome name (e.g., 'my_fave_Yp_genome')
+p_genomeNameParam           = re.compile('^-n')   # genome name (e.g., 'my_fave_Yp_genome')
 p_speciesParam              = re.compile('^-s')   # species (e.g., 'Y_pestis') 
 p_blastpIdentityParam       = re.compile('^-i')   # blastp identity cutoff
 p_blastnIdentityParam       = re.compile('^-j')   # blastn identity cutoff
 p_blastpHitCountParam       = re.compile('^-h')   # blastp top hit count
 p_blastnHitCountParam       = re.compile('^-H')   # blastn top hit count
 p_translateOnlyParam        = re.compile('^-x')   # if user passes 'true' => get genes, translate, compare, then stop before annotation
-p_psatFileParam             = re.compile('^-P')   # PSAT output file, indicated by capital 'P'
 p_blastDBsStringParam       = re.compile('^-d')   # string listing database(s) to blast against
 p_hmmProgramDBsStringParam  = re.compile('^-m')   # string listing hmm program and database(s) to search against
 
@@ -186,6 +231,7 @@ p_uniparc              = re.compile('uniparc')
 p_swissprot            = re.compile('swissprot')           
 p_pfam                 = re.compile('pfam')                
 p_smart                = re.compile('smart')               
+p_phageEnzyme          = re.compile('phageEnzyme')               
 # hmm profiles DBs
 p_ncbiVirusHmm         = re.compile('ncbiVirusGenomeHmm')  
 p_ncbiVirusProteinHmm  = re.compile('ncbiVirusProteinHmm') 
@@ -199,11 +245,11 @@ p_uniparcHmm           = re.compile('uniparcHmm')
 p_swissprotHmm         = re.compile('swissprotHmm')        
 p_pfamHmm              = re.compile('pfamHmm')             
 p_smartHmm             = re.compile('smartHmm')            
+p_phageEnzymeHmm       = re.compile('phageEnzymeHmm')            
 
 # Initialize
 TRANSLATE_ONLY = False
 HMM_SEARCH     = False
-PSAT           = False
 
 # Other patterns
 p_comment  = re.compile('^#')
@@ -226,15 +272,13 @@ for i in range(0,argCount):
     match_geneCallFileParam        = re.search(p_geneCallFileParam,        argList[i])
     match_contigNameParam          = re.search(p_contigNameParam,          argList[i])
     match_genomeTypeParam          = re.search(p_genomeTypeParam,          argList[i])
-    match_nameParam                = re.search(p_nameParam,                argList[i])
-    match_contigNameParam          = re.search(p_contigNameParam,          argList[i])
+    match_genomeNameParam          = re.search(p_genomeNameParam,          argList[i])
     match_speciesParam             = re.search(p_speciesParam,             argList[i])
     match_blastpIdentityParam      = re.search(p_blastpIdentityParam,      argList[i])
     match_blastnIdentityParam      = re.search(p_blastnIdentityParam,      argList[i])
     match_blastpHitCountParam      = re.search(p_blastpHitCountParam,      argList[i])
     match_blastnHitCountParam      = re.search(p_blastnHitCountParam,      argList[i])
     match_translateOnlyParam       = re.search(p_translateOnlyParam,       argList[i])
-    match_psatFileParam            = re.search(p_psatFileParam,            argList[i])
     match_blastDBsStringParam      = re.search(p_blastDBsStringParam,      argList[i])
     match_hmmProgramDBsStringParam = re.search(p_hmmProgramDBsStringParam, argList[i])
 
@@ -265,11 +309,6 @@ for i in range(0,argCount):
         if i < argCount:
             infile_geneCall = argList[i+1] 
 
-    if match_psatFileParam:
-        if i < argCount:
-            PSAT = True
-            infile_psat = argList[i+1] 
-  
     # Other parameterized arguments
 
     if match_geneCallerParam:
@@ -289,13 +328,9 @@ for i in range(0,argCount):
         if i < argCount:
             geneticCode = argList[i+1]
 
-    if match_nameParam:
+    if match_genomeNameParam:
         if i < argCount:
-            name = argList[i+1]
- 
-    if match_contigNameParam:
-        if i < argCount:
-            contigName = argList[i+1]
+            genomeName = argList[i+1]
  
     if match_speciesParam:
         if i < argCount:
@@ -306,6 +341,10 @@ for i in range(0,argCount):
             value = argList[i+1]
             if value.lower() == 'yes' or value.lower() == 'true' or value.lower() == 'on' or value.lower() == 'y':
                 TRANSLATE_ONLY = True
+                translateOnly = True
+            else:
+                TRANSLATE_ONLY = False 
+                translateOnly = False 
 
     if match_blastpIdentityParam:
         if i < argCount:
@@ -345,9 +384,10 @@ for i in range(0,argCount):
             match_uniparc          = re.search(p_uniparc,value)
             match_swissprot        = re.search(p_swissprot,value)
             match_pfam             = re.search(p_pfam,value)
-            match_smart        = re.search(p_smart,value)
+            match_smart            = re.search(p_smart,value)
+            match_phageEnzyme      = re.search(p_phageEnzyme,value)
             if match_ncbiVirus:
-                NCBI_VIRUS_BLAST = True
+                NCBI_VIRUS_GENOME_BLAST = True
             if match_ncbiVirusProtein:
                 NCBI_VIRUS_PROTEIN_BLAST = True
             if match_nr:
@@ -362,14 +402,14 @@ for i in range(0,argCount):
                 PHANTOME_BLAST = True
             if match_pvogs:
                 PVOGS_BLAST = True 
-            if match_uniparc:
-                UNIPARC_BLAST = True
             if match_swissprot:
                 SWISSPROT_BLAST = True
-            if match_swissprot:
+            if match_pfam:
                 PFAM_BLAST = True
-            if match_swissprot:
+            if match_smart:
                 SMART_BLAST = True
+            if match_phageEnzyme:
+                PHAGE_ENZYME_BLAST = True
 
     if match_hmmProgramDBsStringParam:
         if i < argCount:
@@ -387,6 +427,7 @@ for i in range(0,argCount):
             match_swissprotHmm        = re.search(p_swissprotHmm,value)
             match_pfamHmm             = re.search(p_pfamHmm,value)
             match_smartHmm            = re.search(p_smart,value)
+            match_phageEnzymeHmm      = re.search(p_phageEnzyme,value)
             if match_hmmProgram:
                 hmmProgram = match_hmmProgram.group(1)
                 HMM_SEARCH = True
@@ -406,14 +447,14 @@ for i in range(0,argCount):
                 PHANTOME_HMM = True
             if match_pvogsHmm:
                 PVOGS_HMM = True 
-            if match_uniparcHmm:
-                UNIPARC_HMM = True
             if match_swissprotHmm:
                 SWISSPROT_HMM = True
             if match_pfamHmm:
                 PFAM_HMM = True
             if match_smartHmm:
                 SMART_HMM = True
+            if match_phageEnzymeHmm:
+                PHAGE_ENZYME_HMM = True
 
 # Open and Check files
 
@@ -446,15 +487,6 @@ except IOError as e:
         print(e, "gene call file,", infile_geneCall)
     LOGFILE_H.write("%s%s%s%s\n" % ("fileError ",e," gene call file, ", infile_geneCall))
 
-if PSAT:
-    try:
-        PSAT_FILE = open(infile_psat,"r")
-    except IOError as e:
-        fileError = True
-        if PHATE_WARNINGS == 'True':
-            print(e, "psat file,", infile_psat)
-        LOGFILE_H.write("%s%s%s%s\n" % ("fileError ",e," psat file, ", infile_psat))
-
 try:
     OUTFILE = open(outfile,"w")
 except IOError as e:
@@ -477,12 +509,6 @@ if fileError:
     print("    gene call file is", infile_geneCall)
     print("    outfile is", outfile)
     print("    gfffile is", gfffile)
-    if PHATE_WARNINGS == 'True':
-        if PSAT:
-            print("    psat file is", infile_psat)
-        else:
-            print("    There is no PSAT results file.")
-        print("Terminating due to file error")
     LOGFILE_H.write("%s%s\n" % ("Terminating due to file error at ",datetime.datetime.now()))
     LOGFILE_H.close(); exit(0)
 
@@ -498,21 +524,16 @@ LOGFILE_H.write("%s%s\n" % ("infile_geneCall is ", infile_geneCall))
 LOGFILE_H.write("%s%s\n" % ("infile_gene is ", infile_gene))
 LOGFILE_H.write("%s%s\n" % ("infile_protein is ", infile_protein))
 LOGFILE_H.write("%s%s\n" % ("genomeType is ",genomeType))
-LOGFILE_H.write("%s%s\n" % ("name is ",name))
-LOGFILE_H.write("%s%s\n" % ("contigName is ",contigName))
-LOGFILE_H.write("%s%s\n" % ("species is ",species))
+LOGFILE_H.write("%s%s\n" % ("genomeName is ",genomeName))
+LOGFILE_H.write("%s%s\n" % ("genomeSpecies is ",genomeSpecies))
 LOGFILE_H.write("%s%s\n" % ("blastpIdentity is ",blastpIdentity))
 LOGFILE_H.write("%s%s\n" % ("blastpHitCount is ",blastpHitCount))
 LOGFILE_H.write("%s%s\n" % ("blastnHitCount is ",blastnHitCount))
-if PSAT:
-    LOGFILE_H.write("%s%s\n" % ("psat file is ", infile_psat))
-else:
-    LOGFILE_H.write("%s\n" % ("psat file not provided"))
 if TRANSLATE_ONLY:
     LOGFILE_H.write("%s\n" % ("Translating only; no annotation."))
 else:
     LOGFILE_H.write("%s\n" % ("Annotating"))
-LOGFILE_H.write("%s%s\n" % ("NCBI_VIRUS_BLAST is ",NCBI_VIRUS_BLAST))
+LOGFILE_H.write("%s%s\n" % ("NCBI_VIRUS_GENOME_BLAST is ",NCBI_VIRUS_GENOME_BLAST))
 LOGFILE_H.write("%s%s\n" % ("NCBI_VIRUS_PROTEIN_BLAST is ",NCBI_VIRUS_PROTEIN_BLAST))
 LOGFILE_H.write("%s%s\n" % ("KEGG_VIRUS_BLAST is ",KEGG_VIRUS_BLAST))
 LOGFILE_H.write("%s%s\n" % ("NR_BLAST is ",NR_BLAST))
@@ -520,10 +541,10 @@ LOGFILE_H.write("%s%s\n" % ("REFSEQ_PROTEIN_BLAST is ",REFSEQ_PROTEIN_BLAST))
 LOGFILE_H.write("%s%s\n" % ("REFSEQ_GENE_BLAST is ",REFSEQ_GENE_BLAST))
 LOGFILE_H.write("%s%s\n" % ("PHANTOME_BLAST is ",PHANTOME_BLAST))
 LOGFILE_H.write("%s%s\n" % ("PVOGS_BLAST is ",PVOGS_BLAST))
-LOGFILE_H.write("%s%s\n" % ("UNIPARC_BLAST is ",UNIPARC_BLAST))
 LOGFILE_H.write("%s%s\n" % ("SWISSPROT_BLAST is ",SWISSPROT_BLAST))
+LOGFILE_H.write("%s%s\n" % ("PHAGE_ENZYME_BLAST is ",PHAGE_ENZYME_BLAST))
 LOGFILE_H.write("%s%s\n" % ("hmmProgram is ",hmmProgram))
-LOGFILE_H.write("%s%s\n" % ("NCBI_VIRUS_HMM is ",NCBI_VIRUS_HMM))
+LOGFILE_H.write("%s%s\n" % ("NCBI_VIRUS_GENOME_HMM is ",NCBI_VIRUS_GENOME_HMM))
 LOGFILE_H.write("%s%s\n" % ("NCBI_VIRUS_PROTEIN_HMM is ",NCBI_VIRUS_PROTEIN_HMM))
 LOGFILE_H.write("%s%s\n" % ("KEGG_VIRUS_HMM is ",KEGG_VIRUS_HMM))
 LOGFILE_H.write("%s%s\n" % ("NR_HMM is ",NR_HMM))
@@ -531,8 +552,8 @@ LOGFILE_H.write("%s%s\n" % ("REFSEQ_PROTEIN_HMM is ",REFSEQ_PROTEIN_HMM))
 LOGFILE_H.write("%s%s\n" % ("REFSEQ_GENE_HMM is ",REFSEQ_GENE_HMM))
 LOGFILE_H.write("%s%s\n" % ("PHANTOME_HMM is ",PHANTOME_HMM))
 LOGFILE_H.write("%s%s\n" % ("PVOGS_HMM is ",PVOGS_HMM))
-LOGFILE_H.write("%s%s\n" % ("UNIPARC_HMM is ",UNIPARC_HMM))
 LOGFILE_H.write("%s%s\n" % ("SWISSPROT_HMM is ",SWISSPROT_HMM))
+LOGFILE_H.write("%s%s\n" % ("PHAGE_ENZYME_HMM is ",PHAGE_ENZYME_HMM))
 
 # Communicate to user
 if PHATE_MESSAGES == 'True':
@@ -553,15 +574,11 @@ if PHATE_MESSAGES == 'True':
     print("blastp identity is", blastpIdentity)
     print("blastp hit count is", blastpHitCount)
     print("blastn hit count is", blastnHitCount)
-    if PSAT:
-        print("psat file is", infile_psat)
-    else:
-        print("There is no PSAT results file.")
     if TRANSLATE_ONLY:
         print("Translating only; no annotation.")
     else:
         print("Annotating")
-    print("NCBI_VIRUS_BLAST is", NCBI_VIRUS_BLAST)
+    print("NCBI_VIRUS_GENOME_BLAST is", NCBI_VIRUS_GENOME_BLAST)
     print("NCBI_VIRUS_PROTEIN_BLAST is", NCBI_VIRUS_PROTEIN_BLAST)
     print("NR_BLAST is", NR_BLAST)
     print("KEGG_VIRUS_BLAST is", KEGG_VIRUS_BLAST)
@@ -569,8 +586,8 @@ if PHATE_MESSAGES == 'True':
     print("REFSEQ_GENE_BLAST is", REFSEQ_GENE_BLAST)
     print("PHANTOME_BLAST is", PHANTOME_BLAST)
     print("PVOGS_BLAST is", PVOGS_BLAST)
-    print("UNIPARC_BLAST is", UNIPARC_BLAST)
     print("SWISSRPOT_BLAST is", SWISSPROT_BLAST)
+    print("PHAGE_ENZYME_BLAST is", PHAGE_ENZYME_BLAST)
     print("hmmProgram is", hmmProgram)
     print("NCBI_VIRUS_HMM is", NCBI_VIRUS_HMM)
     print("NCBI_VIRUS_PROTEIN_HMM is", NCBI_VIRUS_PROTEIN_HMM)
@@ -580,8 +597,8 @@ if PHATE_MESSAGES == 'True':
     print("REFSEQ_GENE_HMM is", REFSEQ_GENE_HMM)
     print("PHANTOME_HMM is", PHANTOME_HMM)
     print("PVOGS_HMM is", PVOGS_HMM)
-    print("UNIPARC_HMM is", UNIPARC_HMM)
     print("SWISSPROT_HMM is", SWISSPROT_HMM)
+    print("PHAGE_ENZYME_HMM is", PHAGE_ENZYME_HMM)
 
 if PHATE_PROGRESS == 'True':
     print("Sequence annotation main says: Configuration complete for sequence annotation module.")
@@ -591,7 +608,7 @@ if PHATE_PROGRESS == 'True':
 geneCallInfo = {      # For passing info to genomeSequence module
     'geneCaller'           : geneCaller, 
     'geneCallFile'         : infile_geneCall, 
-    'name'                 : name,
+    'genomeName'           : genomeName,
 }
 
 # Create a genome object and set parameters 
@@ -600,18 +617,15 @@ if PHATE_PROGRESS == 'True':
     print("Preparing for sequence annotation: setting parameters...")
 LOGFILE_H.write("%s%s\n" % ("Setting parameters for genome at ",datetime.datetime.now()))
 myGenome = phate_genomeSequence.genome()
-myGenome.genomeType  = genomeType
-myGenome.name        = name 
-myGenome.genomeName  = name
-myGenome.species     = species 
-#myGenome.genomeName  = contigName
-myGenome.genomeName  = name
+myGenome.genomeType    = genomeType
+myGenome.genomeName    = genomeName
+myGenome.genomeSpecies = genomeSpecies 
 myGenome.setCodeBaseDir(CODE_BASE_DIR)
 myGenome.setOutputDir(outputDir)
 LOGFILE_H.write("%s\n" % ("Reading sequence into genome object"))
 gLines = GENOME_FILE.read().splitlines()
 myGenome.contigSet.addFastas(gLines,'nt')
-myGenome.contigSet.assignContig(contigName) #***  TEMPORARY handles only finished genome / single contig for now
+#myGenome.contigSet.assignContig(contigName) #***  TEMPORARY handles only finished genome / single contig for now
 if PHATE_MESSAGES == 'True':
     print("Sequence annotation main says: contigName is", myGenome.contigSet.contig)
 
@@ -719,17 +733,17 @@ else:
 
     # Prepare for genome blast
     myParamSet = {
-        'identityMin'    : GENOME_IDENTITY_MIN,  #*** Should not be hard coded, but should be a low-stringency setting
-        'identitySelect' : GENOME_IDENTITY_SELECT,  #*** this one too 
-        'evalueMin'      : EVALUE_MIN,
-        'evalueSelect'   : EVALUE_SELECT,
-        'topHitCount'    : int(blastnHitCount),
-        'outputFormat'   : XML_OUT_FORMAT,  # blast output format (use 5=XML or 7=LIST only) 
-        'scoreEdge'      : SCORE_EDGE,
-        'overhang'       : OVERHANG,
-        'geneCallDir'    : outputDir, 
-        'blastOutDir'    : genomeBlastOutputDir,
-        'ncbiVirusBlast' : NCBI_VIRUS_BLAST,
+        'identityMin'          : GENOME_IDENTITY_MIN,  #*** Should not be hard coded, but should be a low-stringency setting
+        'identitySelect'       : GENOME_IDENTITY_SELECT,  #*** this one too 
+        'evalueMin'            : EVALUE_MIN,
+        'evalueSelect'         : EVALUE_SELECT,
+        'topHitCount'          : int(blastnHitCount),
+        'outputFormat'         : XML_OUT_FORMAT,  # blast output format (use 5=XML or 7=LIST only) 
+        'scoreEdge'            : SCORE_EDGE,
+        'overhang'             : OVERHANG,
+        'geneCallDir'          : outputDir, 
+        'blastOutDir'          : genomeBlastOutputDir,
+        'ncbiVirusGenomeBlast' : NCBI_VIRUS_GENOME_BLAST,
     }
     blast.setBlastParameters(myParamSet)
     blast.setBlastFlavor('blastn') 
@@ -830,8 +844,8 @@ else:
         'refseqProteinBlast'    : REFSEQ_PROTEIN_BLAST,
         'phantomeBlast'         : PHANTOME_BLAST,
         'pvogsBlast'            : PVOGS_BLAST,
-        'uniparcBlast'          : UNIPARC_BLAST,
         'swissprotBlast'        : SWISSPROT_BLAST,
+        'phageEnzymeBlast'      : PHAGE_ENZYME_BLAST,
     }
     blast.setBlastParameters(myParamSet)
     blast.setBlastFlavor('blastp')
@@ -889,11 +903,11 @@ else:
         'refseqProteinHmm'      : REFSEQ_PROTEIN_HMM,
         'phantomeHmm'           : PHANTOME_HMM,
         'pvogsHmm'              : PVOGS_HMM,
-        'uniparcHmm'            : UNIPARC_HMM,
         'swissprotHmm'          : SWISSPROT_HMM,
         'pfamHmm'               : PFAM_HMM,
         'smartHmm'              : SMART_HMM,
-        'ncbiVirusHmm'          : NCBI_VIRUS_HMM,
+        'phageEnzymeHmm'        : PHAGE_ENZYME_HMM,
+        'ncbiVirusGenomeHmm'    : NCBI_VIRUS_GENOME_HMM,
         'ncbiVirusProteinHmm'   : NCBI_VIRUS_PROTEIN_HMM,
     }
     if DEBUG:
@@ -910,18 +924,6 @@ else:
 
     LOGFILE_H.write("%s%s\n" % ("HMM search complete at ",datetime.datetime.now()))
 
-    # ADD PSAT ANNOTATIONS  
-
-    if PSAT:
-        if PHATE_PROGRESS == 'True':
-            print("Setting PSAT parameters and recording PSAT annotations.")
-        LOGFILE_H.write("%s\n" % ("Setting PSAT parameters and recording PSAT annotations."))
-        psatJobID   = "unknown"  #*** Should extract from filename, if it is part of filename
-        psatJobName = "unknown"  #*** Take what preceeds PSAT jobID from filename
-        myGenome.setPSATparameters(psatJobID,psatJobName,infile_psat)
-        myGenome.recordPSATannotations()
-        LOGFILE_H.write("%s%s\n" % ("PSAT annotations recorded at ",datetime.datetime.now()))
-
     # REPORT OUT 
 
     if PHATE_PROGRESS == 'True':
@@ -935,8 +937,6 @@ else:
 if PHATE_PROGRESS == 'True':
     print("Sequence annotation main says: Done!")
 GENOME_FILE.close()
-if PSAT:
-    PSAT_FILE.close()
 OUTFILE.close()
 GFFFILE.close()
 
