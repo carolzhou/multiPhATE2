@@ -27,9 +27,9 @@ from subprocess import call
 
 ##### Verbosity
 
-CGC_WARNINGS = os.environ["CGC_WARNINGS"]
-CGC_MESSAGES = os.environ["CGC_MESSAGES"]
-CGC_PROGRESS = os.environ["CGC_PROGRESS"]
+CGC_WARNINGS = os.environ["PHATE_CGC_WARNINGS"]
+CGC_MESSAGES = os.environ["PHATE_CGC_MESSAGES"]
+CGC_PROGRESS = os.environ["PHATE_CGC_PROGRESS"]
 
 ##### FILES
 

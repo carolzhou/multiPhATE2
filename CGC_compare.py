@@ -8,7 +8,7 @@
 #    callers.
 #
 # Updates:
-#    12 October 2018
+#    03 December 2019
 #
 # Programmer's Notes:
 #
@@ -46,9 +46,9 @@ PHATE_PIPELINE = True  # Running this code within the PhATE pipeline. Set this t
 ##### Verbosity
 
 #if PHATE_PIPELINE:
-#    CGC_WARNINGS = os.environ["CGC_WARNINGS"]
-#    CGC_MESSAGES = os.environ["CGC_MESSAGES"]
-#    CGC_PROGRESS = os.environ["CGC_PROGRESS"]
+#    CGC_WARNINGS = os.environ["PHATE_CGC_WARNINGS"]
+#    CGC_MESSAGES = os.environ["PHATE_CGC_MESSAGES"]
+#    CGC_PROGRESS = os.environ["PHATE_CGC_PROGRESS"]
 #else:
 #    CGC_WARNINGS = 'True'
 #    CGC_MESSAGES = 'True'
@@ -57,6 +57,7 @@ PHATE_PIPELINE = True  # Running this code within the PhATE pipeline. Set this t
 CGC_WARNINGS = 'True'
 CGC_MESSAGES = 'False'
 CGC_PROGRESS = 'True'
+
 #DEBUG = True  # Controls verbosity in this code only
 DEBUG = False
 
@@ -65,9 +66,9 @@ p_comment   = re.compile('^#')
 class Comparison(object):
     
     def __init__(self):
-        self.commonCore      = []  # list of lists of identical CGC_geneCall object calls (ie, different callers, same call) 
-        self.mergeList       = []  # combined list of CGC_geneCall objects, merged by self.Merge()
-        self.uniqueList      = []  # list of lists of unique gene calls over all callers; each item in list is a common gene call (>=1 gene caller)
+        self.commonCore      = []  # list of lists of identical CGC_geneCall object calls (ie, different callers, same call) (ie, universally agreed calls) 
+        self.mergeList       = []  # combined list of CGC_geneCall objects, merged by self.Merge() (all calls by all callers, ordered by contig, end, start)
+        self.uniqueList      = []  # list of lists of unique gene calls over all callers; each item in list is a common gene call (>=1 gene caller) (ie, the superset)
         self.callerList      = []  # non-redundant list of callers 
         self.geneCall        = CGC_geneCall.GeneCall()  # a geneCall object
         self.averageScores   = defaultdict(dict)  # Holds average gene-call score for each caller 
@@ -89,7 +90,6 @@ class Comparison(object):
                 print("WARNING in CGC_compare module: IdentifyCallers(): No callers to extract: call method Merge() to establish mergeList before calling this method") 
             return 0
 
-
     ##### IDENTIFY COMMON CORE #####
     # Run Merge() and Compare() before running this method   
     #################
@@ -108,7 +108,8 @@ class Comparison(object):
                             leftEnd    = commonCalls[0].leftEnd
                             rightEnd   = commonCalls[0].rightEnd
                             geneLength = commonCalls[0].geneLength
-                            newCommonCoreCall.AssignGeneCall(geneName,"All_callers",count,strand,leftEnd,rightEnd,geneLength)
+                            contig     = commonCalls[0].contig
+                            newCommonCoreCall.AssignGeneCall(geneName,"All_callers",count,strand,leftEnd,rightEnd,geneLength,contig)
                             self.commonCore.append(newCommonCoreCall)
                             count += 1
                 else:
@@ -122,7 +123,6 @@ class Comparison(object):
                 print("WARNING in CGC_compare module: IdentifyCommonCore(): No data available to identify common core")
         return 
 
- 
     ##### IS LESSER ? #####
     # Determine which gene call occurs first along the sequence
     #################
@@ -132,7 +132,6 @@ class Comparison(object):
         if (int(gene1.leftEnd) == int(gene2.leftEnd)) and (int(gene1.rightEnd) < int(gene2.rightEnd)):
             return True
         return False
-
 
     ##### MERGE #####
     # Merge a list of gene call objects with self.mergeList
@@ -374,6 +373,144 @@ class Comparison(object):
                 return False 
 
     ##### PRINT METHODS ##########################################################################################
+
+    def ProcessAgreement(self,inList,geneNumber,FILE_H):
+        coordinateList = []     # capturing possibly different start coordinates among the gene calls
+        POSITIVE = False; NEGATIVE = False  # which strand? 
+        contig         = ""     # common contig
+        strand         = ''     # common strand
+        longStart      = 0      # start coordinate for longest gene call
+        end            = 0      # common end coordinate
+        length         = 0      # length of longest gene call
+        leftEnd        = 0      # for printing: left coordinate (could be longStart or end)
+        rightEnd       = 0      # for printing: right coordinate (could be longStart or end)
+        sourceList     = []     # list of gene callers that "agree"
+        sourceString   = ""     # concatenation string of sourceList callers
+
+        # Collect all start coordinates, then find longest gene
+        for geneCall in inList:
+            if geneCall.strand == '+':
+                coordinateList.append(geneCall.leftEnd)
+                POSITIVE = True
+            else:
+                coordinateList.append(geneCall.rightEnd)
+                NEGATIVE = True
+            sourceList.append(geneCall.geneCaller)
+
+        if POSITIVE or NEGATIVE:
+            contig = inList[0].contig
+            strand = inList[0].strand
+            coordinateList.sort()
+            if POSITIVE:
+                end = inList[0].rightEnd
+                longStart = coordinateList[0]  # take smallest number
+                rightEnd = end
+                leftEnd  = longStart
+            else:
+                end = inList[0].leftEnd
+                longStart = coordinateList[-1] # take largest number
+                leftEnd  = end
+                rightEnd = longStart
+            length = abs(int(end) - int(longStart)) + 1  # calculate length of longest gene call
+            sourceString = '_'.join(sourceList)          # create source list as string for printing
+            FILE_H.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNumber,strand,leftEnd,rightEnd,length,contig,sourceString))
+
+        return
+
+    def PrintGenecalls2file_cgc(self,FILE_H,dataSet): # Printing from internal data structure to phate's cgc format
+        contig = '.'; source = '.'; type = 'cds'
+        geneNo = 0
+        start = '0'; end = '0'; strand = 'x' 
+        phase = '.'; attributes = '.'; score = '.'
+        #protein = 'unknown'
+
+        # Superset genes are a non-redundant list of gene calls from all callers
+        if dataSet.lower() == 'superset':    
+            FILE_H.write("%s\n" % ("# Superset gene calls, corresponding to cgc.gff"))
+            FILE_H.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % ("Gene No.","Strand","LeftEnd","RightEnd","Length","Contig","Callers"))
+            for callList in self.uniqueList:
+                geneNo += 1
+                contig = callList[0].contig
+                source = callList[0].geneCaller
+                if callList[0].strand == '+' or callList[0].strand == '-':   # ordering is from low to high, regardless of strand indicator
+                    strand = callList[0].strand
+                    start  = str(callList[0].leftEnd)
+                    end    = str(callList[0].rightEnd)
+                else:
+                    if CGC_WARNINGS == 'True':
+                        print("WARNING: CGC_compare says, Unexpected value for strand:", callList[0].strand)
+                if len(callList) == len(self.callerList):      # all callers agreed
+                    attributes = 'unanimous call'
+                    source     = 'all callers'
+                elif len(callList) == 1:                       # only 1 caller called this one
+                    attributes = 'unique call'
+                    source     = callList[0].geneCaller
+                elif len(self.callerList) - len(callList) > 0: # multiple callers
+                    attributes = 'multiple callers'
+                    source = ''
+                    for geneCall in callList:
+                        source += geneCall.geneCaller + '_'
+                    source = source.rstrip('_')
+                else:
+                    attributes = '.'
+                    source     = '.'
+                length = (int(end) - int(start)) + 1
+                FILE_H.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,start,end,str(length),contig,source))
+
+        # Consensus genes are called with same stop codon among gene callers (ie, start codon may be different)
+        elif dataSet.lower() == 'consensus':  
+            previousContig = ""; previousStrand = ""; previousLeftEnd = 0; previousRightEnd = 0;
+            AGREE = False; agreeList = []; # List of geneCall objects that are in consensus, as defined above
+            geneNo = 0; FIRST = True;
+            FILE_H.write("%s\n" % ("# Consensus gene calls, stop codon in agreement among all gene callers"))
+            FILE_H.write("%s\n" % ("# Start codons are reported as that which yield the longest gene"))
+            FILE_H.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % ("Gene No.","Strand","LeftEnd","RightEnd","Length","Contig","Callers"))
+
+            for geneCall in self.mergeList:
+                if geneCall.contig == previousContig and geneCall.strand == previousStrand:
+                    if previousStrand == '+':
+                        if geneCall.rightEnd == previousRightEnd:
+                            AGREE = True
+                    elif previousStrand == '-':
+                        if geneCall.leftEnd == previousLeftEnd:
+                            AGREE = True
+                if not AGREE:
+                    if FIRST:
+                        FIRST = False
+                    else:
+                        geneNo += 1
+                        self.ProcessAgreement(agreeList,geneNo,FILE_H)
+                        agreeList = [] # reset
+
+                agreeList.append(geneCall)
+                previousContig   = geneCall.contig
+                previousStrand   = geneCall.strand
+                previousLeftEnd  = geneCall.leftEnd
+                previousRightEnd = geneCall.rightEnd
+                AGREE = False
+
+            # Print final agreeList
+            geneNo += 1
+            self.ProcessAgreement(agreeList,geneNo,FILE_H)
+
+        # Common Core genes are identical among gene callers
+        elif dataSet.lower() == 'common_core' or dataSet.lower() == 'commoncore' or dataSet.lower() == 'common-core':
+            geneNo = 0; strand = ''; leftEnd = 0; rightEnd = 0; length = 0; contig = ""; source = ""
+            FILE_H.write("%s\n" % ("# Common-core gene calls, identical among gene callers"))
+            FILE_H.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % ("Gene No.","Strand","LeftEnd","RightEnd","Length","Contig","Callers"))
+            for geneCall in self.commonCore:
+                geneNo += 1
+                strand   = geneCall.strand
+                leftEnd  = geneCall.leftEnd
+                rightEnd = geneCall.rightEnd
+                length   = abs(int(rightEnd) - int(leftEnd)) + 1
+                contig   = geneCall.contig
+                source   = geneCall.geneCaller
+                FILE_H.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,str(leftEnd),str(rightEnd),str(length),contig,source))
+        else:
+            if CGC_WARNINGS == 'True':
+                print("WARNING: CGC_compare says, dataSet not recognized:", dataSet) 
+        return
 
     def PrintGenecalls2file_gff(self,FILE_H,dataSet):
         seqid = '.'; source = '.'; type = 'cds'
@@ -733,5 +870,3 @@ class Comparison(object):
         print("\n***************GeneCall Grid")
         self.PrintGenecallGrid()
         return
-
-

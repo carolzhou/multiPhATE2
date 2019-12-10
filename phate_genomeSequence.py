@@ -176,8 +176,10 @@ class genome(object):
             p_digits = re.compile('\d+')
             if 'contig' in geneCallInfo:
                 contig = geneCallInfo['contig']
-            if 'geneCaller' in geneCallInfo:
-                gc = geneCallInfo['geneCaller'].lower()
+            #if 'geneCaller' in geneCallInfo:
+            if 'primaryCalls' in geneCallInfo:
+                #gc = geneCallInfo['geneCaller'].lower()
+                gc = geneCallInfo['primaryCalls'].lower()
                 match_phanotate = re.search('phanotate',gc)
                 match_PHANOTATE = re.search('PHANOTATE',gc)
                 match_rast      = re.search('rast',gc)
@@ -186,6 +188,7 @@ class genome(object):
                 match_prodigal  = re.search('prodigal',gc)
                 match_geneMarkS = re.search('genemarks',gc)
                 match_consensus = re.search('consensus',gc)
+                match_superset  = re.search('superset',gc)
                 if match_phanotate or match_PHANOTATE:
                     geneCaller = 'phanotate'
                 elif match_rast:
@@ -200,8 +203,12 @@ class genome(object):
                     geneCaller = 'genemark'
                 elif match_consensus:
                     geneCaller = 'consensus'
-            if 'geneCallFile' in geneCallInfo:
-                geneCallFile = geneCallInfo['geneCallFile']
+                elif match_superset:
+                    geneCaller = 'superset'
+            #if 'geneCallFile' in geneCallInfo:
+            if 'primaryCallsPathFile' in geneCallInfo:
+                #geneCallFile = geneCallInfo['geneCallFile']
+                geneCallFile = geneCallInfo['primaryCallsPathFile']
             else:
                 if PHATE_WARNINGS == 'True':
                     print("WARNING in genomeSequence module: processGeneCalls(), no geneCall file provided")

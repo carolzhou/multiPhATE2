@@ -4,6 +4,8 @@
 #
 # Programmers: Jeff Kimbrel, Carol Zhou
 #
+# Last update: 2 December 2019
+#
 # Description: Single command to run PHANOTATE, Prodigal, Glimmer and GeneMarkS on a fasta file
 #
 ################################################################
@@ -23,26 +25,31 @@ GENEMARKS_CALLS = False
 PRODIGAL_CALLS  = False 
 GLIMMER_CALLS   = False 
 PHANOTATE_CALLS = False 
+# booleans to control whether custom calls are processed
+CUSTOM_CALLS    = False
 
 # patterns
 p_genemarks = re.compile('[gG][eE][nN][eE][mM][aA][rR][kK]')
 p_glimmer   = re.compile('[gG][lL][iI][mM][mM][eE][rR]')
 p_prodigal  = re.compile('[pP][rR][oO][dD][iI][gG][aA][lL]')
 p_phanotate = re.compile('[pP][hH][aA][nN][oO][tT][aA][tT][eE]')
+p_custom    = re.compile('[cC][uU][sS][tT][oO][mM]')
+p_comment   = re.compile('^#')
+p_blank     = re.compile('^$')
 
 ########## HOUSEKEEPING ##########
 
 #paths
-prodigalPath  = os.environ["PRODIGAL_PATH"]
-glimmerPath   = os.environ["GLIMMER_PATH"] 
-geneMarkSPath = os.environ["GENEMARKS_PATH"]
-phanotatePath = os.environ["PHANOTATE_PATH"]
-cgcPath       = os.environ["CGC_PATH"]
+prodigalPath  = os.environ["PHATE_PRODIGAL_PATH"]
+glimmerPath   = os.environ["PHATE_GLIMMER_PATH"] 
+geneMarkSPath = os.environ["PHATE_GENEMARKS_PATH"]
+phanotatePath = os.environ["PHATE_PHANOTATE_PATH"]
+cgcPath       = os.environ["PHATE_CGC_PATH"]
 
 # Verbosity
-PHATE_MESSAGES = os.environ["PHATE_MESSAGES"]
-PHATE_WARNINGS = os.environ["PHATE_WARNINGS"]
-PHATE_PROGRESS = os.environ["PHATE_PROGRESS"]
+PHATE_MESSAGES = os.environ["PHATE_PHATE_MESSAGES"]
+PHATE_WARNINGS = os.environ["PHATE_PHATE_WARNINGS"]
+PHATE_PROGRESS = os.environ["PHATE_PHATE_PROGRESS"]
 
 # Data Structures
 
@@ -62,13 +69,20 @@ if len(sys.argv) == 1:
         print("Usage: /usr/local/bin/python3.4 annotatePhage.py fastaFile.fa outFolder", "Exiting now.")
     exit(0)
 
-fastaFileName = sys.argv[1]
-outputFolder = sys.argv[2] + "/"
-cgcLog = outputFolder + "cgc.log"
-cgcGff = outputFolder + "cgc.gff"
+fastaFileName       = sys.argv[1]
+outputFolder        = sys.argv[2] + "/"
+customCallerOutfile = sys.argv[4]  # will be 'unknown' if user is not including a custom genecaller output file
+
+cgcLog         = outputFolder + "CGC_main.log"
+cgcGff         = outputFolder + "CGCcallSummary.gff"
+supersetCgc    = outputFolder + "superset.cgc"
+consensusCgc   = outputFolder + "consensus.cgc"
+commoncoreCgc  = outputFolder + "commoncore.cgc"
+customCalls    = outputFolder + customCallerOutfile
+customCallsCgc = outputFolder + "custom.cgc"
 
 # booleans to control gene finding
-if len(sys.argv) == 4:
+if len(sys.argv) == 5:
     # get instructions for which gene finders to run; typically, running in the automated pipeline here
     # argument is a string containing the names of gene callers to be run
     genecallParams = sys.argv[3]  # a string listing gene callers to use 
@@ -76,16 +90,18 @@ if len(sys.argv) == 4:
     match_prodigal  = re.search(p_prodigal, genecallParams)
     match_glimmer   = re.search(p_glimmer,  genecallParams)
     match_phanotate = re.search(p_phanotate,genecallParams)
+    match_custom    = re.search(p_custom,   genecallParams) # this caller is not run; user provides gff output as PipleineInput/<subdir>_custom.gff
     if match_genemarks:
         GENEMARKS_CALLS = True 
     if match_prodigal:
-        PRODIGAL_CALLS = True
+        PRODIGAL_CALLS  = True
     if match_glimmer:
-        GLIMMER_CALLS = True 
+        GLIMMER_CALLS   = True 
     if match_phanotate:
         PHANOTATE_CALLS = True 
+    if match_custom:
+        CUSTOM_CALLS    = True
 
-#logfile = open("./phate_genecallPhage.log","w")
 logfilefullpath = outputFolder + "phate_genecallPhage.log"
 logfile = open(logfilefullpath,"w")
 logfile.write("%s%s\n" % ("Input parameters are:",sys.argv))
@@ -98,16 +114,23 @@ logfile.write("%s%s\n" % ("output folder is ", outputFolder))
 logfile.write("%s%s\n" % ("working folder is ", workingFolder))
 resultsFile = outputFolder + "results.txt"
 results = open(resultsFile,"w")
-files = {'Results File' : resultsFile}  #*** CHECK THIS
+#files = {'Results File' : resultsFile}  #*** CHECK THIS
 logfile.write("%s%s\n" % ("results file is ",resultsFile))
 logfile.write("%s%s\n" % ("GENEMARKS_CALLS is ",GENEMARKS_CALLS))
 logfile.write("%s%s\n" % ("PRODIGAL_CALLS is ",PRODIGAL_CALLS))
 logfile.write("%s%s\n" % ("GLIMMER_CALLS is ",GLIMMER_CALLS))
 logfile.write("%s%s\n" % ("PHANOTATE_CALLS is ",PHANOTATE_CALLS))
+logfile.write("%s%s\n" % ("CUSTOM_CALLS is ",CUSTOM_CALLS))
 logfile.write("%s%s\n" % ("DEBUG is ",DEBUG))
 logfile.write("%s%s\n" % ("CGC log file is ",cgcLog))
+logfile.write("%s%s\n" % ("cgcGff is ",cgcGff))
+logfile.write("%s%s\n" % ("supersetCgc is ",supersetCgc))
+logfile.write("%s%s\n" % ("consensusCgc is ",consensusCgc))
+logfile.write("%s%s\n" % ("commoncoreCgc is ",commoncoreCgc))
+logfile.write("%s%s\n" % ("customCalls is ",customCalls))
+logfile.write("%s%s\n" % ("customCallsCgc is ",customCallsCgc))
 
-callCounts = {'prodigal' : 0, 'glimmer' : 0, 'genemarks' : 0, 'phanotate' : 0}
+callCounts = {'prodigal' : 0, 'glimmer' : 0, 'genemarks' : 0, 'phanotate' : 0, 'custom' : 0}
 
 iterateGlimmer = False
 #iterateGlimmer = True 
@@ -120,12 +143,12 @@ class geneCall:
     def __init__(self, ID, method, contig, start, stop, strand, score):
         geneCall.geneCallList.append(self)
         self.ID = ID
-        self.method = method
-        self.contig = contig
-        self.start = start
-        self.stop = stop
-        self.strand = strand
-        self.score = score
+        self.method  = method
+        self.contig  = contig
+        self.start   = start
+        self.stop    = stop
+        self.strand  = strand
+        self.score   = score
 
     def printall(self):
         print(self.ID, self.method, self.contig, self.start, self.stop, self.strand, self.score)
@@ -157,9 +180,9 @@ def processProdigal(line):
 
         contig = lineSplit[0]
         method = lineSplit[1]
-        start = lineSplit[3]
-        stop = lineSplit[4]
-        score = lineSplit[5]
+        start  = lineSplit[3]
+        stop   = lineSplit[4]
+        score  = lineSplit[5]
         strand = lineSplit[6]
 
         ID = getProdigalId(lineSplit[8])
@@ -216,6 +239,54 @@ def processPhanotate(line):
         geneCall("NA", "PHANOTATE", split[3], split[0], split[1], split[2], "NA")
         #geneCall("NA", "PHANOTATE", "NA", split[0], split[1], split[2], "NA")
         callCounts['phanotate'] += 1
+
+def Convert_gff2cgc(gffFile,cgcFile):
+    # NOTE:  start/end versus leftEnd/rightEnd may be modified once I figure out what GFF3 does.
+    # GFF format that is input to this code may not be strictly GFF. The 9 columns are as follows:
+    # col1: contig            col2: source (ie gene caller)   col3: feature (cds or other)
+    # col4: start             col5: end                       col6: score
+    # col7: strand (+/-)      col8: frame (0,1,2)             col9: attribute
+    # The contig names must match those in the fasta file exactly, no spaces etc. preferred
+    # The source is the name of the gene caller or source (e.g., NCBI)
+    # The cds/CDS features are collected only, others skipped
+    # The start and end are left and right relative to the positive strand, so 79 and 123 on (-) strand means 123 is start, 79 is end coordinate.
+    # Frame, score, and attribute are ignored; enter as '.' if blank.
+
+    geneNo   = 0
+    strand   = '.'
+    leftEnd  = 0
+    rightEnd = 0
+    contig   = 'unknown'
+    protein  = 'unknown'
+
+    p_contigLine = re.compile("# ")  #*** RESUME CODING HERE
+
+    GFF_H = open(gffFile,"r")
+    CGC_H = open(cgcFile,"w")
+
+    CGC_H.write("%s%s\n" % ("# Custom gene calls reformatted from file ",customCalls))
+    CGC_H.write("%s%s\n" % ("Gene No.","Strand","LeftEnd","RightEnd","Length","Contig","Protein" ))
+
+    for line in GFF_H.read().splitlines():
+        match_comment    = re.search(p_comment,line)
+        match_blank      = re.search(p_blank,line)
+        match_contigLine = re.search(p_contigLine,line)
+        if match_comment or match_blank:
+            pass
+        fields    = line.split('\t')
+        contig    = fields[0]  # contig as listed in user's genome fasta file
+        source    = fields[1]  # gene caller or source (e.g., NCBI)
+        feature   = fields[2]  # 'cds' or 'CDS'
+        leftEnd   = fields[3]  # start if strand is +
+        rightEnd  = fields[4]  # end if strand is - 
+        score     = fields[5]
+        strand    = fields[6]  # + or - 
+        frame     = fields[7]
+        attribute = fields[8]
+        CGC_H.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (contig,strand,leftEnd,rightEnd,length,geneName,attribute)) 
+
+    GFF_H.close()
+    CGC_H.close()
 
 def Convert_cgc2gff(cgcFile,gffFile):
     p_caller   = re.compile('^#\s([\w\d\.\-]+)\sgene\scalls')  # caller is names in first line of file
@@ -385,6 +456,21 @@ if PHANOTATE_CALLS:
 else:
     logfile.write("%s\n" % ("Not running PHANOTATE gene calling"))
 
+########## CUSTOM ###########
+
+if DEBUG:
+    logfile.write("%s\n" % ("Preparing to process CUSTOM calls"))
+    logfile.write("%s%s\n" % ("CUSTOM_CALLS is ",CUSTOM_CALLS))
+    logfile.write("%s%s\n" % ("customCalls is ",customCalls))
+    logfile.write("%s%s\n" % ("customCallsCgc is ",customCallsCgc))
+
+if CUSTOM_CALLS:
+    if PHATE_PROGRESS == 'True':
+        print("Genecall module says: reformatting custom calls.")
+    if PHATE_MESSAGES == 'True':
+        print("\n######## CUSTOM CALLS #########")
+    logfile.write("%s\n" % ("Processing CUSTOM CALLS"))
+
 ########## RESULTS ##########
 
 print("\n########## RESULTS ##########")
@@ -428,6 +514,9 @@ if GLIMMER_CALLS:
 if PHANOTATE_CALLS:
     callerCount += 1
     systemCall('python ' + cgcPath + '/CGC_parser.py PHANOTATE ' + outputFolder + 'phanotateOutput.txt ' + outputFolder + 'phanotate.cgc')
+if CUSTOM_CALLS:
+    callerCount += 1
+    systemCall('python ' + cgcPath + '/CGC_parser.py Custom ' + outputFolder + 'custom.gff ' + outputFolder + 'custom.cgc')
 
 logfile.write("%s%s\n" % ("callerCount is ",callerCount))
 if callerCount >= 2:
@@ -435,12 +524,16 @@ if callerCount >= 2:
 
 if DEBUG:
     print("DEBUG: next, running CGC_main.py")
+
 if runCGC:
-    #systemCall('python ' + cgcPath + 'CGC_main.py ' + outputFolder + '*.cgc > ' + outputFolder + 'CGC_results.txt')
+    commandString1 = 'python ' + cgcPath + 'CGC_main.py log=' + cgcLog 
+    commandString2 = ' cgc=' + cgcGff + ' superset=' + supersetCgc + ' consensus=' + consensusCgc + ' commoncore=' + commoncoreCgc
+    commandString3 = ' ' + outputFolder + '*.cgc > ' + outputFolder + 'CGC_results.txt'
+    command = commandString1 + commandString2 + commandString3
     if DEBUG:
         print("DEBUG: calling CGC, cgcLog is", cgcLog)
-    #systemCall('python ' + cgcPath + 'CGC_main.py log=' + cgcLog + ' '                         + outputFolder + '*.cgc > ' + outputFolder + 'CGC_results.txt')
-    systemCall('python ' + cgcPath + 'CGC_main.py log=' + cgcLog + ' ' + 'gff=' + cgcGff + ' ' + outputFolder + '*.cgc > ' + outputFolder + 'CGC_results.txt')
+        print("command is ",command)
+    systemCall(command)
     
 else:
     logfile.write("%s\n" % ("Not running CGC code: too few gene callers to meaningfully compare"))
@@ -448,9 +541,10 @@ else:
 # Lastly, convert cgc-formatted gene-call files to gff and write to output
 # For each gene caller, open and process its caller.cgc file, format to gff, then write to cgc_caller.gff
 if GENEMARKS_CALLS:
-    cgcFile = outputFolder + 'genemark'       + '.cgc'
+    cgcFile = outputFolder + 'genemark'        + '.cgc'
     gffFile = outputFolder + 'phate_geneMarkS' + '.gff'
     Convert_cgc2gff(cgcFile,gffFile)
+
 if PRODIGAL_CALLS:
     cgcFile = outputFolder + 'prodigal'        + '.cgc'
     gffFile = outputFolder + 'phate_prodigal'  + '.gff'
@@ -465,5 +559,10 @@ if PHANOTATE_CALLS:
     cgcFile = outputFolder + 'phanotate'       + '.cgc'
     gffFile = outputFolder + 'phate_phanotate' + '.gff'
     Convert_cgc2gff(cgcFile,gffFile)
+
+if CUSTOM_CALLS:
+    cgcFile = outputFolder + 'custom'          + '.cgc'
+    gffFile = outputFolder + 'phate_custom'    + '.gff'
+    Convert_cgc2gff(customCalls,customCallsCgc)
 
 logfile.close()

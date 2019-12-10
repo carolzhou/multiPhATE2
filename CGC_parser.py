@@ -41,9 +41,9 @@ CGC_WARNINGS  = 'True'
 CGC_MESSAGES  = 'True'
 CGC_PROGRESS  = 'True'
 
-#os.environ["CGC_WARNINGS"] = CGC_WARNINGS
-#os.environ["CGC_MESSAGES"] = CGC_MESSAGES
-#os.environ["CGC_PROGRESS"] = CGC_PROGRESS
+#os.environ["PHATE_CGC_WARNINGS"] = CGC_WARNINGS
+#os.environ["PHATE_CGC_MESSAGES"] = CGC_MESSAGES
+#os.environ["PHATE_CGC_PROGRESS"] = CGC_PROGRESS
 
 
 ##### CONFIGURABLE
@@ -59,6 +59,7 @@ PRODIGAL_sco = True   # using the XXX.genes.sco file
 PRODIGAL_gff = False  # using the XXX.genes.gff file
 RAST_GFF3    = True   # using RAST gff3 file; other RAST formats not yet supported
 GFF3         = True   # using a properly formatted Genbank .faa file (format as GFF3)
+CUSTOM_GFF3  = True   # using gff3 input format for custom gene calls
 
 ##### FILES
 
@@ -89,11 +90,12 @@ p_phate     = re.compile('[Pp][Hh][Aa][Tt][Ee]')  # PHANOTATE, actually
 p_phanotate = re.compile('[Pp][Hh][Aa][Nn][Oo][Tt][Aa][Tt][Ee]')
 p_gff3      = re.compile('[Gg][Ff][Ff]')  # take gff or gff3
 p_genbank   = re.compile('[Gg][Ee][Nn][Bb][Aa][Nn][Kk]')
+p_custom    = re.compile('[Cc][Uu][Ss][Tt][Oo][Mm]')
 
-##### IDIOMS
+##### CONTROL 
 
-CHATTY = True
-#CHATTY = False
+#DEBUG = True
+DEBUG = False
 
 ##### CONSTANTS
 
@@ -234,16 +236,16 @@ def ProcessGenemark(fLines,OUT):
             if strand != '+' and strand != '-':
                 if RUNLOGOPEN:
                     RUNLOGFILE.write("%s%s\n" % ("ERROR: unknown strand designator, ",strand))
-                OUT.write("%s\n" ("ERROR encountered: unknown strand designator\n"))
+                OUT.write("%s\n" % ("ERROR encountered: unknown strand designator\n"))
                 if USER_OUT_PROVIDED:
-                    USER_OUT.write("%s\n" ("ERROR encountered: unknown strand designator\n"))
+                    USER_OUT.write("%s\n" % ("ERROR encountered: unknown strand designator\n"))
                 if CGC_WARNINGS == 'True':
                     print("ERROR in CGC_parser module: unexpected strand designator,", strand)
                 return
             if contig == '':
                 contig = 'unknown'  # Contig name may be absent in input file
             #TMPFILE.write("%s\t%s\t%s\t%s\t%s\t%s\t%si\t%s\n" % (geneNo,strand,leftEnd,rightEnd,length,contig,protein))
-            OUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%si\t%s\n" % (geneNo,strand,leftEnd,rightEnd,length,contig,protein))
+            OUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,leftEnd,rightEnd,length,contig,protein))
             if USER_OUT_PROVIDED:
                 USER_OUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,leftEnd,rightEnd,length,contig,protein))
     return
@@ -291,9 +293,9 @@ def ProcessGlimmer(fLines,OUT):
             else:
                 if RUNLOGOPEN:
                     RUNLOGFILE.write("%s%s\n" % ("ERROR: unknown strand designator, ",strand))
-                OUT.write("%s\n" ("ERROR encountered: unknown strand designator\n"))
+                OUT.write("%s\n" % ("ERROR encountered: unknown strand designator\n"))
                 if USER_OUT_PROVIDED:
-                    USER_OUT.write("%s\n" ("ERROR encountered: unknown strand designator\n"))
+                    USER_OUT.write("%s\n" % ("ERROR encountered: unknown strand designator\n"))
                 if CGC_WARNINGS == 'True':
                     print("ERROR in CGC_parser module: unexpected strand designator,", strand)
                 return
@@ -302,12 +304,38 @@ def ProcessGlimmer(fLines,OUT):
             if contig == '':    # contig name may be left out of input file
                 contig = 'unknown'
             count += 1; geneNo = count  # re-assign gene number over that assigned by Glimmer
-            OUT.write("%s\t%s\t%s\t%s\t%s\t%si\t%s\n" % (geneNo,strand,str(leftEnd),str(rightEnd),str(length),contig,protein))
+            OUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,str(leftEnd),str(rightEnd),str(length),contig,protein))
 
             if USER_OUT_PROVIDED:
                 USER_OUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,str(leftEnd),str(rightEnd),str(length),contig,protein))
     return
 
+# Custom gene calls should be formatted similar to GFF3; only gene call lines are processed
+# Contig name (must match corresponding in .fasta file) is in first column 
+def ProcessCustom(fLines,OUT):  
+    geneNo = 0; contig = ""; strand = ''; leftEnd = ''; rightEnd = ''; length = 0; count = 0; 
+    if CUSTOM_GFF3:
+        p_dataLine = re.compile('(.*)\t.*\tCDS\t(\d+)\t(\d+)\t\.\t([+-])\t\d\t.*')
+        for line in fLines:
+            match_comment = re.search(p_comment,line)
+            match_dataLine = re.search(p_dataLine,line) 
+            if match_comment:
+                continue
+            elif match_dataLine:
+                count += 1
+                geneNo = count 
+                contig    =     match_dataLine.group(1)
+                leftEnd   = int(match_dataLine.group(2))
+                rightEnd  = int(match_dataLine.group(3))
+                strand    =     match_dataLine.group(4) 
+                length    = abs(rightEnd - leftEnd) + 1
+                OUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,str(leftEnd),str(rightEnd),str(length),contig,protein))
+                if USER_OUT_PROVIDED:
+                    USER_OUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,str(leftEnd),str(rightEnd),str(length),contig,protein))
+    else:
+        pass # Not using other format (for now)
+    return
+ 
 def ProcessRAST(fLines,OUT):
     geneNo = 0; contig = ""; strand = ''; leftEnd = ''; rightEnd = ''; length = 0; count = 0; 
     if RAST_GFF3:
@@ -359,7 +387,7 @@ def ProcessGFF3(fLines,OUT):
                     strand    =     fields[6]
                     if fields[8] != '':
                         protein = fields[8]
-                    if feature == 'CDS':
+                    if feature.lower() == 'cds':
                         length = rightEnd - leftEnd + 1
                         OUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,str(leftEnd),str(rightEnd),str(length),contig,protein))
                         if USER_OUT_PROVIDED:
@@ -468,6 +496,7 @@ match_phanotate   = re.search(p_phanotate,geneCaller)
 match_gff3        = re.search(p_gff3,geneCaller)
 match_genbank     = re.search(p_genbank,geneCaller)
 match_phate       = re.search(p_phate,geneCaller)
+match_custom      = re.search(p_custom,geneCaller)
 
 OUTFILE.write("%s%s%s%s%s\n" % ('# ',geneCaller, " gene calls",", taken from file ",geneCallerOut))
 OUTFILE.write("%s\n" % ("Gene No.\tStrand\tLeftEnd\tRightEnd\tLength\tContig\tProtein"))
@@ -497,6 +526,8 @@ elif match_gff3:
     ProcessGFF3(fileLines,OUTFILE)
 elif match_genbank:
     ProcessGFF3(fileLines,OUTFILE)  # Need to format genbank's protein fasta file as GFF3
+elif match_custom:
+    ProcessCustom(fileLines,OUTFILE) # Incoming format is pre-defined; may be same as GFFx, but not necessarily
 else:
     if RUNLOGOPEN:
         RUNLOGFILE.write("%s%s\n" % ("ERROR: Cannot process unknown gene caller output file:",geneCaller))

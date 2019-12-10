@@ -36,9 +36,9 @@ PHATE_PIPELINE = True  # Running this code within the PhATE pipeline. Set this t
 ##### Verbosity
 
 #if PHATE_PIPELINE:
-#    CGC_WARNINGS = os.environ["CGC_WARNINGS"]
-#    CGC_MESSAGES = os.environ["CGC_MESSAGES"]
-#    CGC_PROGRESS = os.environ["CGC_PROGRESS"]
+#    CGC_WARNINGS = os.environ["PHATE_CGC_WARNINGS"]
+#    CGC_MESSAGES = os.environ["PHATE_CGC_MESSAGES"]
+#    CGC_PROGRESS = os.environ["PHATE_CGC_PROGRESS"]
 #else:
 #    CGC_WARNINGS = 'True'
 #    CGC_MESSAGES = 'True'

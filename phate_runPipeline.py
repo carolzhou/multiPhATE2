@@ -4,7 +4,7 @@
 #
 # Program Title:  phate_runPipeline.py ()
 #
-# Most recent update:  21 November 2019
+# Most recent update:  02 December 2019
 #
 # Description: Runs the phate annotation pipeline.  This code runs under Python 3.7, and requires
 #    dependent packages.
@@ -50,6 +50,7 @@ PROTEIN_FILE           = 'protein.faa'                           #
 BASE_DIR                      = os.environ["PHATE_BASE_DIR"]
 DATABASE_DIR                  = os.environ["PHATE_DATABASE_DIR"]
 SOFTWARE_DIR                  = os.environ["PHATE_SOFTWARE_DIR"]
+PIPELINE_INPUT_DIR            = os.environ["PHATE_PIPELINE_INPUT_DIR"]
 
 EMBOSS_HOME                   = os.environ["PHATE_EMBOSS_PHATE_HOME"] 
 PIPELINE_DIR                  = os.environ["PHATE_PIPELINE_DIR"] 
@@ -63,18 +64,20 @@ REFSEQ_PROTEIN_BASE_DIR       = os.environ["PHATE_REFSEQ_PROTEIN_BASE_DIR"]
 REFSEQ_PROTEIN_BLAST_HOME     = os.environ["PHATE_REFSEQ_PROTEIN_BLAST_HOME"]
 REFSEQ_GENE_BASE_DIR          = os.environ["PHATE_REFSEQ_GENE_BASE_DIR"]
 REFSEQ_GENE_BLAST_HOME        = os.environ["PHATE_REFSEQ_GENE_BLAST_HOME"]
-PHANTOME_BASE_DIR             = os.environ["PHATE_PHANTOME_BASE_DIR"]
-PHANTOME_BLAST_HOME           = os.environ["PHATE_PHANTOME_BLAST_HOME"]
 PVOGS_BASE_DIR                = os.environ["PHATE_PVOGS_BASE_DIR"]
 PVOGS_BLAST_HOME              = os.environ["PHATE_PVOGS_BLAST_HOME"]
+PHANTOME_BASE_DIR             = os.environ["PHATE_PHANTOME_BASE_DIR"]
+PHANTOME_BLAST_HOME           = os.environ["PHATE_PHANTOME_BLAST_HOME"]
+PHAGE_ENZYME_BASE_DIR         = os.environ["PHATE_PHAGE_ENZYME_BASE_DIR"] 
+PHAGE_ENZYME_BLAST_HOME       = os.environ["PHATE_PHAGE_ENZYME_BLAST_HOME"]
 KEGG_VIRUS_BASE_DIR           = os.environ["PHATE_KEGG_VIRUS_BASE_DIR"] 
 KEGG_VIRUS_BLAST_HOME         = os.environ["PHATE_KEGG_VIRUS_BLAST_HOME"]
-SWISSPROT_BASE_DIR            = os.environ["PHATE_SWISSPROT_BASE_DIR"]
-SWISSPROT_BLAST_HOME          = os.environ["PHATE_SWISSPROT_BLAST_HOME"]
 PFAM_BASE_DIR                 = os.environ["PHATE_PFAM_BASE_DIR"]
 PFAM_BLAST_HOME               = os.environ["PHATE_PFAM_BLAST_HOME"]
 SMART_BASE_DIR                = os.environ["PHATE_SWISSPROT_BASE_DIR"]
 SMART_BLAST_HOME              = os.environ["PHATE_SWISSPROT_BLAST_HOME"]
+SWISSPROT_BASE_DIR            = os.environ["PHATE_SWISSPROT_BASE_DIR"]
+SWISSPROT_BLAST_HOME          = os.environ["PHATE_SWISSPROT_BLAST_HOME"]
 UNIPROT_BASE_DIR              = os.environ["PHATE_UNIPROT_BASE_DIR"]
 UNIPROT_BLAST_HOME            = os.environ["PHATE_UNIPROT_BLAST_HOME"]
 NR_BLAST_BASE_DIR             = os.environ["PHATE_NR_BLAST_BASE_DIR"]
@@ -155,8 +158,8 @@ OUTFILE.write("%s%s%s\n" % ("Begin out file ",datetime.datetime.now(), " *******
 runLog = "" # Pipeline log file for current pipeline run (written to user's output subdirectory; this is created once we know the subdir name)
 
 # DEBUG messages control (local)
-DEBUG = True
-#DEBUG = False
+#DEBUG = True
+DEBUG = False
 
 ##### HELP STRINGS
 
@@ -234,17 +237,17 @@ blastpIdentity           = 60
 blastnHitCount           = 5
 blastpHitCount           = 5
 ncbiVirusGenomeBlast     = False
-refseqGeneBlast          = False
 ncbiVirusProteinBlast    = False
-keggVirusBlast           = False
-phantomeBlast            = False
+refseqGeneBlast          = False
+refseqProteinBlast       = False
 pvogsBlast               = False
+phantomeBlast            = False
+phageEnzymeBlast         = False
+keggVirusBlast           = False
 pfamBlast                = False
 smartBlast               = False
 swissprotBlast           = False
 uniprotBlast             = False
-phageEnzymeBlast         = False
-refseqProteinBlast       = False
 nrBlast                  = False
 customGenomeBlast        = False
 customGenomeDBname       = 'unknown' 
@@ -255,18 +258,18 @@ customGeneDBpath         = 'unknown'
 customProteinBlast       = False 
 customProteinDBname      = 'unknown'
 customProteinDBpath      = 'unknown'
-pvogsHmm                 = False 
-phantomeHmm              = False
-pfamHmm                  = False
-smartHmm                 = False
-swissprotHmm             = False
-phageEnzymeHmm           = False
-uniprotHmm               = False
-keggVirusHmm             = False
 ncbiVirusGenomeHmm       = False
 ncbiVirusProteinHmm      = False
 refseqProteinHmm         = False
 refseqGeneHmm            = False
+pvogsHmm                 = False 
+phantomeHmm              = False
+phageEnzymeHmm           = False
+keggVirusHmm             = False
+pfamHmm                  = False
+smartHmm                 = False
+swissprotHmm             = False
+uniprotHmm               = False
 nrHmm                    = False
 hmmProgram               = '' 
 jackhmmer                = False
@@ -303,16 +306,17 @@ with open(jsonFile, 'r') as jsonParameters:
     blastnHitCount           = parameters["blastnHitCount"]
     blastpHitCount           = parameters["blastpHitCount"]
     ncbiVirusGenomeBlast     = parameters["ncbiVirusGenomeBlast"]
-    refseqGeneBlast          = parameters["refseqGeneBlast"]
     ncbiVirusProteinBlast    = parameters["ncbiVirusProteinBlast"]
-    keggVirusBlast           = parameters["keggVirusBlast"]
-    phantomeBlast            = parameters["phantomeBlast"]
+    refseqProteinBlast       = parameters["refseqProteinBlast"]
+    refseqGeneBlast          = parameters["refseqGeneBlast"]
     pvogsBlast               = parameters["pvogsBlast"]
+    phantomeBlast            = parameters["phantomeBlast"]
+    phageEnzymeBlast         = parameters["phageEnzymeBlast"]
+    keggVirusBlast           = parameters["keggVirusBlast"]
     pfamBlast                = parameters["pfamBlast"]
     smartBlast               = parameters["smartBlast"]
     swissprotBlast           = parameters["swissprotBlast"]
-    phageEnzymeBlast         = parameters["phageEnzymeBlast"]
-    refseqProteinBlast       = parameters["refseqProteinBlast"]
+    uniprotBlast             = parameters["uniprotBlast"]
     nrBlast                  = parameters["nrBlast"]
     customGenomeBlast        = parameters["customGenomeBlast"]
     customGenomeDBname       = parameters["customGenomeDBname"]
@@ -323,13 +327,19 @@ with open(jsonFile, 'r') as jsonParameters:
     customProteinBlast       = parameters["customProteinBlast"]
     customProteinDBname      = parameters["customProteinDBname"]
     customProteinDBpath      = parameters["customProteinDBpath"]
+    ncbiVirusGenomeHmm       = parameters["ncbiVirusGenomeHmm"]
+    ncbiVirusProteinHmm      = parameters["ncbiVirusProteinHmm"]
+    refseqProteinHmm         = parameters["refseqProteinHmm"]
+    refseqGeneHmm            = parameters["refseqGeneHmm"]
     pvogsHmm                 = parameters["pvogsHmm"]
     phantomeHmm              = parameters["phantomeHmm"]
+    phageEnzymeHmm           = parameters["phageEnzymeHmm"]
+    keggVirusHmm             = parameters["keggVirusHmm"]
     pfamHmm                  = parameters["pfamHmm"]
     smartHmm                 = parameters["smartHmm"]
     swissprotHmm             = parameters["swissprotHmm"]
-    phageEnzymeHmm           = parameters["phageEnzymeHmm"]
     uniprotHmm               = parameters["uniprotHmm"]
+    nrHmm                    = parameters["nrHmm"]
     hmmProgram               = parameters["hmmProgram"]
     jackhmmer                = parameters["jackhmmer"]
     hmmscan                  = parameters["hmmscan"]
@@ -376,9 +386,9 @@ if DEBUG:
 
 if genomeType.lower() == 'phage' and primaryCallsFile != 'phanotate.cgc':
     if PHATE_WARNINGS == 'True':
-        print("phate_runPipeline says, WARNING: If genome type is phage, the consensus gene-call file should be phanotate.cgc! Yours is", primaryCallsFile)
-    LOGFILE.write("%s%s\n" % ("WARNING:  User has selected genome type as phage, but consensus gene-call file as ", primaryCallsFile))
-    RUNLOG.write("%s%s\n" % ("WARNING:  User has selected genome type as phage, but consensus gene-call file as ", primaryCallsFile))
+        print("phate_runPipeline says, WARNING: If genome type is phage, the primary gene-call file is usually phanotate.cgc! Yours is", primaryCallsFile)
+    LOGFILE.write("%s%s\n" % ("WARNING:  User has selected genome type as phage, but primary gene-call file as ", primaryCallsFile))
+    RUNLOG.write("%s%s\n" % ("WARNING:  User has selected genome type as phage, but primary gene-call file as ", primaryCallsFile))
 
 if PHATE_MESSAGES == 'True':
     print("PIPELINE_INPUT_DIR is", PIPELINE_INPUT_DIR)
@@ -411,13 +421,15 @@ if PHATE_MESSAGES == 'True':
     print("ncbiVirusProteinBlast is", ncbiVirusProteinBlast)
     print("refseqProteinBlast is", refseqProteinBlast)
     print("refseqGeneBlast is", refseqGeneBlast)
-    print("keggVirusBlast is", keggVirusBlast)
-    print("nrBlast is", nrBlast)
-    print("phantomeBlast is", phantomeBlast)
     print("pvogsBlast is", pvogsBlast)
+    print("phantomeBlast is", phantomeBlast)
+    print("phageEnzymeBlast is", phageEnzymeBlast)
+    print("keggVirusBlast is", keggVirusBlast)
+    print("pfamBlast is", pfamBlast)
+    print("smartBlast is", smartBlast)
     print("swissprotBlast is", swissprotBlast)
-    print("nrBlast is", nrBlast)
     print("uniprotBlast is", uniprotBlast)
+    print("nrBlast is", nrBlast)
     print("customGenomeBlast is", customGenomeBlast)
     print("customGenomeDBname is", customGenomeBlastDBname)
     print("customGenomeDBpath is", customGenomeBlastDBpath)
@@ -427,12 +439,18 @@ if PHATE_MESSAGES == 'True':
     print("customProteinBlast is", customProteinBlast)
     print("customProteinDBname is", customProteinDBname)
     print("customProteinDBpath is", customProteinDBpath)
+    print("ncbiVirusGenomeHmm is", ncbiVirusGenomeHmm)
+    print("ncbiVirusProteinHmm is", ncbiVirusProteinHmm)
+    print("refseqProteinHmm is", refseqProteinHmm)
+    print("refseqGeneHmm is", refseqGeneHmm)
     print("pvogsHmm is", pvogsHmm)
     print("phantomeHmm is", phantomeHmm)
+    print("phageEnzymeHmm is", phageEnzymeHmm)
     print("pfamHmm is", pfamHmm)
     print("smartHmm is", smartHmm)
     print("swissprotHmm is", swissprotHmm)
     print("uniprotHmm is", uniprotHmm)
+    print("nrHmm is", nrHmm)
     print("hmmProgram is", hmmProgram)
     print("jackhmmer is", jackhmmer)
     print("hmmscan is", hmmscan)
@@ -440,12 +458,6 @@ if PHATE_MESSAGES == 'True':
     print("customHmm is", customHmm)
     print("customHmmDBname is", customHmmDBname)
     print("customHmmDBpath is", customHmmDBpath)
-    print("ncbiVirusHmm is", ncbiVirusHmm)
-    print("ncbiVirusProteinHmm is", ncbiVirusProteinHmm)
-    print("keggVirusHmm is", keggVirusHmm)
-    print("refseqProteinHmm is", refseqProteinHmm)
-    print("refseqGeneHmm is", refseqGeneHmm)
-    print("nrHmm is", nrHmm)
 
 RUNLOG.write("%s\n" % ("Input parameters:"))
 RUNLOG.write("%s%s\n" % ("   PIPELINE_INPUT_DIR: ", PIPELINE_INPUT_DIR))
@@ -474,39 +486,48 @@ RUNLOG.write("%s%s\n" % ("   blastpHitCount is ",blastpHitCount))
 RUNLOG.write("%s%s\n" % ("   blastnHitCount is ",blastnHitCount))
 RUNLOG.write("%s%s\n" % ("   ncbiVirusGenomeBlast is ",ncbiVirusGenomeBlast))
 RUNLOG.write("%s%s\n" % ("   ncbiVirusProteinBlast is ",ncbiVirusProteinBlast))
-RUNLOG.write("%s%s\n" % ("   keggVirusBlast is ",keggVirusBlast))
-RUNLOG.write("%s%s\n" % ("   nrBlast is ",nrBlast))
 RUNLOG.write("%s%s\n" % ("   refseqProteinBlast is ",refseqProteinBlast))
 RUNLOG.write("%s%s\n" % ("   refseqGeneBlast is ",refseqGeneBlast))
-RUNLOG.write("%s%s\n" % ("   phantomeBlast is ",phantomeBlast))
 RUNLOG.write("%s%s\n" % ("   pvogsBlast is ",pvogsBlast))
+RUNLOG.write("%s%s\n" % ("   phantomeBlast is ",phantomeBlast))
+RUNLOG.write("%s%s\n" % ("   phageEnzymeBlast is ",phageEnzymeBlast))
+RUNLOG.write("%s%s\n" % ("   keggVirusBlast is ",keggVirusBlast))
+RUNLOG.write("%s%s\n" % ("   pfamBlast is ",pfamBlast))
+RUNLOG.write("%s%s\n" % ("   smartBlast is ",smartBlast))
 RUNLOG.write("%s%s\n" % ("   swissprotBlast is ",swissprotBlast))
+RUNLOG.write("%s%s\n" % ("   uniprotBlast is ",uniprotBlast))
+RUNLOG.write("%s%s\n" % ("   nrBlast is ",nrBlast))
 RUNLOG.write("%s%s\n" % ("   hmmProgram is ",hmmProgram))
 RUNLOG.write("%s%s\n" % ("   jackhmmer is ",jackhmmer))
 RUNLOG.write("%s%s\n" % ("   hmmscan is ",hmmscan))
 RUNLOG.write("%s%s\n" % ("   hmmbuild is ",hmmbuild))
 RUNLOG.write("%s%s\n" % ("   ncbiVirusGenomeHmm is ",ncbiVirusGenomeHmm))
 RUNLOG.write("%s%s\n" % ("   ncbiVirusProteinHmm is ",ncbiVirusProteinHmm))
-RUNLOG.write("%s%s\n" % ("   keggVirusHmm is ",keggVirusHmm))
-RUNLOG.write("%s%s\n" % ("   nrHmm is ",nrHmm))
 RUNLOG.write("%s%s\n" % ("   refseqProteinHmm is ",refseqProteinHmm))
 RUNLOG.write("%s%s\n" % ("   refseqGeneHmm is ",refseqGeneHmm))
-RUNLOG.write("%s%s\n" % ("   phantomeHmm is ",phantomeHmm))
 RUNLOG.write("%s%s\n" % ("   pvogsHmm is ",pvogsHmm))
+RUNLOG.write("%s%s\n" % ("   phantomeHmm is ",phantomeHmm))
+RUNLOG.write("%s%s\n" % ("   phageEnzymeHmm is ",phageEnzymeHmm))
+RUNLOG.write("%s%s\n" % ("   keggVirusHmm is ",keggVirusHmm))
+RUNLOG.write("%s%s\n" % ("   pfamHmm is ",pfamHmm))
+RUNLOG.write("%s%s\n" % ("   smartHmm is ",smartHmm))
 RUNLOG.write("%s%s\n" % ("   swissprotHmm is ",swissprotHmm))
+RUNLOG.write("%s%s\n" % ("   uniprotHmm is ",uniprotHmm))
+RUNLOG.write("%s%s\n" % ("   nrHmm is ",nrHmm))
 
 # Open and check input file(s)
 
-inputDir     = PIPELINE_INPUT_DIR
-genomeFile   = PIPELINE_INPUT_DIR + GENOME_FILE
-genecallFile = PIPELINE_OUTPUT_SUBDIR + primaryCallsFile 
-geneFile     = PIPELINE_OUTPUT_SUBDIR + GENE_FILE
-proteinFile  = PIPELINE_OUTPUT_SUBDIR + PROTEIN_FILE
-outputDir    = PIPELINE_OUTPUT_SUBDIR
+inputDir             = PIPELINE_INPUT_DIR
+genomeFile           = PIPELINE_INPUT_DIR + GENOME_FILE
+primaryCallsPathFile = PIPELINE_OUTPUT_SUBDIR + primaryCallsFile 
+# Reassign geneFile and proteinFile as path/filename
+geneFile             = PIPELINE_OUTPUT_SUBDIR + GENE_FILE
+proteinFile          = PIPELINE_OUTPUT_SUBDIR + PROTEIN_FILE
+outputDir            = PIPELINE_OUTPUT_SUBDIR
 
 RUNLOG.write("%s%s\n" % ("inputDir is ",    inputDir))
 RUNLOG.write("%s%s\n" % ("genomeFile is ",  genomeFile))
-RUNLOG.write("%s%s\n" % ("genecallFile is ",genecallFile))
+RUNLOG.write("%s%s\n" % ("primaryCallsPathFile is ",primaryCallsPathFile))
 RUNLOG.write("%s%s\n" % ("geneFile is ",    geneFile))
 RUNLOG.write("%s%s\n" % ("proteinFile is ", proteinFile))
 
@@ -548,21 +569,52 @@ if PHATE_PROGRESS == 'True':
 RUNLOG.write("%s\n" % ("Preparing to run genecall module..."))
 
 param2 = outputDir[:-1]  # remove terminal '/' because subordinate code adds it explicitly
-
 param3 = ''  # can't pass a dict; future re-write genecalling module as class
+
+MULTIPLE_CALLERS = False
+geneCallerCount = 0
 if genemarksCalls:
+    geneCallerCount += 1
     param3 += "genemarks_"
 if prodigalCalls:
+    geneCallerCount += 1
     param3 += "prodigal_"
 if glimmerCalls:
+    geneCallerCount += 1
     param3 += "glimmer_"
 if phanotateCalls:
+    geneCallerCount += 1
     param3 += "phanotate_"
-if customGeneCalls:
-    param3 += "custom_"
+if customGeneCalls:   
+    try:
+        geneCallerCount += 1
+        param3 += "custom_"
+        command = 'cp ' + PIPELINE_INPUT_DIR + customGeneCallerOutfile + ' ' + PIPELINE_OUTPUT_SUBDIR + customGeneCallerOutfile
+        result = os.system(command)
+    except:
+        print ("ERROR in phate_runPipeline: could not copy custom genecall file ",customGeneCallerOutfile, " to working subdirectory ",PIPELINE_OUTPUT_SUBDIR)
+        if primaryCalls == 'custom':
+            print("ERROR in phate_runPipeline: cannot use custom calls as primary")
+            exit(0)
+
+if geneCallerCount >= 2:
+    MULTIPLE_CALLERS = True
+
+# If there are multiple callers and if the user is selecting the primary call set as the superset, consensus,
+# or common core, then reassign primaryCallsPathFile (from 'unknown') to the CGC-generated gene set in cgc format.
+# The superset is the non-redundant set of gene calls produced by all gene callers.
+# The consensus set comprises the non-redundant set of gene calls that agree on stop codon.
+# The common_core set comprises the non-redundant set of gene calls that are identical.
+if MULTIPLE_CALLERS:
+    if primaryCalls == 'superset':
+        primaryCallsPathFile = PIPELINE_OUTPUT_SUBDIR + 'superset.cgc' 
+    if primaryCalls == 'consensus':
+        primaryCallsPathFile = PIPELINE_OUTPUT_SUBDIR + 'consensus.cgc' 
+    if primaryCalls == 'common_core':
+        primaryCallsPathFile = PIPELINE_OUTPUT_SUBDIR + 'common_core.cgc' 
 
 #param4 = "2>&1 > genecall.err" # Trying to capture jackhmmer screen output - but doesn't work!`
-command = "python " + GENECALL_CODE + ' ' + genomeFile + ' ' + param2 + ' ' + param3
+command = "python " + GENECALL_CODE + ' ' + genomeFile + ' ' + param2 + ' ' + param3 + ' ' + customGeneCallerOutfile 
 
 if PHATE_PROGRESS == 'True':
     print("Calling the gene-call module.")
@@ -594,10 +646,6 @@ if ncbiVirusGenomeBlast:
     blastParameterString += '_ncbiVirusGenome'
 if ncbiVirusProteinBlast:
     blastParameterString += '_ncbiVirusProtein'
-if nrBlast:
-    blastParameterString += '_nr'
-if keggVirusBlast:
-    blastParameterString += '_kegg'
 if refseqProteinBlast:
     blastParameterString += '_refseqProtein'
 if refseqGeneBlast:
@@ -606,14 +654,20 @@ if pvogsBlast:
     blastParameterString += '_pvogs'
 if phantomeBlast:
     blastParameterString += '_phantome'
-if swissprotBlast:
-    blastParameterString += '_swissprot'
+if phageEnzymeBlast:
+    blastParameterString += '_phageEnzyme'
+if keggVirusBlast:
+    blastParameterString += '_kegg'
 if pfamBlast:
     blastParameterString += '_pfam'
 if smartBlast:
     blastParameterString += '_smart'
+if swissprotBlast:
+    blastParameterString += '_swissprot'
 if uniprotBlast:
     blastParameterString += '_uniprot'
+if nrBlast:
+    blastParameterString += '_nr'
 
 # Construct string listing hmm program and databases to be searched
 
@@ -630,10 +684,6 @@ if ncbiVirusGenomeHmm:
     hmmParameterString += '_ncbiVirusGenomeHmm'
 if ncbiVirusProteinHmm:
     hmmParameterString += '_ncbiVirusProteinHmm'
-if nrHmm:
-    hmmParameterString += '_nrHmm'
-if keggVirusHmm:
-    hmmParameterString += '_keggHmm'
 if refseqProteinHmm:
     hmmParameterString += '_refseqProteinHmm'
 if refseqGeneHmm:
@@ -642,20 +692,24 @@ if pvogsHmm:
     hmmParameterString += '_pvogsHmm'
 if phantomeHmm:
     hmmParameterString += '_phantomeHmm'
-if uniprotHmm:
-    hmmParameterString += '_uniprotHmm'
-if swissprotHmm:
-    hmmParameterString += '_swissprotHmm'
+if phageEnzymeHmm:
+    hmmParameterString += '_phageEnzymeHmm'
+if keggVirusHmm:
+    hmmParameterString += '_keggVirusHmm'
 if pfamHmm:
     hmmParameterString += '_pfamHmm'
 if smartHmm:
     hmmParameterString += '_smartHmm'
-if phageEnzymeHmm:
-    hmmParameterString += '_phageEnzymeHmm'
+if uniprotHmm:
+    hmmParameterString += '_uniprotHmm'
+if swissprotHmm:
+    hmmParameterString += '_swissprotHmm'
+if nrHmm:
+    hmmParameterString += '_nrHmm'
 
 commandRoot1 = "python " + SEQANNOTATION_CODE + " -o " + outputDir  # code and output direction
 commandRoot2 = " -G " + genomeFile        + " -g " + geneFile       + " -p " + proteinFile             # genome files
-commandRoot3 = " -c " + primaryCalls      + " -f " + genecallFile                                      # gene-call information
+commandRoot3 = " -c " + primaryCalls      + " -f " + primaryCallsPathFile                              # gene-call information
 commandRoot4 = " -t " + genomeType        + " -n " + genomeName     + " -s " + genomeSpecies           # genome meta-data
 commandRoot5 = " -i " + blastpIdentity    + " -j " + blastnIdentity + " -h " + blastpHitCount + " -H " + blastnHitCount # blast parameters
 commandRoot6 = " -d " + blastParameterString                                                           # databases to blast against

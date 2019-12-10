@@ -31,8 +31,8 @@ from subprocess import Popen, PIPE, STDOUT
 import string
 
 # DEBUG control
-DEBUG = True
-#DEBUG = False
+#DEBUG = True
+DEBUG = False
 
 # Get environment variables (set in phate_runPipeline.py)
 #*** Note: hmm databases are same as blast databases for now
