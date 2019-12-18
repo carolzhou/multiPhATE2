@@ -104,10 +104,15 @@ customProteinDBpath      = 'pathNotSet'
 
 # programs, databases, and booleans controlling hmm processes
 # programs
-hmmProgram               = ''     # hmm program for blast database search; currently only choice is 'jackhmmer'; '' = off 
-jackhmmer                = False  # hmm programs for hmm search
+#hmmProgram               = ''     # hmm program for blast database search; currently only choice is 'jackhmmer'; '' = off 
+#jackhmmer                = False  # hmm programs for hmm search
+blastpSearch             = False  # if True, run blastp against fasta blast database(s)
+phmmerSearch             = False  # if True, run phmmer against fasta database(s)
+jackhmmerSearch          = False  # if True, run jackhmmer against fasta blast database(s)
 hmmscan                  = False
 hmmbuild                 = False
+hmmsearch                = False
+runCGP                   = False
 # databases to be used (booleans)
 ncbiVirusGenomeHmm       = False
 ncbiVirusProteinHmm      = False
@@ -374,7 +379,7 @@ p_custom_geneCallerName       = re.compile("custom_gene_caller_name='(.*)'") # n
 p_custom_geneCallerOutfile    = re.compile("custom_gene_caller_outfile='(.*)'") # not yet in service
 
 # BLAST PROCESSING
-
+p_blastpSearch                = re.compile("blastp='(.*)'")             #  
 # Blast Parameters (value)
 p_blastpIdentity              = re.compile("blastp_identity='(\d+)'")   #*** For now; but should distinguish between blastn/blastp
 p_blastnIdentity              = re.compile("blastn_identity='(\d+)'")   # not yet in service 
@@ -426,10 +431,11 @@ p_customProteinDBpath         = re.compile("custom_protein_blast_database_path='
 # HMM PROCESSING
 
 # HMM Processing to be done (true/false)
-p_hmmProgram                  = re.compile("hmm_program='(.*)'")   # for hmm search of fasta database(s) 
-p_jackhmmer                   = re.compile("jackhmmer='(.*)'")     # not yet in service
-p_hmmscan                     = re.compile("hmmscan='(.*)'")       # not yet in service
-p_hmmbuild                    = re.compile("hmmbuild='(.*)'")      # not yet in service
+#p_hmmProgram                  = re.compile("hmm_program='(.*)'")      # for hmm search of fasta database(s) 
+#p_jackhmmer                   = re.compile("jackhmmer='(.*)'")        # not yet in service
+p_phmmerSearch                = re.compile("phmmer='(.*)'")           # for hmm search of fasta database(s) 
+p_jackhmmerSearch             = re.compile("jackhmmer='(.*)'")        # for hmm search of fasta database(s) 
+p_hmmscan                     = re.compile("hmmscan='(.*)'")          # not yet in service
 # HMM Databases to be used (true/false)
 p_ncbiVirusGenomeHmm          = re.compile("ncbi_virus_genome_hmm_profiles='(.*)'")
 p_ncbiVirusProteinHmm         = re.compile("ncbi_virus_protein_hmm_profiles='(.*)'")
@@ -462,6 +468,11 @@ p_nrHmmDBpath                 = re.compile("nr_hmm_profiles_database_path='(.*)'
 p_customHmm                   = re.compile("custom_hmm_profiles='(.*)'")    # not yet in service
 p_customHmmDBname             = re.compile("custom_hmm_profiles_database_name='(.*)'")  # value/string
 p_customHmmDBpath             = re.compile("custom_hmm_profiles_database_path='(.*)'")  # value/string
+
+# COMPARATIVE GENOMICS
+p_runCGP                      = re.compile("CGP='(.*)'")              # not yet in service
+p_hmmbuild                    = re.compile("hmmbuild='(.*)'")         # not yet in service
+p_hmmsearch                   = re.compile("hmmsearch='(.*)'")        # not yet in service
 
 # DEPENDENT CODE LOCATIONS 
 p_blastPlusHome               = re.compile("blast_plus_home='(.*)'")
@@ -586,6 +597,11 @@ for cLine in cLines:
     match_primaryCalls              = re.search(p_primaryCalls,cLine)
     match_geneticCode               = re.search(p_geneticCode,cLine)
     match_translateOnly             = re.search(p_translateOnly,cLine)
+ 
+    # codes to run against sequence databases 
+    match_blastpSearch              = re.search(p_blastpSearch,cLine)    # for blast search  
+    match_phmmerSearch              = re.search(p_phmmerSearch,cLine)    # for hmm search  
+    match_jackhmmerSearch           = re.search(p_jackhmmerSearch,cLine) # for iterative hmm search  
 
     # blast parameters
     match_blastpIdentity            = re.search(p_blastpIdentity,cLine)
@@ -593,7 +609,7 @@ for cLine in cLines:
     match_blastpHitCount            = re.search(p_blastpHitCount,cLine)
     match_blastnHitCount            = re.search(p_blastnHitCount,cLine)
 
-    # blast processes
+    # sequence/blast databases to be used 
     match_ncbiVirusGenomeBlast      = re.search(p_ncbiVirusGenomeBlast,cLine)
     match_ncbiVirusProteinBlast     = re.search(p_ncbiVirusProteinBlast,cLine)
     match_refseqProteinBlast        = re.search(p_refseqProteinBlast,cLine)
@@ -615,16 +631,15 @@ for cLine in cLines:
     match_customProteinBlast        = re.search(p_customProteinBlast,cLine)
     match_customProteinDBname       = re.search(p_customProteinDBname,cLine)
 
-    # hmm codes
-    match_hmmProgram                = re.search(p_hmmProgram,cLine)    # for blast search  
-    match_jackhmmer                 = re.search(p_jackhmmer,cLine)     # for hmm search
-    match_hmmscan                   = re.search(p_hmmscan,cLine)       # for hmm search
-    match_hmmbuild                  = re.search(p_hmmbuild,cLine)      # for hmm search
-    match_customHmm                 = re.search(p_customHmm,cLine)     # for hmm search
+    # hmm codes to run against profile databases
+    #match_hmmProgram                = re.search(p_hmmProgram,cLine)      # for blast search  
+    match_hmmscan                   = re.search(p_hmmscan,cLine)         # for hmm search
+
+    # True/False running a custom hmm profile database
+    match_customHmm                 = re.search(p_customHmm,cLine)       # for hmm search
 
     # hmm profiles
     #*** some of the hmms listed may not be implemented, but are included just in case
-    match_hmmProgram                = re.search(p_hmmProgram,cLine)            # for blast DB search only; currently 'jackhmmer' is only choice 
     match_ncbiVirusGenomeHmm        = re.search(p_ncbiVirusGenomeHmm,cLine)    # ? big; is this used?
     match_ncbiVirusProteinHmm       = re.search(p_ncbiVirusProteinHmm,cLine)   # ? big; is this used?
     match_refseqProteinHmm          = re.search(p_refseqProteinHmm,cLine)      # ? big; is this used?
@@ -656,6 +671,7 @@ for cLine in cLines:
 
     # 3rd party codes
     #*** The below parameters are no longer in use; assuming global installs of 3rd party software
+    # phanotate should be located to the external softwares directory
     match_blastPlusHome             = re.search(p_blastPlusHome,cLine)
     match_embossHome                = re.search(p_embossHome,cLine)
     match_tRNAscanSEhome            = re.search(p_tRNAscanSEhome,cLine)
@@ -698,6 +714,11 @@ for cLine in cLines:
     match_uniprotHmmDBpath          = re.search(p_uniprotHmmDBpath,cLine)
     match_nrHmmDBpath               = re.search(p_nrHmmDBpath,cLine)
     match_customHmmDBpath           = re.search(p_customHmmDBpath,cLine)
+
+    # Comparative genomics
+    match_runCGP                    = re.search(p_runCGP,cLine)
+    match_hmmbuild                  = re.search(p_hmmbuild,cLine)
+    match_hmmsearch                 = re.search(p_hmmsearch,cLine)
 
     # verbosity
     match_phateWarnings             = re.search(p_phateWarnings,cLine)
@@ -854,6 +875,8 @@ for cLine in cLines:
             primaryCalls = 'consensus'
         elif value.lower() == 'superset':
             primaryCalls = 'superset'
+        elif value.lower() == 'commoncore' or value.lower() == 'common-core' or value.lower() == 'common_core':
+            primaryCalls = 'commoncore'
         elif value.lower() == 'custom':
             primaryCalls = 'custom'
         else:
@@ -905,6 +928,21 @@ for cLine in cLines:
         customGeneCallerOutfile = value
 
     ##### BLAST #####
+
+    elif match_blastpSearch:     # blastp search against fasta blast database(s)
+        value = match_blastpSearch.group(1)
+        if value.lower() == 'true' or value.lower() == 'yes' or value.lower() == 'on':
+            blastpSearch = True 
+
+    elif match_phmmerSearch:     # phmmer search against fasta blast database(s)
+        value = match_phmmerSearch.group(1)
+        if value.lower() == 'true' or value.lower() == 'yes' or value.lower() == 'on':
+            phmmerSearch = True 
+
+    elif match_jackhmmerSearch:     # jackhmmer search against fasta blast database(s)
+        value = match_jackhmmerSearch.group(1)
+        if value.lower() == 'true' or value.lower() == 'yes' or value.lower() == 'on':
+            jackhmmerSearch = True 
 
     elif match_blastpIdentity:
         value = match_blastpIdentity.group(1)
@@ -1040,29 +1078,10 @@ for cLine in cLines:
 
     # HMM programs
 
-    elif match_hmmProgram:   #*** to be deprecated
-        value = match_hmmProgram.group(1)
-        if value.lower() == 'jackhmmer':
-            hmmProgram = 'jackhmmer'
-        else:
-            if PHATE_WARNINGS == 'True':
-                print("WARNING: currenly only jackhmmer hmm search is supported; running jackhmmer")
-            hmmProgram = HMM_PROGRAM_DEFAULT 
-
-    elif match_jackhmmer:
-        value = match_jackhmmer.group(1)
-        if value.lower() == 'true' or value.lower() == 'yes' or value.lower() == 'on':
-            jackhmmer = True
-
-    elif match_hmmscan:
+    elif match_hmmscan:          # hmmscan search against hmm profile database(s)
         value = match_hmmscan.group(1)
         if value.lower() == 'true' or value.lower() == 'yes' or value.lower() == 'on':
             hmmscan = True
-
-    elif match_hmmbuild:
-        value = match_hmmbuild.group(1)
-        if value.lower() == 'true' or value.lower() == 'yes' or value.lower() == 'on':
-            hmmbuild = True
 
     # HMM databases
 
@@ -1145,6 +1164,23 @@ for cLine in cLines:
         value = match_customHmmDBpath.group(1)
         if value != '':
             customHmmDBpath = value
+
+    # Comparative Genomics
+
+    elif match_runCGP:
+        value = match_runCGP.group(1)
+        if value.lower() == 'true' or value.lower() == 'yes' or value.lower() == 'on':
+            runCGP = True
+
+    elif match_hmmbuild:         # create hmm profiles
+        value = match_hmmbuild.group(1)
+        if value.lower() == 'true' or value.lower() == 'yes' or value.lower() == 'on':
+            hmmbuild = True
+
+    elif match_hmmsearch:         # search hmm profiles against fasta database(s)
+        value = match_hmmsearch.group(1)
+        if value.lower() == 'true' or value.lower() == 'yes' or value.lower() == 'on':
+            hmmsearch = True
 
     ##### DEPENDENT CODE LOCATIONS #####
 
@@ -1428,6 +1464,9 @@ if not HPC: # Skip logging if running in high-throughput, else multiPhate.log fi
         LOG.write("%s%s\n" % ("   customGeneCalls is ",customGeneCalls))
         LOG.write("%s%s\n" % ("   customGeneCallerName is ",customGeneCallerName))
         LOG.write("%s%s\n" % ("   customGeneCallerOutfile is ",customGeneCallerOutfile))
+    LOG.write("%s%s\n" % ("   blastpSearch is ",blastpSearch))
+    LOG.write("%s%s\n" % ("   phmmerSearch is ",phmmerSearch))
+    LOG.write("%s%s\n" % ("   jackhmmerSearch is ",jackhmmerSearch))
     LOG.write("%s%s\n" % ("   blastpIdentity is ",blastpIdentity))
     LOG.write("%s%s\n" % ("   blastnIdentity is ",blastnIdentity))
     LOG.write("%s%s\n" % ("   blastpHitCount is ",blastpHitCount))
@@ -1457,8 +1496,6 @@ if not HPC: # Skip logging if running in high-throughput, else multiPhate.log fi
         LOG.write("%s%s\n" % ("   customProteinBlast is ",customProteinBlast))
         LOG.write("%s%s\n" % ("   customProteinDBname is ",customProteinDBname))
         LOG.write("%s%s\n" % ("   customProteinDBpath is ",customProteinDBpath))
-    LOG.write("%s%s\n" % ("   hmmProgram is ",hmmProgram))  #*** to be deprecated
-    LOG.write("%s%s\n" % ("   jackhmmer is ",jackhmmer))
     LOG.write("%s%s\n" % ("   hmmscan is ",hmmscan))
     LOG.write("%s%s\n" % ("   hmmbuild is ",hmmbuild))
     LOG.write("%s%s\n" % ("   ncbiVirusGenomeHmm is ",ncbiVirusGenomeHmm))
@@ -1520,6 +1557,9 @@ if not HPC: # Skip logging if running in high-throughput, else multiPhate.log fi
     LOG.write("%s%s\n" % ("   nr hmm profiles are located in ",nrHmmDBpath))
     if customHmm:
         LOG.write("%s%s\n" % ("   Custom hmm database is located in ",os.environ["PHATE_CUSTOM_HMM_HOME"]))
+    LOG.write("%s%s\n" % ("   runCGP is ",runCGP))
+    LOG.write("%s%s\n" % ("   hmmbuild is ",hmmbuild))
+    LOG.write("%s%s\n" % ("   hmmsearch is ",hmmsearch))
     LOG.write("%s%s\n" % ("   phate warnings is set to ",os.environ["PHATE_PHATE_WARNINGS"]))
     LOG.write("%s%s\n" % ("   phate messages is set to ",os.environ["PHATE_PHATE_MESSAGES"]))
     LOG.write("%s%s\n" % ("   phate progress is set to ",os.environ["PHATE_PHATE_PROGRESS"]))
@@ -1616,10 +1656,10 @@ for genome in genomeList:
             "swissprotHmm":swissprotHmm,
             "uniprotHmm":uniprotHmm,
             "nrHmm":nrHmm,
-            "hmmProgram":hmmProgram,
-            "jackhmmer":jackhmmer,
+            "blastpSearch":blastpSearch,
+            "jackhmmerSearch":jackhmmerSearch,
+            "phmmerSearch":phmmerSearch,
             "hmmscan":hmmscan,
-            "hmmbuild":hmmbuild,
             "customHmm":customHmm,
             "customHmmDBname":customHmmDBname,
             "customHmmDBpath":customHmmDBpath,

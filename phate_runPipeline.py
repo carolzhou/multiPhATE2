@@ -39,7 +39,8 @@ import json
 
 # CONSTANTS and CONFIGURABLES
 
-hmmProgramSet = {'jackhmmer'}  #*** Add more possibilities here for hmm searches against blast databases
+seqProgramSet = {'blastp','phmmer','jackhmmer'}  # codes for searches against sequence/blast databases
+hmmProgramSet = {'hmmscan'}                      # codes for hmm searches against hmm profile databases
 
 # Output file names 
 GENE_FILE              = 'gene.fnt'                              #
@@ -125,11 +126,11 @@ CODE        = CODE_BASE + ".py"
 CONFIG_FILE = "phate.config"  # by default, but user should name their own, ending in ".config"
 
 # Subordinate codes
-GENECALL_CODE_DIR       = BASE_DIR + "GeneCalling/"         # Here resides GENECALL_CODE plus CGC (Compare Gene Calls) codes
-SEQANNOT_CODE_DIR       = BASE_DIR + "SequenceAnnotation/"  # Performs sequence annotation via blast and incorporates PSAT output
-GENECALL_CODE           = GENECALL_CODE_DIR + "phate_genecallPhage.py"
-SEQANNOTATION_CODE_BASE = "phate_sequenceAnnotation_main"
-SEQANNOTATION_CODE      = SEQANNOT_CODE_DIR + SEQANNOTATION_CODE_BASE + ".py"
+GENECALL_CODE_DIR           = BASE_DIR + "GeneCalling/"         # Here resides GENECALL_CODE plus CGC (Compare Gene Calls) codes
+SEQANNOT_CODE_DIR           = BASE_DIR + "SequenceAnnotation/"  # Performs sequence annotation via blast and incorporates PSAT output
+GENECALL_CODE               = GENECALL_CODE_DIR + "phate_genecallPhage.py"
+SEQANNOTATION_CODE_BASE     = "phate_sequenceAnnotation_main"
+SEQANNOTATION_CODE          = SEQANNOT_CODE_DIR + SEQANNOTATION_CODE_BASE + ".py"
 
 # Configurables set by values in phate.config input file
 DEFAULT_PIPELINE_INPUT_DIR  = 'PipelineInput/'                        # Default
@@ -232,6 +233,9 @@ customGeneCallerName     = 'unknown'
 customGeneCallerOutfile  = 'unknown'
 primaryCalls             = 'unknown' 
 primaryCallsFile         = 'unknown'
+blastpSearch             = False
+phmmerSearch             = False
+jackhmmerSearch          = False
 blastnIdentity           = 60
 blastpIdentity           = 60
 blastnHitCount           = 5
@@ -258,6 +262,7 @@ customGeneDBpath         = 'unknown'
 customProteinBlast       = False 
 customProteinDBname      = 'unknown'
 customProteinDBpath      = 'unknown'
+hmmscan                  = False
 ncbiVirusGenomeHmm       = False
 ncbiVirusProteinHmm      = False
 refseqProteinHmm         = False
@@ -271,10 +276,6 @@ smartHmm                 = False
 swissprotHmm             = False
 uniprotHmm               = False
 nrHmm                    = False
-hmmProgram               = '' 
-jackhmmer                = False
-hmmscan                  = False 
-hmmbuild                 = False
 customHmm                = False 
 customHmmDBname          = 'unknown' 
 customHmmDBpath          = 'unknown'
@@ -301,6 +302,9 @@ with open(jsonFile, 'r') as jsonParameters:
     customGeneCallerOutfile  = parameters["customGeneCallerOutfile"]
     primaryCalls             = parameters["primaryCalls"]
     primaryCallsFile         = parameters["primaryCallsFile"]
+    blastpSearch             = parameters["blastpSearch"]
+    phmmerSearch             = parameters["phmmerSearch"]
+    jackhmmerSearch          = parameters["jackhmmerSearch"]
     blastnIdentity           = parameters["blastnIdentity"]
     blastpIdentity           = parameters["blastpIdentity"]
     blastnHitCount           = parameters["blastnHitCount"]
@@ -327,6 +331,7 @@ with open(jsonFile, 'r') as jsonParameters:
     customProteinBlast       = parameters["customProteinBlast"]
     customProteinDBname      = parameters["customProteinDBname"]
     customProteinDBpath      = parameters["customProteinDBpath"]
+    hmmscan                  = parameters["hmmscan"]
     ncbiVirusGenomeHmm       = parameters["ncbiVirusGenomeHmm"]
     ncbiVirusProteinHmm      = parameters["ncbiVirusProteinHmm"]
     refseqProteinHmm         = parameters["refseqProteinHmm"]
@@ -340,10 +345,6 @@ with open(jsonFile, 'r') as jsonParameters:
     swissprotHmm             = parameters["swissprotHmm"]
     uniprotHmm               = parameters["uniprotHmm"]
     nrHmm                    = parameters["nrHmm"]
-    hmmProgram               = parameters["hmmProgram"]
-    jackhmmer                = parameters["jackhmmer"]
-    hmmscan                  = parameters["hmmscan"]
-    hmmbuild                 = parameters["hmmbuild"]
     customHmm                = parameters["customHmm"]
     customHmmDBname          = parameters["customHmmDBname"]
     customHmmDBpath          = parameters["customHmmDBpath"]
@@ -413,6 +414,9 @@ if PHATE_MESSAGES == 'True':
     print("customCallerName is", customCallerName)
     print("customCallerOutfile is", customCallerOutfile)
     print("primaryCalls is", primaryCalls) 
+    print("blastpSearch is", blastpSearch)
+    print("phmmerSearch is", phmmerSearch)
+    print("jackhmmerSearch is", jackhmmerSearch)
     print("blastpIdentity is", blastpIdentity) 
     print("blastnIdentity is", blastnIdentity) 
     print("blastpHitCount is", blastpHitCount) 
@@ -439,6 +443,7 @@ if PHATE_MESSAGES == 'True':
     print("customProteinBlast is", customProteinBlast)
     print("customProteinDBname is", customProteinDBname)
     print("customProteinDBpath is", customProteinDBpath)
+    print("hmmscan is", hmmscan)
     print("ncbiVirusGenomeHmm is", ncbiVirusGenomeHmm)
     print("ncbiVirusProteinHmm is", ncbiVirusProteinHmm)
     print("refseqProteinHmm is", refseqProteinHmm)
@@ -451,10 +456,6 @@ if PHATE_MESSAGES == 'True':
     print("swissprotHmm is", swissprotHmm)
     print("uniprotHmm is", uniprotHmm)
     print("nrHmm is", nrHmm)
-    print("hmmProgram is", hmmProgram)
-    print("jackhmmer is", jackhmmer)
-    print("hmmscan is", hmmscan)
-    print("hmmbuild is", hmmbuild)
     print("customHmm is", customHmm)
     print("customHmmDBname is", customHmmDBname)
     print("customHmmDBpath is", customHmmDBpath)
@@ -480,6 +481,9 @@ RUNLOG.write("%s%s\n" % ("   primaryCallsFile is ",primaryCallsFile))
 RUNLOG.write("%s%s\n" % ("   customGeneCalls is ",customGeneCalls))
 RUNLOG.write("%s%s\n" % ("   customGeneCallerName is ",customGeneCallerName))
 RUNLOG.write("%s%s\n" % ("   customGeneCallerOutfile is ",customGeneCallerOutfile))
+RUNLOG.write("%s%s\n" % ("   blastpSearch is ",blastpSearch))
+RUNLOG.write("%s%s\n" % ("   phmmerSearch is ",phmmerSearch))
+RUNLOG.write("%s%s\n" % ("   jackhmmerSearch is ",jackhmmerSearch))
 RUNLOG.write("%s%s\n" % ("   blastpIdentity is ",blastpIdentity))
 RUNLOG.write("%s%s\n" % ("   blastnIdentity is ",blastnIdentity))
 RUNLOG.write("%s%s\n" % ("   blastpHitCount is ",blastpHitCount))
@@ -497,10 +501,7 @@ RUNLOG.write("%s%s\n" % ("   smartBlast is ",smartBlast))
 RUNLOG.write("%s%s\n" % ("   swissprotBlast is ",swissprotBlast))
 RUNLOG.write("%s%s\n" % ("   uniprotBlast is ",uniprotBlast))
 RUNLOG.write("%s%s\n" % ("   nrBlast is ",nrBlast))
-RUNLOG.write("%s%s\n" % ("   hmmProgram is ",hmmProgram))
-RUNLOG.write("%s%s\n" % ("   jackhmmer is ",jackhmmer))
 RUNLOG.write("%s%s\n" % ("   hmmscan is ",hmmscan))
-RUNLOG.write("%s%s\n" % ("   hmmbuild is ",hmmbuild))
 RUNLOG.write("%s%s\n" % ("   ncbiVirusGenomeHmm is ",ncbiVirusGenomeHmm))
 RUNLOG.write("%s%s\n" % ("   ncbiVirusProteinHmm is ",ncbiVirusProteinHmm))
 RUNLOG.write("%s%s\n" % ("   refseqProteinHmm is ",refseqProteinHmm))
@@ -641,80 +642,106 @@ if PHATE_PROGRESS == 'True':
 
 # First, construct string listing the names of databases to be blasted
 
-blastParameterString = ''
+blastDatabaseParameterString = ''   # databases
 if ncbiVirusGenomeBlast:
-    blastParameterString += '_ncbiVirusGenome'
+    blastDatabaseParameterString += '_ncbiVirusGenome'
 if ncbiVirusProteinBlast:
-    blastParameterString += '_ncbiVirusProtein'
+    blastDatabaseParameterString += '_ncbiVirusProtein'
 if refseqProteinBlast:
-    blastParameterString += '_refseqProtein'
+    blastDatabaseParameterString += '_refseqProtein'
 if refseqGeneBlast:
-    blastParameterString += '_refseqGene'
+    blastDatabaseParameterString += '_refseqGene'
 if pvogsBlast:
-    blastParameterString += '_pvogs'
+    blastDatabaseParameterString += '_pvogs'
 if phantomeBlast:
-    blastParameterString += '_phantome'
+    blastDatabaseParameterString += '_phantome'
 if phageEnzymeBlast:
-    blastParameterString += '_phageEnzyme'
+    blastDatabaseParameterString += '_phageEnzyme'
 if keggVirusBlast:
-    blastParameterString += '_kegg'
+    blastDatabaseParameterString += '_kegg'
 if pfamBlast:
-    blastParameterString += '_pfam'
+    blastDatabaseParameterString += '_pfam'
 if smartBlast:
-    blastParameterString += '_smart'
+    blastDatabaseParameterString += '_smart'
 if swissprotBlast:
-    blastParameterString += '_swissprot'
+    blastDatabaseParameterString += '_swissprot'
 if uniprotBlast:
-    blastParameterString += '_uniprot'
+    blastDatabaseParameterString += '_uniprot'
 if nrBlast:
-    blastParameterString += '_nr'
+    blastDatabaseParameterString += '_nr'
+
+blastProgramParameterString = ''   # programs 
+if blastpSearch:
+    blastProgramParameterString += '_blastp'
+
+# For now, use same databases for hmm search against sequence databases
+seqDatabaseParameterString = blastDatabaseParameterString 
+
+hmmProgramParameterString = ''     # programs
+if phmmerSearch:
+    hmmProgramParameterString   += '_phmmer'
+if jackhmmerSearch:
+    hmmProgramParameterString   += '_jackhmmer'
 
 # Construct string listing hmm program and databases to be searched
 
-hmmParameterString = ''
-if hmmProgram in hmmProgramSet:
-    hmmParameterString += '_program=' + hmmProgram 
-if jackhmmer:
-    hmmParameterString += '_jackhmmer'
-if hmmscan:
-    hmmParameterString += '_hmmscan'
-if hmmbuild:
-    hmmParameterString += '_hmmbuild'
+profileDatabaseParameterString = ''  # hmm profile databases
 if ncbiVirusGenomeHmm:
-    hmmParameterString += '_ncbiVirusGenomeHmm'
+    profileDatabaseParameterString += '_ncbiVirusGenomeHmm'
 if ncbiVirusProteinHmm:
-    hmmParameterString += '_ncbiVirusProteinHmm'
+    profileDatabaseParameterString += '_ncbiVirusProteinHmm'
 if refseqProteinHmm:
-    hmmParameterString += '_refseqProteinHmm'
+    profileDatabaseParameterString += '_refseqProteinHmm'
 if refseqGeneHmm:
-    hmmParameterString += '_refseqGeneHmm'
+    profileDatabaseParameterString += '_refseqGeneHmm'
 if pvogsHmm:
-    hmmParameterString += '_pvogsHmm'
+    profileDatabaseParameterString += '_pvogsHmm'
 if phantomeHmm:
-    hmmParameterString += '_phantomeHmm'
+    profileDatabaseParameterString += '_phantomeHmm'
 if phageEnzymeHmm:
-    hmmParameterString += '_phageEnzymeHmm'
+    profileDatabaseParameterString += '_phageEnzymeHmm'
 if keggVirusHmm:
-    hmmParameterString += '_keggVirusHmm'
+    profileDatabaseParameterString += '_keggVirusHmm'
 if pfamHmm:
-    hmmParameterString += '_pfamHmm'
+    profileDatabaseParameterString += '_pfamHmm'
 if smartHmm:
-    hmmParameterString += '_smartHmm'
+    profileDatabaseParameterString += '_smartHmm'
 if uniprotHmm:
-    hmmParameterString += '_uniprotHmm'
+    profileDatabaseParameterString += '_uniprotHmm'
 if swissprotHmm:
-    hmmParameterString += '_swissprotHmm'
+    profileDatabaseParameterString += '_swissprotHmm'
 if nrHmm:
-    hmmParameterString += '_nrHmm'
+    profileDatabaseParameterString += '_nrHmm'
 
-commandRoot1 = "python " + SEQANNOTATION_CODE + " -o " + outputDir  # code and output direction
-commandRoot2 = " -G " + genomeFile        + " -g " + geneFile       + " -p " + proteinFile             # genome files
-commandRoot3 = " -c " + primaryCalls      + " -f " + primaryCallsPathFile                              # gene-call information
-commandRoot4 = " -t " + genomeType        + " -n " + genomeName     + " -s " + genomeSpecies           # genome meta-data
-commandRoot5 = " -i " + blastpIdentity    + " -j " + blastnIdentity + " -h " + blastpHitCount + " -H " + blastnHitCount # blast parameters
-commandRoot6 = " -d " + blastParameterString                                                           # databases to blast against
-commandRoot7 = " -m " + hmmParameterString                                                             # program and databases for hmm search
-commandRoot = commandRoot1 + commandRoot2 + commandRoot3 + commandRoot4 + commandRoot5 + commandRoot6 + commandRoot7
+profileProgramParameterString = ''  # hmm programs to run against sequence databases
+if hmmscan:
+    profileProgramParameterString  += '_hmmscan'
+
+# Set empty strings (so parameter is passed regardless, not as '')
+if blastProgramParameterString == '':
+    blastProgramParameterString = 'none'
+if blastDatabaseParameterString == '':
+    blastDatabaseParameterString = 'none'
+if hmmProgramParameterString == '':
+    hmmProgramParameterString = 'none'
+if seqDatabaseParameterString == '':
+    seqDatabaseParameterString = 'none'
+if profileProgramParameterString == '':
+    profileProgramParameterString = 'none'
+if profileDatabaseParameterString == '':
+    profileDatabaseParameterString = 'none'
+
+commandRoot1  = "python " + SEQANNOTATION_CODE      + " -o " + outputDir  # code and output direction
+commandRoot2  = " -G "    + genomeFile              + " -g " + geneFile             + " -p " + proteinFile   # genome files
+commandRoot3  = " -c "    + primaryCalls            + " -f " + primaryCallsPathFile                          # gene-call information
+commandRoot4  = " -t "    + genomeType              + " -n " + genomeName           + " -s " + genomeSpecies # genome meta-data
+commandRoot5  = " -i "    + blastpIdentity          + " -j " + blastnIdentity                                # blast identity parameters 
+commandRoot6  = " -h "    + blastpHitCount          + " -H " + blastnHitCount                                # blast hit count parameters
+commandRoot7  = " -B "    + blastProgramParameterString   + " -b " + blastDatabaseParameterString            # blast and hmm search of blast/sequence database(s)
+commandRoot8  = " -M "    + hmmProgramParameterString     + " -m " + seqDatabaseParameterString              # hmm search of hmm profile database(s)
+commandRoot9  = " -R "    + profileProgramParameterString + " -r " + profileDatabaseParameterString          # program and databases for hmm search
+commandRootA  = commandRoot1 + commandRoot2 + commandRoot3 + commandRoot4 + commandRoot5
+commandRoot   = commandRootA + commandRoot6 + commandRoot7 + commandRoot8 + commandRoot9
 
 # As appropriate, append additional parameters
 if translateOnly:
