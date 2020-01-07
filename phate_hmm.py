@@ -5,12 +5,10 @@
 # This class performs hmm searches against various protein- or phage-related fasta databases. 
 # Note that this "hmm" module runs hmm codes. The "profile" module runs profiles or alignments.
 # 
-# Programmer's Notes:
-# Currently this code runs only jackhmmer searches, but other program(s) may be added later.
-# A different module will handle hmm searches against hmm profile databases.
+# Programmer's Notes: This code now runs jackhmmer and phmmer; lightly tested; needs further testing.
 #
 # Programmer:  C Zhou
-# Most recent update:  18 Dec 2019
+# Most recent update:  30 Dec 2019
 # 
 # Classes and Methods:
 #
@@ -41,7 +39,7 @@ DEBUG = False
 # The HMM refers to the hmm codes that search against these databases,
 # not to the nature of the actual data in the databases.
 
-HMM_HOME                      = os.environ["PHATE_HMM_HOME"]
+HMMER_HOME                    = os.environ["PHATE_HMMER_HOME"]
 NCBI_VIRUS_PROTEIN_HMM_HOME   = os.environ["PHATE_NCBI_VIRUS_PROTEIN_BLAST_HOME"]
 REFSEQ_PROTEIN_HMM_HOME       = os.environ["PHATE_REFSEQ_PROTEIN_BLAST_HOME"]
 REFSEQ_GENE_HMM_HOME          = os.environ["PHATE_REFSEQ_GENE_BLAST_HOME"]
@@ -122,17 +120,17 @@ class multiHMM(object):
             if 'jackhmmerSearch' in list(paramset.keys()):
                 self.jackhmmerSearch = paramset['jackhmmerSearch']
             if 'geneCallDir' in list(paramset.keys()):
-                self.setGeneCallDir(paramset['geneCallDir'])
+                self.geneCallDir = paramset['geneCallDir']
             if 'hmmOutDir' in list(paramset.keys()):
-                self.setHmmOutDir(paramset['hmmOutDir'])
+                self.hmmOutDir = paramset['hmmOutDir']
             if 'genomeHmmOutDir' in list(paramset.keys()):
-                self.setHmmOutDir(paramset['genomeHmmOutDir'])
+                self.genomeHmmOutDir = paramset['genomeHmmOutDir']
             if 'geneHmmOutDir' in list(paramset.keys()):
-                self.setHmmOutDir(paramset['geneHmmOutDir'])
+                self.geneHmmOutDir = paramset['geneHmmOutDir']
             if 'proteinHmmOutDir' in list(paramset.keys()):
-                self.setHmmOutDir(paramset['proteinHmmOutDir'])
+                self.proteinHmmOutDir = paramset['proteinHmmOutDir']
             if 'pVOGsOutDir' in list(paramset.keys()):
-                self.setPVOGsOutDir(paramset['pVOGsOutDir'])
+                self.pVOGsOutDir = paramset['pVOGsOutDir']
             # Booleans to control execution  #*** Only pvogsHmm is currently in service
             if 'ncbiVirusProteinBlast' in list(paramset.keys()):
                 self.NCBI_VIRUS_PROTEIN_HMM = paramset["ncbiVirusProteinBlast"]
@@ -209,7 +207,7 @@ class multiHMM(object):
         command = ''
 
         # Write fasta sequence to temporary file
-        fastaFile = self.hmmOutDir + "temp.fasta"
+        fastaFile = self.proteinHmmOutDir + "temp.fasta"
         fastaFileH = open(fastaFile,"w")
         if fasta.sequentialHeader == "unknown":  # unchanged from default
             fasta.printFasta2file(fastaFileH,"blastHeader")
@@ -224,18 +222,17 @@ class multiHMM(object):
             domOutfile = outfile + '.jackhmmer.domout' # captures tabbed data for the domain-level analysis
             stdOutfile = outfile + '.jackhmmer.stdout' # captures data written to standard out, other than seq or dom output
  
-            command = HMM_HOME + "jackhmmer --tblout " + seqOutfile + ' --domtblout ' + domOutfile + ' ' + fastaFile + ' ' + database
+            command = HMMER_HOME + "jackhmmer --tblout " + seqOutfile + ' --domtblout ' + domOutfile + ' ' + fastaFile + ' ' + database
         elif self.hmmProgram == 'phmmer': 
             # Construct out file names
             seqOutfile = outfile + '.phmmer.seqout' # captures tabbed data for the sequence-level analysis
             domOutfile = outfile + '.phmmer.domout' # captures tabbed data for the domain-level analysis
             stdOutfile = outfile + '.phmmer.stdout' # captures data written to standard out, other than seq or dom output
  
-            #command = HMM_HOME + "phmmer " + fastaFile + ' ' + database + ' > ' + seqOutfile
-            command = HMM_HOME + "phmmer --tblout " + seqOutfile + ' --domtblout ' + domOutfile + ' ' + fastaFile + ' ' + database
+            command = HMMER_HOME + "phmmer --tblout " + seqOutfile + ' --domtblout ' + domOutfile + ' ' + fastaFile + ' ' + database
 
         if command == '':  # set to 'jackhmmer' (only hmm code currently supported)
-            command = HMM_HOME + "jackhmmer --tblout " + seqOutfile + ' --domtblout ' + domOutfile + ' ' + fastaFile + ' ' + database
+            command = HMMER_HOME + "jackhmmer --tblout " + seqOutfile + ' --domtblout ' + domOutfile + ' ' + fastaFile + ' ' + database
             if PHATE_WARNINGS == 'True':
                 print("WARNING in hmm module: HMM program not currently supported: ", self.hmmProgram, "Program was set to jackhmmer.")
         if PHATE_OUT == 'True':
@@ -247,7 +244,7 @@ class multiHMM(object):
         else:
             result = os.system(command)
 
-        # For jackhmmer/TBL parsing
+        # For jackhmmer/phmmer TBL parsing
         hitList = [] # contains a list of hitDataSet objects
         sequenceDataSet = {
             "hitNumber"         : 0,
@@ -561,7 +558,7 @@ class multiHMM(object):
                     print("Hmm module says: Running NR hmm search:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
-                    outfile = self.hmmOutDir + self.hmmProgram + "_nr_" + str(count)
+                    outfile = self.proteinHmmOutDir + self.hmmProgram + "_nr_" + str(count)
                     self.hmm1fasta(fasta,outfile,database,dbName)  #*** CONTROL
 
             if self.NCBI_VIRUS_PROTEIN_HMM:  
@@ -572,7 +569,7 @@ class multiHMM(object):
                     print("Hmm module says: Running NCBI_VIRUS_PROTEIN hmm search:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
-                    outfile = self.hmmOutDir + self.hmmProgram + "_ncbiVirProt_" + str(count)
+                    outfile = self.proteinHmmOutDir + self.hmmProgram + "_ncbiVirProt_" + str(count)
                     self.hmm1fasta(fasta,outfile,database,dbName)  #*** CONTROL
 
             if self.REFSEQ_PROTEIN_HMM:
@@ -583,7 +580,7 @@ class multiHMM(object):
                     print("Hmm module says: Running Refseq protein hmm search:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
-                    outfile = self.hmmOutDir + self.hmmProgram + "_refseqProtein_" + str(count)
+                    outfile = self.proteinHmmOutDir + self.hmmProgram + "_refseqProtein_" + str(count)
                     self.hmm1fasta(fasta,outfile,database,dbName)  #*** CONTROL
 
             if self.PHANTOME_HMM:
@@ -594,7 +591,7 @@ class multiHMM(object):
                     print("Hmm module says: Running PHANTOME hmm search:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
-                    outfile = self.hmmOutDir + self.hmmProgram + "_phantome_" +str(count)
+                    outfile = self.proteinHmmOutDir + self.hmmProgram + "_phantome_" +str(count)
                     self.hmm1fasta(fasta,outfile,database,dbName)
 
             if self.KEGG_VIRUS_HMM: 
@@ -605,7 +602,7 @@ class multiHMM(object):
                     print("Hmm module says: Running KEGG hmm search:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
-                    outfile = self.hmmOutDir + self.hmmProgram + "_kegg_" + str(count)
+                    outfile = self.proteinHmmOutDir + self.hmmProgram + "_kegg_" + str(count)
                     self.hmm1fasta(fasta,outfile,database,dbName)
 
             if self.SWISSPROT_HMM: 
@@ -616,7 +613,7 @@ class multiHMM(object):
                     print("Hmm module says: Running Swissprot hmm search:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
-                    outfile = self.hmmOutDir + self.hmmProgram + "_swissprot_" + str(count)
+                    outfile = self.proteinHmmOutDir + self.hmmProgram + "_swissprot_" + str(count)
                     self.hmm1fasta(fasta,outfile,database,dbName)   #*** CONTROL
 
             if self.PHAGE_ENZYME_HMM: 
@@ -627,7 +624,7 @@ class multiHMM(object):
                     print("Hmm module says: Running phage enzyme hmm search:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
-                    outfile = self.hmmOutDir + self.hmmProgram + "_phageEnz_" + str(count)
+                    outfile = self.proteinHmmOutDir + self.hmmProgram + "_phageEnz_" + str(count)
                     self.hmm1fasta(fasta,outfile,database,dbName)   #*** CONTROL
 
             if self.PVOGS_HMM:  
@@ -638,7 +635,7 @@ class multiHMM(object):
                     print("Hmm module says: Running pVOGs hmm search:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
-                    outfile = self.hmmOutDir + self.hmmProgram + "_pvog_" + str(count)
+                    outfile = self.proteinHmmOutDir + self.hmmProgram + "_pvog_" + str(count)
                     self.hmm1fasta(fasta,outfile,database,dbName)
 
                 if PHATE_PROGRESS == 'True':

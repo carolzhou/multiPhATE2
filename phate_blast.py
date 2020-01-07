@@ -154,7 +154,7 @@ class multiBlast(object):
                 self.setBlastOutDir(paramset['blastOutDir'])
             if 'pvogsOutDir' in list(paramset.keys()):
                 self.setPVOGsOutDir(paramset['pvogsOutDir'])
-            if 'ncbiVirusBlast' in list(paramset.keys()):
+            if 'ncbiVirusGenomeBlast' in list(paramset.keys()):
                 self.NCBI_VIRUS_GENOME_BLAST = paramset["ncbiVirusGenomeBlast"]
             if 'ncbiVirusProteinBlast' in list(paramset.keys()):
                 self.NCBI_VIRUS_PROTEIN_BLAST = paramset["ncbiVirusProteinBlast"]
@@ -264,6 +264,7 @@ class multiBlast(object):
     ##### PERFORM BLAST
 
     def blast1fasta(self,fasta,outfile,database,dbName): # fasta is a phate_fastaSequence.fasta object
+        command = ""
 
         # Write fasta sequence to temporary file
         fastaFile = self.blastOutDir + "temp.fasta"
@@ -453,16 +454,10 @@ class multiBlast(object):
                 newAnnotation.annotationList.append(resultString)
  
                 # Get DBXREFs, packed into annotation object's self.description field
-                if DEBUG:
-                    print("TESTING: newAnnotation", newAnnotation.printAll())
-                    print("TESTING: database and dbName are", database, dbName)
                 newAnnotation.link2databaseIdentifiers(database,dbName) # Get DBXREFs, packed into self.description
  
                 # Add this completed annotation to growing list for this fasta
                 fasta.annotationList.append(newAnnotation)
-
-            if DEBUG: 
-                print("Done parsing XML tree") 
 
         # Parse from LIST-formatted blast output
         elif self.outputFormat == LIST:

@@ -4,10 +4,12 @@
 #
 # Program Title:  phate_runPipeline.py ()
 #
-# Most recent update:  02 December 2019
+# Most recent update:  30 December 2019
 #
 # Description: Runs the phate annotation pipeline.  This code runs under Python 3.7, and requires
 #    dependent packages.
+#
+# Input: a json string, formatted by multiPhATE2.py
 #
 # Usage:  python phate_runPipeline.py myGenome.json
 #
@@ -26,7 +28,7 @@
 #
 # Programmers: 
 #    Carol E. Zhou - pipeline programmer: CompareCalls/, DatabasePrep/, SequenceAnnotation/, phate_runPipeline.py
-#    Jeff Kimbrel  - GeneCalling/
+#    Jeff Kimbrel, Carol Zhou  - GeneCalling/
 #
 ################################################################
 
@@ -103,7 +105,7 @@ BLASTP_HIT_COUNT_DEFAULT      = os.environ["PHATE_BLASTP_HIT_COUNT_DEFAULT"]
 BLASTN_HIT_COUNT_DEFAULT      = os.environ["PHATE_BLASTN_HIT_COUNT_DEFAULT"]
 
 # HMM
-HMM_HOME                      = os.environ["PHATE_HMM_HOME"]
+HMMER_HOME                    = os.environ["PHATE_HMMER_HOME"]
 
 # Global control: verbosity and error capture
 CLEAN_RAW_DATA                = os.environ["PHATE_CLEAN_RAW_DATA"]

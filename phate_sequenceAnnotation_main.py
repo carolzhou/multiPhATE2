@@ -4,13 +4,13 @@
 #
 # phate_sequenceAnnotation_main.py
 #
-# Description:  Performs blast and/or hmm search on a given input gene or protein fasta set
-#    and returns the results. The databases are pre-determined, but can
-#    be added to by inserting new specifications in the blast object.
+# Description:  Performs blast and/or hmm searches on a given input gene or protein databases.
+#    Databases may be blast, sequence, or hmm profiles. Current search programs supported are:
+#    blastn, blastp, jackhmmer, phmmer, hmmscan.
 #
 # Programmer: CEZhou
 #
-# Date: 02 December 2019
+# Latest Update: 30 December 2019
 # Version 1.5
 #
 ################################################################
@@ -23,8 +23,8 @@ import time, datetime
 from subprocess import call
 
 # DEBUG control
-DEBUG = True
-#DEBUG = False 
+#DEBUG = True
+DEBUG = False 
 
 # Defaults/Parameters
 PRIMARY_CALLS          = 'phanotate'   # Default; can be configured by user
@@ -110,7 +110,6 @@ CUSTOM_GENE_BLAST_HOME        = os.environ["PHATE_CUSTOM_GENE_BLAST_HOME"]
 CUSTOM_PROTEIN_BLAST_HOME     = os.environ["PHATE_CUSTOM_PROTEIN_BLAST_HOME"]
 
 # HMM database locations
-HMM_HOME                      = os.environ["PHATE_HMM_HOME"]
 NCBI_VIRUS_GENOME_HMM_HOME    = os.environ["PHATE_NCBI_VIRUS_GENOME_HMM_HOME"]
 NCBI_VIRUS_PROTEIN_HMM_HOME   = os.environ["PHATE_NCBI_VIRUS_PROTEIN_HMM_HOME"]
 REFSEQ_PROTEIN_HMM_HOME       = os.environ["PHATE_REFSEQ_PROTEIN_HMM_HOME"]
@@ -136,7 +135,7 @@ import phate_genomeSequence # manages genomes to be annotated
 import phate_annotation     # records annotations, including gene-call info and secondary annotations
 import phate_blast          # runs blast search against blast database(s) 
 import phate_hmm            # runs hmm search against specified sequence database(s) 
-#import phate_profile        # runs hmm search against specified hmm profile database(s)
+import phate_profile        # runs hmm search against specified hmm profile database(s)
 
 ##### FILES
 
@@ -442,10 +441,10 @@ for i in range(0,argCount):
             if match_nr:
                 NR_BLAST = True
 
-    if match_blastProgramStringParam: # blast programs to run against blast databases
+    if match_blastProgramStringParam: # blast programs to run against (protein) blast databases
         if i < argCount:
             value = argList[i+1]
-            match_blastp = re.search(p_blastp, argList[i])
+            match_blastp = re.search(p_blastp, value)
             if match_blastp:
                 BLASTP_SEARCH = True
 
@@ -907,7 +906,7 @@ else:
         if PHATE_PROGRESS == 'True':
             print("Preparing for profile search...")
         LOGFILE_H.write("%s\n" % ("Creating a profile object"))
-        #profile = phate_profile.multiProfile()
+        profile = phate_profile.multiProfile()
         print("HMM search of profile databases not yet in service")
 
         # Create directories for hmm/profile search output
@@ -926,6 +925,7 @@ else:
 
     ##### GENOME BLAST
 
+    LOGFILE_H.write("%s%s\n" % ("Checking RUN_GENOME_BLAST ",RUN_GENOME_BLAST))
     if RUN_GENOME_BLAST:
 
         # Create blast output directory for genome blast
@@ -952,25 +952,19 @@ else:
         blast.setBlastParameters(myParamSet)
         blast.setBlastFlavor('blastn') 
 
-        LOGFILE_H.write("%s%s%s%s\n" % (datetime.datetime.now(), " Preparing to run ", blast.blastFlavor, " at the following settings:"))
-        blast.printParameters2file(LOGFILE_H)
-
         if PHATE_PROGRESS == 'True':
             print("Sequence annotation main says: Preparing to run", blast.blastFlavor)
         if PHATE_MESSAGES == 'True':
             print("Sequence annotation main says: Running", blast.blastFlavor, "at the following settings:")
             blast.printParameters()
-
         if PHATE_PROGRESS == 'True':
             print("Sequence annotation main says: Running Blast against phage genome database(s)...")
 
         LOGFILE_H.write("%s%s%s%s\n" % (datetime.datetime.now(), " Preparing to run ", blast.blastFlavor, " at the following settings:"))
         blast.printParameters2file(LOGFILE_H)
         LOGFILE_H.write("%s\n" % ("Running Blast against phage genome database(s)..."))
-
         # Run Genome blast 
         blast.runBlast(myGenome.contigSet,'genome')
-  
         if PHATE_PROGRESS == 'True':
             print("Sequence annotation main says: Genome blast complete")
         LOGFILE_H.write("%s%s\n" % ("Genome blast complete at ", datetime.datetime.now()))
@@ -1184,8 +1178,9 @@ else:
             os.mkdir(geneProfileOutputDir)
         # Done for now; gene profile search not yet in service
 
-        # Create profile output directory for protein profile search
+        # Create profile output directory for protein profile search and pVOG groups
         proteinProfileOutputDir = profileOutputDir + 'Protein/'
+        pVOGsOutputDir          = profileOutputDir + 'Protein/'
         try:
             os.stat(proteinProfileOutputDir)
         except:
@@ -1193,11 +1188,18 @@ else:
 
         # profile object already created (see above) 
 
+        if HMMSCAN:
+            profileProgram = 'hmmscan'
+            hmmscan = True
+
         myParamSet = {
+            'profileProgram'       : profileProgram,
             'geneCallDir'          : outputDir,
+            'profileOutDir'        : profileOutputDir,
             'genomeProfileOutDir'  : genomeProfileOutputDir,
             'geneProfileOutDir'    : geneProfileOutputDir,
             'proteinProfileOutDir' : proteinProfileOutputDir,
+            'pVOGsOutDir'          : pVOGsOutputDir,
             'hmmscan'              : hmmscan,
             'ncbiVirusProteinHmm'  : NCBI_VIRUS_PROTEIN_HMM,
             'refseqProteinHmm'     : REFSEQ_PROTEIN_HMM,

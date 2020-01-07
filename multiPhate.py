@@ -4,12 +4,29 @@
 #
 # Program Title:  multiPhate2.py (/multiPhate2/)
 #
-# Last Update:  02 December 2019
+# Last Update:  30 December 2019
 #
-# Description: Script multiPhate.py runs the phate annotation pipeline over a set of input phage genomes.  This code runs under 
-#    Python 3.7, and requires dependent packages and databases as listed in the README file.
-#    multiPhate.py inputs a configuration file (see sample_ multiPhate.config), and uses it to construct a set of
-#    configuration files, one for each genome. Then, multiPhate.py executes phate_runPipeline.py over all of the genomes in the set.
+# Description: Script multiPhate.py runs an annotation pipeline (phate_runPipeline.py) over any
+#    number of genomes specified in the user's input configuration file (multPhate.config). It then
+#    runs a code (CGP) to compare the proteomes of the user's genomes.
+#    Specifically:
+#      1) multiPhate.py runs the annotation pipeline over each input phage genome. The first step
+#         involves gene calling using up to 4 gene callers plus an optional custom gene caller's 
+#         output. The results of gene calling are compared, and several outputs are generated:
+#         gene calls for each of the (up to 5) gene callers, the superset computed from all gene
+#         callers, a consensus gene-call set, and a common-core gene call set. The second step
+#         involves performing searches against specified databases to identify homologies for each
+#         predicted peptide from each genome. Codes that may be selected are: blastn (genome and gene),
+#         blastp, phmmer, jackhmmer, hmmscan. Databases are appropriate to the code (ie, blast, 
+#         sequence, or hmm profile). Homology search results are combined into tabbed and gff outfiles.
+#      2) multiPhate.py runs the comparative genomics module to compare the predicted proteins
+#         of the user's genomes. CGP identifies a reference genome (the first listed in the user
+#         config), and lists all corresponding predicted proteins from each of the other genomes.
+#         Lastly, it identifies a core proteome common among the users input genomes.
+#   
+# Programmer's notes:
+#   1. The phate_profile.py modules remains to be completed and tested.
+#   2. The phate_compare.py modules is currently under development.
 #
 # Usage:  python multiPhate.py myMultiPhate.config
 #    (see sample_multiPhate.config for how to create your configuration file)
@@ -225,7 +242,7 @@ os.environ["PHATE_CGC_PATH"]                = BASE_DIR_DEFAULT + "CompareCalls/"
 # Data sets
 # BLAST
 os.environ["PHATE_NCBI_VIRUS_BASE_DIR"]             = DATABASE_DIR_DEFAULT + "NCBI/"
-os.environ["PHATE_NCBI_VIRUS_GENOME_BLAST_HOME"]    = os.environ["PHATE_NCBI_VIRUS_BASE_DIR"] + "Virus_Genome/"  + "viral.1.1.genomic.fna"
+os.environ["PHATE_NCBI_VIRUS_GENOME_BLAST_HOME"]    = os.environ["PHATE_NCBI_VIRUS_BASE_DIR"] + "Virus_Genome/"  + "viral.genomic.fna"
 os.environ["PHATE_NCBI_VIRUS_PROTEIN_BLAST_HOME"]   = os.environ["PHATE_NCBI_VIRUS_BASE_DIR"] + "Virus_Protein/" + "viral.protein.faa"
 os.environ["PHATE_NCBI_TAXON_DIR"]                  = os.environ["PHATE_NCBI_VIRUS_BASE_DIR"] + "Virus_Genome/"
 os.environ["PHATE_REFSEQ_PROTEIN_BASE_DIR"]         = DATABASE_DIR_DEFAULT + "Refseq/Protein/"
@@ -300,9 +317,16 @@ os.environ["PHATE_SCORE_EDGE_MAX"]                  = str(SCORE_EDGE_MAX)
 os.environ["PHATE_OVERHANG_MAX"]                    = str(OVERHANG_MAX)
 os.environ["PHATE_HIT_COUNT_MAX"]                   = str(HIT_COUNT_MAX)  #*** This is the hit count actually used in phate_blast
 
-# HMM
-os.environ["PHATE_HMM_HOME"]                        = ""  #*** is this used?
-os.environ["PHATE_HMMER_HOME"]                      = ""
+# CODES - These should be installed globally (via Conda), but if not, locations go here
+os.environ["PHATE_BLAST_HOME"]                      = "" 
+os.environ["PHATE_EMBOSS_HOME"]                     = ""
+os.environ["PHATE_PHANOTATE_HOME"]                  = ""
+os.environ["PHATE_PRODIGAL_HOME"]                   = ""
+os.environ["PHATE_GLIMMER_HOME"]                    = ""
+os.environ["PHATE_GENEMARKS_HOME"]                  = ""
+os.environ["PHATE_CGC_HOME"]                        = "" 
+os.environ["PHATE_tRNAscanSE_HOME"]                 = ""
+os.environ["PHATE_HMMER_HOME"]                      = ""  
 
 # Global control: verbosity and error capture
 os.environ["PHATE_CLEAN_RAW_DATA"]                  = CLEAN_RAW_DATA_DEFAULT
@@ -1676,6 +1700,8 @@ for genome in genomeList:
 
 if not HPC:
     LOG.write("%s%s\n" % ("Processing genomes through PhATE. Begin processing at ",datetime.datetime.now()))
+
+# Run the phate pipeline over each genome, as specified in the multiPhate.config file
 for jsonFile in jsonList:
     if not HPC:
         LOG.write("%s%s\n" % ("Running PhATE using genome json file ",jsonFile))
@@ -1686,6 +1712,10 @@ for jsonFile in jsonList:
     result = os.system(command)
     if not HPC:
         LOG.write("%s%s\n" % ("End processing at ",datetime.datetime.now()))
+
+# Run the comparative genomics module to compare proteoms among the user's specified genomes
+
+pass
 
 ##### CLEAN UP
 
