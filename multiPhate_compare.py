@@ -2,8 +2,6 @@
 # Module: phate_annotation.py
 # Programmer: Carol L. Ecale Zhou
 #
-# Latest update: 2 January 2020
-#
 # Description: Module containing classes and methods for representing annotation results from various sources 
 #
 # Classes and methods: 
@@ -477,9 +475,6 @@ class annotationRecord(object):
             elif dbName.lower() == 'pvogs':
                 pVOGlist = self.getPvogMembers(pVOGheaderFile) 
 
-            elif dbName.lower() == 'pvogs_hmm':
-                pVOGlist = self.getPvogMembers(pVOGheaderFile) 
-
             elif dbName.lower() == 'ncbivirusprotein':
                 pass
  
@@ -536,7 +531,7 @@ class annotationRecord(object):
 
     # Return annotations as a semicolon-delimited string
     def returnGFFannotationRecord(self,FILE_HANDLE):
-        annot = ''
+        self.annotationString = ''; annot = ''; annotationList = []
         if self.annotationType == 'gene':
             annot = '(gene) ' + self.start + '/' + self.end + '/' + self.strand + ' ' + self.method 
         elif self.annotationType == 'functional':
@@ -547,8 +542,6 @@ class annotationRecord(object):
             annot = '(homolog) ' + self.method + ' ' + newName
         elif self.annotationType == 'hmm search':
             annot = '(hmm search) ' + self.method + ' ' + self.description
-        elif self.annotationType == 'profile search':
-            annot = '(profile search) ' + self.method + ' ' + self.description
         elif self.annotationType == 'cds':
             annot = '(cds)' + self.method + ' ' + self.description
         elif self.annotationType == 'mrna':
@@ -557,12 +550,15 @@ class annotationRecord(object):
             annot = '(polypeptide) ' + self.method + ' ' + self.description
         else:
             annot = '(unk type) ' + self.method + ' ' + self.description
+        annotationList.append(annot)
 
-        annotationString = ""
-        for item in self.annotationList:
-            annotationString += item
-        annot += annotationString
-        FILE_HANDLE.write("%s" % (annot))
+        if len(annotationList) > 0:   #*** IMPROVE THIS, there should be only one annot in list
+            for i in range(0, len(annotationList)):
+                if i > 0:
+                    self.annotationString += '; ' + annotationList[i] 
+                else:
+                    self.annotationString += annotationList[i]
+        FILE_HANDLE.write("%s" % (self.annotationString))
 
     def printAnnotationRecord2file(self,FILE_HANDLE):  #*** Update this
         FILE_HANDLE.write("%s%s%s" % ("Annotation source:",self.source,"\n"))

@@ -625,6 +625,7 @@ except IOError as e:
     LOGFILE_H.write("%s%s%s%s\n" % ("fileError ",e," genome file, ", infile_genome))
 
 try:
+    LOGFILE_H.write("%s%s\n" % ("Opening primary calls file, ",infile_primaryCalls))
     PRIMARY_CALLS_FILE = open(infile_primaryCalls,"r")
 except IOError as e:
     fileError = True

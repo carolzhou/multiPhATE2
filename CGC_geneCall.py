@@ -52,8 +52,7 @@ DEBUG = False
 
 p_comment    = re.compile('^#')
 p_caller     = re.compile('([\w\d]+)\sgene\scalls')
-p_callerName = re.compile('[Gg][Ee][Nn][Ee][Mm][Aa][Rr][Kk]|[Gg][Ll][Ii][Mm][Mm][Ee][Rr]|[Pp][Rr][Oo][Dd][Ii][Gg][Aa][Ll]|[Rr][Aa][Ss][Tt]|[Tt][Hh][Ee][Aa]|[Pp][Hh][Aa][Nn][Oo][Tt][Aa][Tt][Ee]|[Gg][Ff][Ff][3]')
-#p_callerName = re.compile('[Gg][Ee][Nn][Ee][Mm][Aa][Rr][Kk]|[Gg][Ll][Ii][Mm][Mm][Ee][Rr]|[Pp][Rr][Oo][Dd][Ii][Gg][Aa][Ll]|[Rr][Aa][Ss][Tt]|[Pp][Hh][Aa][Tt][Ee]')
+p_callerName = re.compile('[Gg][Ee][Nn][Ee][Mm][Aa][Rr][Kk]|[Gg][Ll][Ii][Mm][Mm][Ee][Rr]|[Pp][Rr][Oo][Dd][Ii][Gg][Aa][Ll]|[Rr][Aa][Ss][Tt]|[Pp][Hh][Aa][Nn][Oo][Tt][Aa][Tt][Ee]|[Cc][Uu][Ss][Tt][Oo][Mm]|[Gg][Ff][Ff][3]|[Gg][Ff][Ff]')
 p_dataLine   = re.compile('^(\d+)\t([+-])\t(\d+)\t(\d+)\t(\d+)\t([\d\w\.\-\_]+)')
 
 class GeneCall(object):

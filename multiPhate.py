@@ -906,7 +906,10 @@ for cLine in cLines:
         else:
             if PHATE_WARNINGS == 'True':
                 print("WARNING:  Invalid string for primary calls in config file:", value)
-        primaryCallsFile = primaryCalls + '.cgc'
+        if primaryCalls == 'glimmer2' or primaryCalls == 'glimmer3':
+            primaryCallsFile = 'glimmer' + '.cgc'
+        else:
+            primaryCallsFile = primaryCalls + '.cgc'
 
     elif match_genemarksCalls:
         value = match_genemarksCalls.group(1)

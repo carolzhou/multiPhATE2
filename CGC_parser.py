@@ -5,6 +5,7 @@
 # CGC_parser.py
 #
 # Programmer:  Carol Zhou
+# Last update:  15 January 2020
 #
 # Description:  This code inputs the name of a gene caller plus
 #    the gene-caller's output file, and outputs a properly formatted
@@ -21,6 +22,10 @@
 # Input Files:  For GeneMarkS, use the XXX.fasta.lst file; for
 #    Glimmer2, use the XXX.g2.coord file; and for Prodigal, use the
 #    XXX.genes.sco file, for Glimmer3, use the run3.coords file. 
+#
+# Programmer's Notes:
+#    *) Should this code to writing to OUTFILE or OUT, even if user provided
+#       an output filename?
 #
 ################################################################
 
@@ -236,18 +241,21 @@ def ProcessGenemark(fLines,OUT):
             if strand != '+' and strand != '-':
                 if RUNLOGOPEN:
                     RUNLOGFILE.write("%s%s\n" % ("ERROR: unknown strand designator, ",strand))
-                OUT.write("%s\n" % ("ERROR encountered: unknown strand designator\n"))
                 if USER_OUT_PROVIDED:
                     USER_OUT.write("%s\n" % ("ERROR encountered: unknown strand designator\n"))
+                else:
+                    OUT.write("%s\n" % ("ERROR encountered: unknown strand designator\n"))
                 if CGC_WARNINGS == 'True':
                     print("ERROR in CGC_parser module: unexpected strand designator,", strand)
                 return
             if contig == '':
                 contig = 'unknown'  # Contig name may be absent in input file
             #TMPFILE.write("%s\t%s\t%s\t%s\t%s\t%s\t%si\t%s\n" % (geneNo,strand,leftEnd,rightEnd,length,contig,protein))
-            OUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,leftEnd,rightEnd,length,contig,protein))
             if USER_OUT_PROVIDED:
                 USER_OUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,leftEnd,rightEnd,length,contig,protein))
+            else:
+                OUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,leftEnd,rightEnd,length,contig,protein))
+
     return
             
 def ProcessGlimmer(fLines,OUT):
@@ -293,9 +301,10 @@ def ProcessGlimmer(fLines,OUT):
             else:
                 if RUNLOGOPEN:
                     RUNLOGFILE.write("%s%s\n" % ("ERROR: unknown strand designator, ",strand))
-                OUT.write("%s\n" % ("ERROR encountered: unknown strand designator\n"))
                 if USER_OUT_PROVIDED:
                     USER_OUT.write("%s\n" % ("ERROR encountered: unknown strand designator\n"))
+                else:
+                    OUT.write("%s\n" % ("ERROR encountered: unknown strand designator\n"))
                 if CGC_WARNINGS == 'True':
                     print("ERROR in CGC_parser module: unexpected strand designator,", strand)
                 return
@@ -304,36 +313,50 @@ def ProcessGlimmer(fLines,OUT):
             if contig == '':    # contig name may be left out of input file
                 contig = 'unknown'
             count += 1; geneNo = count  # re-assign gene number over that assigned by Glimmer
-            OUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,str(leftEnd),str(rightEnd),str(length),contig,protein))
-
             if USER_OUT_PROVIDED:
                 USER_OUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,str(leftEnd),str(rightEnd),str(length),contig,protein))
+            else:
+                OUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,str(leftEnd),str(rightEnd),str(length),contig,protein))
+
     return
 
-# Custom gene calls should be formatted similar to GFF3; only gene call lines are processed
+# Custom gene calls should be formatted similar to GFF3, w/9 columns; only gene call lines are processed 
 # Contig name (must match corresponding in .fasta file) is in first column 
 def ProcessCustom(fLines,OUT):  
-    geneNo = 0; contig = ""; strand = ''; leftEnd = ''; rightEnd = ''; length = 0; count = 0; 
+    geneNo = 0; contig = "unknown"; strand = ''; leftEnd = ''; rightEnd = ''; length = 0; protein = "unknown" 
     if CUSTOM_GFF3:
-        p_dataLine = re.compile('(.*)\t.*\tCDS\t(\d+)\t(\d+)\t\.\t([+-])\t\d\t.*')
-        for line in fLines:
-            match_comment = re.search(p_comment,line)
-            match_dataLine = re.search(p_dataLine,line) 
-            if match_comment:
-                continue
-            elif match_dataLine:
-                count += 1
-                geneNo = count 
-                contig    =     match_dataLine.group(1)
-                leftEnd   = int(match_dataLine.group(2))
-                rightEnd  = int(match_dataLine.group(3))
-                strand    =     match_dataLine.group(4) 
-                length    = abs(rightEnd - leftEnd) + 1
-                OUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,str(leftEnd),str(rightEnd),str(length),contig,protein))
-                if USER_OUT_PROVIDED:
-                    USER_OUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,str(leftEnd),str(rightEnd),str(length),contig,protein))
+        if RUNLOGOPEN:
+            RUNLOGFILE.write("%s\n" % ("In CGC_parser.py, ProcessCustom() method"))
+        for fLine in fLines:
+            match_comment  = re.search(p_comment,fLine)
+            match_blank    = re.search(p_empty,fLine)
+            if match_comment or match_blank:
+                pass 
+            else:
+                try:
+                    fields = fLine.split('\t')
+                    if len(fields) > 6:
+                        geneNo    += 1
+                        contig    =     fields[0]
+                        leftEnd   = int(fields[3])
+                        rightEnd  = int(fields[4])
+                        strand    =     fields[6]
+                        length    = abs(rightEnd - leftEnd) + 1
+                        if USER_OUT_PROVIDED:
+                            USER_OUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,str(leftEnd),str(rightEnd),str(length),contig,protein))
+                        else:
+                            OUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,str(leftEnd),str(rightEnd),str(length),contig,protein))
+                    else:
+                        pass
+                        if RUNLOGOPEN:
+                            RUNLOGFILE.write("%s%s\n" % ("WARNING: unexpected data line in CGC_parser.py, ProcessCustom(): ",fLine))
+                except:
+                    if RUNLOGOPEN:
+                        RUNLOGFILE.write("%s%s\n" % ("WARNING: cannot process cgc data line in CGC_parser.py, ProcessCustom(): ",fLine))
     else:
         pass # Not using other format (for now)
+        if RUNLOGOPEN:
+            RUNLOGFILE.write("%s\n" % ("WARNING: unexpected format type found in CGC_parser.py, ProcessCustom()."))
     return
  
 def ProcessRAST(fLines,OUT):
@@ -353,9 +376,10 @@ def ProcessRAST(fLines,OUT):
                 rightEnd  = int(match_dataLine.group(3))
                 strand    =     match_dataLine.group(4) 
                 length = rightEnd - leftEnd + 1
-                OUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,str(leftEnd),str(rightEnd),str(length),contig,protein))
                 if USER_OUT_PROVIDED:
                     USER_OUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,str(leftEnd),str(rightEnd),str(length),contig,protein))
+                else:
+                    OUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,str(leftEnd),str(rightEnd),str(length),contig,protein))
     else:
         pass # Not using other RAST format (for now)
     return
@@ -389,9 +413,10 @@ def ProcessGFF3(fLines,OUT):
                         protein = fields[8]
                     if feature.lower() == 'cds':
                         length = rightEnd - leftEnd + 1
-                        OUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,str(leftEnd),str(rightEnd),str(length),contig,protein))
                         if USER_OUT_PROVIDED:
                             USER_OUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,str(leftEnd),str(rightEnd),str(length),contig,protein))
+                        else:
+                            OUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,str(leftEnd),str(rightEnd),str(length),contig,protein))
     else:
         pass  # do nothing if GFF3 not enabled
     return
@@ -418,9 +443,10 @@ def ProcessProdigal(fLines,OUT):
                 length   = int(rightEnd) - int(leftEnd) + 1 
                 count += 1; geneNo = count  # Re-number gene number assigned by Prodigal
                 print("Writing next prodigal gene", geneNo, strand, leftEnd, rightEnd, length, contig, protein)
-                OUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,leftEnd,rightEnd,length,contig,protein))
                 if USER_OUT_PROVIDED:
                     USER_OUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,leftEnd,rightEnd,length,contig,protein))
+                else:
+                    OUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,leftEnd,rightEnd,length,contig,protein))
 
     else: # using XXX.genes file
         p_header   = re.compile('seqhdr=\"(.*)\"')
@@ -441,9 +467,10 @@ def ProcessProdigal(fLines,OUT):
                 rightEnd = int(match_dataLine.group(3))
                 strand   =     match_dataLine.group(5)
                 length   = int(rightEnd) - int(leftEnd) + 1
-            OUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,leftEnd,rightEnd,length,contig,protein))
             if USER_OUT_PROVIDED:
                 USER_OUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,leftEnd,rightEnd,length,contig,protein))
+            else:
+                OUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,leftEnd,rightEnd,length,contig,protein))
     return
 
 def ProcessPHANOTATE(fLines,OUT):      # SDSU code
@@ -475,9 +502,10 @@ def ProcessPHANOTATE(fLines,OUT):      # SDSU code
                 leftEnd = rightEnd
                 rightEnd = temp 
             length   = int(rightEnd) - int(leftEnd) + 1
-            OUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,leftEnd,rightEnd,str(length),contig,protein))
             if USER_OUT_PROVIDED:
                 USER_OUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,leftEnd,rightEnd,str(length),contig,protein))
+            else:
+                OUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,leftEnd,rightEnd,str(length),contig,protein))
     return
 
 ##### BEGIN MAIN 
@@ -498,43 +526,65 @@ match_genbank     = re.search(p_genbank,geneCaller)
 match_phate       = re.search(p_phate,geneCaller)
 match_custom      = re.search(p_custom,geneCaller)
 
-OUTFILE.write("%s%s%s%s%s\n" % ('# ',geneCaller, " gene calls",", taken from file ",geneCallerOut))
-OUTFILE.write("%s\n" % ("Gene No.\tStrand\tLeftEnd\tRightEnd\tLength\tContig\tProtein"))
+fileLines = INFILE.read().splitlines()
 
 if USER_OUT_PROVIDED:
     USER_OUT.write("%s%s%s%s%s\n" % ('# ',geneCaller, " gene calls",", taken from file ",geneCallerOut))
     USER_OUT.write("%s\n" % ("Gene No.\tStrand\tLeftEnd\tRightEnd\tLength\tContig\tProtein"))
-
-fileLines = INFILE.read().splitlines()
-
-if match_genemark:
-    #ProcessGenemark(fileLines,OUTFILE)  #*** use GFF3 for now; need to troubleshoot
-    ProcessGFF3(fileLines,OUTFILE)
-elif match_glimmer:
-    ProcessGlimmer(fileLines,OUTFILE)
-elif match_prodigal:
-    ProcessProdigal(fileLines,OUTFILE)
-elif match_rast:
-    ProcessRAST(fileLines,OUTFILE)
-elif match_phanotate:
-    ProcessPHANOTATE(fileLines,OUTFILE)
-elif match_phate:
-    ProcessPHANOTATE(fileLines,OUTFILE)
-elif match_phanotate:
-    ProcessPHANOTATE(fileLines,OUTFILE)
-elif match_gff3:
-    ProcessGFF3(fileLines,OUTFILE)
-elif match_genbank:
-    ProcessGFF3(fileLines,OUTFILE)  # Need to format genbank's protein fasta file as GFF3
-elif match_custom:
-    ProcessCustom(fileLines,OUTFILE) # Incoming format is pre-defined; may be same as GFFx, but not necessarily
-else:
-    if RUNLOGOPEN:
-        RUNLOGFILE.write("%s%s\n" % ("ERROR: Cannot process unknown gene caller output file:",geneCaller))
-
-if USER_OUT_PROVIDED:
+    if match_genemark:
+        #ProcessGenemark(fileLines,USER_OUT)  #*** use GFF3 for now; need to troubleshoot
+        ProcessGFF3(fileLines,USER_OUT)
+    elif match_glimmer:
+        ProcessGlimmer(fileLines,USER_OUT)
+    elif match_prodigal:
+        ProcessProdigal(fileLines,USER_OUT)
+    elif match_rast:
+        ProcessRAST(fileLines,USER_OUT)
+    elif match_phanotate:
+        ProcessPHANOTATE(fileLines,USER_OUT)
+    elif match_phate:
+        ProcessPHANOTATE(fileLines,USER_OUT)
+    elif match_phanotate:
+        ProcessPHANOTATE(fileLines,USER_OUT)
+    elif match_gff3:
+        ProcessGFF3(fileLines,USER_OUT)
+    elif match_genbank:
+        ProcessGFF3(fileLines,USER_OUT)  # Need to format genbank's protein fasta file as GFF3
+    elif match_custom:
+        ProcessCustom(fileLines,USER_OUT) # Incoming format is pre-defined; may be same as GFFx, but not necessarily
+    else:
+        if RUNLOGOPEN:
+            RUNLOGFILE.write("%s%s\n" % ("ERROR: Cannot process unknown gene caller output file:",geneCaller))
     USER_OUT.write("%s\n" % ("# END"))
-OUTFILE.write("%s\n" % ("# END"))
+
+else:
+    OUTFILE.write("%s%s%s%s%s\n" % ('# ',geneCaller, " gene calls",", taken from file ",geneCallerOut))
+    OUTFILE.write("%s\n" % ("Gene No.\tStrand\tLeftEnd\tRightEnd\tLength\tContig\tProtein"))
+    if match_genemark:
+        #ProcessGenemark(fileLines,OUTFILE)  #*** use GFF3 for now; need to troubleshoot
+        ProcessGFF3(fileLines,OUTFILE)
+    elif match_glimmer:
+        ProcessGlimmer(fileLines,OUTFILE)
+    elif match_prodigal:
+        ProcessProdigal(fileLines,OUTFILE)
+    elif match_rast:
+        ProcessRAST(fileLines,OUTFILE)
+    elif match_phanotate:
+        ProcessPHANOTATE(fileLines,OUTFILE)
+    elif match_phate:
+        ProcessPHANOTATE(fileLines,OUTFILE)
+    elif match_phanotate:
+        ProcessPHANOTATE(fileLines,OUTFILE)
+    elif match_gff3:
+        ProcessGFF3(fileLines,OUTFILE)
+    elif match_genbank:
+        ProcessGFF3(fileLines,OUTFILE)  # Need to format genbank's protein fasta file as GFF3
+    elif match_custom:
+        ProcessCustom(fileLines,OUTFILE) # Incoming format is pre-defined; may be same as GFFx, but not necessarily
+    else:
+        if RUNLOGOPEN:
+            RUNLOGFILE.write("%s%s\n" % ("ERROR: Cannot process unknown gene caller output file:",geneCaller))
+    OUTFILE.write("%s\n" % ("# END"))
 
 ##### CLEAN UP
 

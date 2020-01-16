@@ -18,7 +18,7 @@ import sys
 import re
 
 DEBUG = False 
-#DEBUG = True
+DEBUG = True
 
 # booleans control which gene finder(s) to call
 GENEMARKS_CALLS = False   
@@ -35,7 +35,7 @@ p_prodigal  = re.compile('[pP][rR][oO][dD][iI][gG][aA][lL]')
 p_phanotate = re.compile('[pP][hH][aA][nN][oO][tT][aA][tT][eE]')
 p_custom    = re.compile('[cC][uU][sS][tT][oO][mM]')
 p_comment   = re.compile('^#')
-p_blank     = re.compile('^$')
+p_blank     = re.compile('^\s*$')
 
 ########## HOUSEKEEPING ##########
 
@@ -78,8 +78,8 @@ cgcGff         = outputFolder + "CGCcallSummary.gff"
 supersetCgc    = outputFolder + "superset.cgc"
 consensusCgc   = outputFolder + "consensus.cgc"
 commoncoreCgc  = outputFolder + "commoncore.cgc"
-customCalls    = outputFolder + customCallerOutfile
-customCallsCgc = outputFolder + "custom.cgc"
+customCalls    = outputFolder + customCallerOutfile  # user's calls in gff format; to be converted to cgc format
+customCallsCgc = outputFolder + "custom.cgc"         # name of cgc formated custom calls file (to be written)
 
 # booleans to control gene finding
 if len(sys.argv) == 5:
@@ -200,12 +200,12 @@ def processGlimmer(line,contig):
     method = "glimmer3"
     ID = lineSplit[0]
 
-    start = lineSplit[1]
-    stop = lineSplit[2]
+    start  = lineSplit[1]
+    stop   = lineSplit[2]
     strand = lineSplit[3][0]
     if strand == "-":
         start = lineSplit[2]
-        stop = lineSplit[1]
+        stop  = lineSplit[1]
 
     score = lineSplit[4]
     geneCall(ID, method, contig, start, stop, strand, score)
@@ -251,6 +251,7 @@ def Convert_gff2cgc(gffFile,cgcFile):
     # The cds/CDS features are collected only, others skipped
     # The start and end are left and right relative to the positive strand, so 79 and 123 on (-) strand means 123 is start, 79 is end coordinate.
     # Frame, score, and attribute are ignored; enter as '.' if blank.
+    #*** SHOULD CONTIG BE READ FROM A COMMENT AT TOP (seqhdr=) OR FROM FIELDS #0 IN EACH LINE???
 
     geneNo   = 0
     strand   = '.'
@@ -259,20 +260,26 @@ def Convert_gff2cgc(gffFile,cgcFile):
     contig   = 'unknown'
     protein  = 'unknown'
 
-    p_contigLine = re.compile("# ")  #*** RESUME CODING HERE
+    p_contigLine = re.compile('seqhdr="(.*)"') 
+    p_comment    = re.compile("^#")
+    p_blank      = re.compile("^\s*%")
 
     GFF_H = open(gffFile,"r")
     CGC_H = open(cgcFile,"w")
 
-    CGC_H.write("%s%s\n" % ("# Custom gene calls reformatted from file ",customCalls))
-    CGC_H.write("%s%s\n" % ("Gene No.","Strand","LeftEnd","RightEnd","Length","Contig","Protein" ))
+    CGC_H.write("%s%s\n" % ("# Custom gene calls reformatted from file ",gffFile))
+    CGC_H.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % ("#Gene No.","Strand","LeftEnd","RightEnd","Length","Contig","Protein"))
 
-    for line in GFF_H.read().splitlines():
-        match_comment    = re.search(p_comment,line)
-        match_blank      = re.search(p_blank,line)
-        match_contigLine = re.search(p_contigLine,line)
+    fLines = GFF_H.read().splitlines()
+    for fLine in fLines:
+        match_comment    = re.search(p_comment,fLine)
+        match_blank      = re.search(p_blank,fLine)
+        match_contigLine = re.search(p_contigLine,fLine)
         if match_comment or match_blank:
-            pass
+            continue
+        if match_contigLine:
+            contig = match_contigLine.group(1)
+            continue
         fields    = line.split('\t')
         contig    = fields[0]  # contig as listed in user's genome fasta file
         source    = fields[1]  # gene caller or source (e.g., NCBI)
@@ -283,7 +290,14 @@ def Convert_gff2cgc(gffFile,cgcFile):
         strand    = fields[6]  # + or - 
         frame     = fields[7]
         attribute = fields[8]
-        CGC_H.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (contig,strand,leftEnd,rightEnd,length,geneName,attribute)) 
+
+        length = abs(int(rightEnd) - int(leftEnd))
+        # Assure that leftEnd < rightEnd, as per CGC convention, else swap
+        if int(rightEnd) < int(leftEnd):
+            temp     = leftEnd
+            leftEnd  = rightEnd
+            rightEnd = temp
+        CGC_H.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,leftEnd,rightEnd,length,contig,protein)) 
 
     GFF_H.close()
     CGC_H.close()
@@ -293,7 +307,7 @@ def Convert_cgc2gff(cgcFile,gffFile):
     p_dataLine = re.compile('^\d')   # data lines begin with a digit
 
     # Initialize gff fields and caller
-    seqid = '.'; source = '.'; type = 'cds'
+    seqid = '.'; source = '.'; seqType = 'cds'
     start = '0'; end = '0'; strand = '.'
     phase = '.'; attributes = '.'; score = '.'
     caller = 'unknown'
@@ -321,7 +335,7 @@ def Convert_cgc2gff(cgcFile,gffFile):
             else:
                 if PHATE_WARNINGS == 'True':
                     print("WARNING: phate_geneCall says, Unexpected strand:", strand)
-            GFF_H.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (seqid,source,type,start,end,strand,phase,attributes))
+            GFF_H.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (seqid,source,sesqType,start,end,strand,phase,attributes))
         elif match_caller:
             caller = match_caller.group(1)
 
@@ -345,7 +359,7 @@ if PRODIGAL_CALLS:
     command = prodigalPath + 'prodigal -q -i ' + fastaFileName + ' -o ' + outputFolder + 'prodigal.gff -f gff -p meta'
     systemCall(command)
 
-    prodigalPeptideFile = outputFolder + "prodigal.proteins.faa"
+    prodigalPeptideFile   = outputFolder + "prodigal.proteins.faa"
     prodigalPotentialFile = outputFolder + "prodigal.genes.potential"
 
     command = prodigalPath + 'prodigal -i ' + fastaFileName + ' -o ' + outputFolder + 'prodigal.genes.sco -f sco -p meta -d ' + prodigalPeptideFile + ' -s ' + prodigalPotentialFile
@@ -458,6 +472,7 @@ else:
 
 ########## CUSTOM ###########
 
+# Custom calls are provided by the user in modified gff format, and converted to cgc format by PhATE
 if DEBUG:
     logfile.write("%s\n" % ("Preparing to process CUSTOM calls"))
     logfile.write("%s%s\n" % ("CUSTOM_CALLS is ",CUSTOM_CALLS))
@@ -466,10 +481,16 @@ if DEBUG:
 
 if CUSTOM_CALLS:
     if PHATE_PROGRESS == 'True':
-        print("Genecall module says: reformatting custom calls.")
+        print("Genecall module says: custom calls need to be converted to cgc format.")
     if PHATE_MESSAGES == 'True':
         print("\n######## CUSTOM CALLS #########")
-    logfile.write("%s\n" % ("Processing CUSTOM CALLS"))
+    try:
+        Convert_gff2cgc(customCalls,customCallsCgc)
+        logfile.write("%s\n" % ("Completed converting custom calls gff file to cgc format."))
+    except:
+        logfile.write("%s%s%s\n" % ("ERROR in phate_genecallPhage.py in Covert_gff2cgc(), input files: ",customCalls,customCallsCgc))
+        print ("ERROR in phate_genecallPhage.py, running Convert_gff2cgc(), ", customCalls, customCallsCgc)
+    logfile.write("%s\n" % ("CUSTOM CALLS - need to be converted to cgc format."))
 
 ########## RESULTS ##########
 
@@ -516,6 +537,9 @@ if PHANOTATE_CALLS:
     systemCall('python ' + cgcPath + '/CGC_parser.py PHANOTATE ' + outputFolder + 'phanotateOutput.txt ' + outputFolder + 'phanotate.cgc')
 if CUSTOM_CALLS:
     callerCount += 1
+    if DEBUG:
+        print("Calling CGC_parser.py")
+        logfile.write("%s\n" % ("Calling CGC_parser.py"))
     systemCall('python ' + cgcPath + '/CGC_parser.py Custom ' + outputFolder + 'custom.gff ' + outputFolder + 'custom.cgc')
 
 logfile.write("%s%s\n" % ("callerCount is ",callerCount))
@@ -563,6 +587,6 @@ if PHANOTATE_CALLS:
 if CUSTOM_CALLS:
     cgcFile = outputFolder + 'custom'          + '.cgc'
     gffFile = outputFolder + 'phate_custom'    + '.gff'
-    Convert_cgc2gff(customCalls,customCallsCgc)
+    Convert_cgc2gff(cgcFile,gffFile)
 
 logfile.close()
