@@ -4,7 +4,7 @@
 #
 # Program Title:  multiPhate2.py (/multiPhate2/)
 #
-# Last Update:  30 December 2019
+# Last Update:  21 February 2020
 #
 # Description: Script multiPhate.py runs an annotation pipeline (phate_runPipeline.py) over any
 #    number of genomes specified in the user's input configuration file (multPhate.config). It then
@@ -25,8 +25,7 @@
 #         Lastly, it identifies a core proteome common among the users input genomes.
 #   
 # Programmer's notes:
-#   1. The phate_profile.py modules remains to be completed and tested.
-#   2. The phate_compare.py modules is currently under development.
+#   1. The phate_profile.py module remains to be fully tested.
 #
 # Usage:  python multiPhate.py myMultiPhate.config
 #    (see sample_multiPhate.config for how to create your configuration file)
@@ -64,7 +63,8 @@ CGC_MESSAGES_DEFAULT     = 'False'
 CGC_PROGRESS_DEFAULT     = 'False'
 CGP_WARNINGS_DEFAULT     = 'False'  # compareGeneProfiles codes
 CGP_MESSAGES_DEFAULT     = 'False'
-CGP_PROGRESS_DEFAULT     = 'False'
+CGP_PROGRESS_DEFAULT     = 'True'
+CGP_PROGRESS             = CGP_PROGRESS_DEFAULT
 
 #DEBUG = True     # Controls debug settings in this (local) code only
 DEBUG = False    # Leave False, unless debugging
@@ -166,6 +166,9 @@ customHmmName            = 'unknown'
 customHmmDBname          = 'unknown' 
 customHmmDBpath          = 'pathNotSet' 
 
+# parameters controlling comparative genomics processing
+runCGP                   = 'false'   # run the CompareGeneProfiles code
+
 # Constants; defaults will apply if not specified in config file
 # Leave all this stuff alone! 
 
@@ -174,12 +177,15 @@ BASE_DIR_DEFAULT            = os.path.join(os.getcwd(),"")    # Ex: /Home/MyName
 DATABASE_DIR_DEFAULT        = BASE_DIR_DEFAULT + "Databases/" 
 SOFTWARE_DIR_DEFAULT        = BASE_DIR_DEFAULT + "ExternalCodes/" 
 PIPELINE_INPUT_DIR_DEFAULT  = BASE_DIR_DEFAULT + "PipelineInput/"    
-PIPELINE_OUTPUT_DIR_DEFAULT = BASE_DIR_DEFAULT + "PipelineOutput/"   
+PIPELINE_OUTPUT_DIR_DEFAULT = BASE_DIR_DEFAULT + "PipelineOutput/"  
+CGP_DIR_DEFAULT             = BASE_DIR_DEFAULT + "CompareGeneProfiles/"
 
 PHATE_PIPELINE_CODE         = 'phate_runPipeline.py' # The annotaton engine
 GENE_FILE                   = 'gene.fnt'             # default filename where gene sequences are written, per genome's PipelineOutput/
 PROTEIN_FILE                = 'protein.faa'          # default filename where protein sequences are written, per genome's PipelineOutput/ 
- 
+CGP_CODE_NAME               = 'CGPMdriver.py'        # top-level, driver program for running CompareGeneProfiles pipeline
+CGP_CODE                    = CGP_DIR_DEFAULT + CGP_CODE_NAME # absolute path of top-level, driver for CompareGeneProfiles pipeline
+
 # naming the custom gene caller
 # paths to subordinate codes; '' if installed globally (e.g., via conda)
 GENEMARKS_HOME              = ''             # Available via license	 
@@ -209,9 +215,11 @@ HIT_COUNT_MAX               = 100 #
 # already have installed on your system. Parameters that differ from defaults will be re-assigned based on information
 # provided in the users' multiPhate.config file.
 
-PIPELINE_INPUT_DIR                          = BASE_DIR_DEFAULT + PIPELINE_INPUT_DIR_DEFAULT   # Default
-PIPELINE_OUTPUT_DIR                         = BASE_DIR_DEFAULT + PIPELINE_OUTPUT_DIR_DEFAULT  # Default
+PIPELINE_INPUT_DIR                          = PIPELINE_INPUT_DIR_DEFAULT   # Default
+PIPELINE_OUTPUT_DIR                         = PIPELINE_OUTPUT_DIR_DEFAULT  # Default
 PHATE_BASE_DIR                              = BASE_DIR_DEFAULT
+CGP_DIR                                     = CGP_DIR_DEFAULT
+os.environ["CGP_CODE_BASE_DIR"]             = CGP_DIR
 os.environ["PHATE_BASE_DIR"]                = BASE_DIR_DEFAULT  
 os.environ["PHATE_DATABASE_DIR"]            = DATABASE_DIR_DEFAULT
 os.environ["PHATE_SOFTWARE_DIR"]            = SOFTWARE_DIR_DEFAULT
@@ -348,6 +356,9 @@ CODE_BASE          = "multiPhate"
 CODE               = CODE_BASE + ".py"
 CONFIG_FILE        = "multiPhate.config"     # by default, but user should name their own, ending in ".config"
 SAMPLE_CONFIG_FILE = "sample_" + CONFIG_FILE # Sample config file; user should copy, then modify. 
+#CGP_CONFIG_FILE    = CGP_DIR + "cgpNxN.config"
+CGP_CONFIG_FILE    = PIPELINE_OUTPUT_DIR + "cgpNxN.config"
+print("Line 361 - CGP_CONFIG_FILE:", CGP_CONFIG_FILE)
 
 # HELP STRINGS
 
@@ -1711,14 +1722,50 @@ for jsonFile in jsonList:
     command = "python " + PHATE_BASE_DIR + PHATE_PIPELINE_CODE + " " + jsonFile 
     if not HPC:
         LOG.write("%s%s\n" % ("Command is ",command))
-        LOG.write("%s%s\n" % ("Begin processing at ",datetime.datetime.now()))
+        LOG.write("%s%s\n" % ("Begin PhATE processing at ",datetime.datetime.now()))
     result = os.system(command)
     if not HPC:
-        LOG.write("%s%s\n" % ("End processing at ",datetime.datetime.now()))
+        LOG.write("%s%s\n" % ("End PhATE processing at ",datetime.datetime.now()))
 
 # Run the comparative genomics module to compare proteoms among the user's specified genomes
+GFF_OUTFILE = "phate_sequenceAnnotation_main.gff"
+if runCGP and not translateOnly and len(genomeList) > 1:
+    if not HPC:
+        LOG.write("%s%s\n" % ("Starting CompareGeneProfiles at ",datetime.datetime.now()))
+    if CGP_PROGRESS:
+        print("Starting CompareGeneProfiles...")
 
-pass
+    # Prepare the configuration file for input to CGP driver code
+    cgpOutputDir = PIPELINE_OUTPUT_DIR 
+    try:
+        print("Opening CGP_CONFIG_FILE:", CGP_CONFIG_FILE)
+        CGP_CONFIG_H = open(CGP_CONFIG_FILE,"w")
+        # Print output directory to config file
+        CGP_CONFIG_H.write("%s\n" % (cgpOutputDir))
+        for genome in genomeList:
+            genomeFile = PIPELINE_INPUT_DIR  + genome["genomeFile"]
+            gffFile    = PIPELINE_OUTPUT_DIR + genome["outputSubdir"] + GFF_OUTFILE 
+            # Print data line for each genome
+            dataLine = genomeFile + ' ' + gffFile + '\n'
+            CGP_CONFIG_H.write("%s\n" % (dataLine))
+        CGP_CONFIG_H.close()
+    except:
+        if not HPC:
+            LOG.write("%s%s\n" % ("Error preparing CompareGeneProfiles configuration file,", CGP_CONFIG_FILE))
+        print ("multiPhATE says, ERROR preparing CompareGeneProfiles configuration file")
+
+    # Run CompareGeneProfiles
+    try:
+        command = "python " + CGP_CODE + ' ' + CGP_CONFIG_FILE
+        print("multiPhate.py says, command is:", command)
+        result = os.system(command)
+    except:
+        if not HPC:
+            LOG.write("%s\n" % ("ERROR: Problem running CompareGeneProfiles"))
+        print ("multiPhATE says, ERROR running CompareGeneProfiles")
+
+    if CGP_PROGRESS:
+        print("Competed CompareGeneProfiles.")
 
 ##### CLEAN UP
 
