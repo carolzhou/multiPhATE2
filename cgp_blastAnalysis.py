@@ -37,9 +37,9 @@ import copy
 import os
 import subprocess
 from xml.etree.ElementTree import ElementTree as ET
-import phate_fastaSequence
-import phate_genomeSequence
-import phate_annotation
+import cgp_fastaSequence as fastaSequence
+import cgp_genomeSequence as genomeSequence
+import cgp_annotation as annotation
 
 # Get environment variables (set in phate_runPipeline.py)
 
@@ -96,7 +96,7 @@ XML = 5
 LIST = 7
 
 # templates 
-annotation = phate_annotation.annotationRecord()
+annotation = annotation.annotationRecord()
 
 class multiBlast(object):
 

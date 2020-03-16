@@ -1,6 +1,7 @@
 ###############################################################
-# Module: phate_genomeSequence.py
+# Module: cgp_genomeSequence.py
 # Programmer: Carol L. Ecale Zhou
+# Last Update: 05 March 2020
 # 
 # Module comprising data structures for organizing genome information
 # Note:  EMBOSS messes with fasta headers; therefore, I am putting minimal info in the header and using only '/'
@@ -35,8 +36,10 @@
 # THIS CODE IS COVERED BY THE BSD LICENSE. SEE INCLUDED FILE BSD.PDF FOR DETAILS.
 
 import string
-import phate_fastaSequence
-import phate_annotation
+from Bio.Seq import Seq
+from Bio.Alphabet import generic_dna, generic_protein
+import cgp_fastaSequence as fastaSequence
+import cgp_annotation as annotation
 import re, os, copy
 import subprocess
  
@@ -59,13 +62,12 @@ DEBUG            = False
 GFF_COMMENT = "##gff-version 3"
 
 # Templates
-annotationObj = phate_annotation.annotationRecord()
-fastaObj      = phate_fastaSequence.fasta()
+annotationObj = annotation.annotationRecord()
+fastaObj      = fastaSequence.fasta()
 
 # Reverse complement
 #complements = string.maketrans('acgtrymkbdhvACGTRYMKBDHV', 'tgcayrkmvhdbTGCAYRKMVHDB') # Python 2
-complements = str.maketrans('acgtrymkbdhvACGTRYMKBDHV', 'tgcayrkmvhdbTGCAYRKMVHDB')     # Python 3
-
+#complements = str.maketrans('acgtrymkbdhvACGTRYMKBDHV', 'tgcayrkmvhdbTGCAYRKMVHDB')     # Python 3
 
 class genome(object):
 
@@ -78,10 +80,10 @@ class genome(object):
         self.name                    = "unknown" # common name (e.g., Drosophila)
         self.genomeName              = "unkknown" # more specific name (e.g., 'Yp phage YP123')
         self.species                 = "unknown" # Latin name (e.g., Drosophila melanogaster)
-        self.annotationList          = []    # using phate_annotation.py classes
-        self.contigSet               = phate_fastaSequence.multiFasta()
-        self.geneSet                 = phate_fastaSequence.multiFasta()
-        self.proteinSet              = phate_fastaSequence.multiFasta()
+        self.annotationList          = []    # using cgp_annotation.py classes
+        self.contigSet               = fastaSequence.multiFasta()
+        self.geneSet                 = fastaSequence.multiFasta()
+        self.proteinSet              = fastaSequence.multiFasta()
         self.contigSet.moleculeType  = 'contig'
         self.contigSet.sequenceType  = 'nt'
         self.geneSet.moleculeType    = 'gene'
@@ -277,8 +279,10 @@ class genome(object):
 
                 # Reverse complement the string if on reverse strand
                 if newGene.strand == '-':
-                    reverseComplement = newGene.sequence.translate(complements)[::-1] 
-                    newGene.sequence = reverseComplement 
+                    #reverseComplement = newGene.sequence.translate(complements)[::-1] 
+                    #newGene.sequence = reverseComplement 
+                    tempGene = Seq(newGene.sequence)
+                    newGene.sequence = tempGene.reverse_complement()
 
                 # Create new protein object and fill data
                 newProtein = copy.deepcopy(fastaObj)

@@ -8,7 +8,7 @@
 # spaces in the sequence are removed.
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last update: 02 June 2014
+# Last update: 04 March 2020
 #
 #############################################
 '''
@@ -18,7 +18,7 @@ import sys
 import os
 import re
 
-import fastaSequence
+import cpg_fastaSequence as fastaSequence
 
 ##### FILES
 

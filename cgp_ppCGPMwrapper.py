@@ -5,7 +5,7 @@
 # cgp_ppCGPMwrapper.py
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last update:  25 March 2014
+# Last update:  04 March 2020
 #
 # This script has no required input files, but should be run in the
 # directory contining a set of "Results_" directories containing output

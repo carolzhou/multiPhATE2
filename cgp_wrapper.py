@@ -5,7 +5,7 @@
 # CGPMwrapper.py (/multiPhATE2/)
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last Update: 25 February 2020
+# Last Update: 04 March 2020
 #
 # This script uses a config file to run compareGeneProfiles.py
 # using the designated input files.  Specifically, the config file
@@ -46,8 +46,6 @@
 # There is one set of the above input parameters for each comparison
 # to be run.
 #
-# Programmer:  Carol L. Ecale Zhou
-# Last update: 18 June 2014
 #
 #################################################################
 '''
@@ -58,8 +56,9 @@ import time
 from subprocess import call
 
 ##### CONFIGURABLES
-CODE_BASE_DIR = os.environ["CODE_BASE_DIR"]
-COMPARE_GENE_PROFILES_CODE = os.path.join(CODE_BASE_DIR, "compareGeneProfiles_main.py")  # use current stable version or modify constant
+CODE_BASE_DIR = os.environ["CGP_CODE_BASE_DIR"]
+PHATE_PIPELINE_OUTPUT_DIR = os.environ["PHATE_PIPELINE_OUTPUT_DIR"]
+COMPARE_GENE_PROFILES_CODE = os.path.join(CODE_BASE_DIR, "cgp_compareGeneProfiles_main.py")  # use current stable version or modify constant
 
 #### FILES
 
@@ -76,12 +75,12 @@ HELP_STRING = "This code is a wrapper for conveniently running compareGeneProfil
 
 INPUT_STRING = "Prepare your config file to specify the following information:\nFor each comparison, list the base directory, genome #1, genome #2, annotation file #1, and annotation file #2, each on a line of text, and skip one line between comparison sets.\nRun this wrapper from the appropriate directory!\ne.g., /home/zhou4/BacGenomeStudies/PAK1/CompareGeneProfiles/Comparisons/\nFor a sample config file, look at configFile_sample.\nNote:  You may prefer to automatically generate the config file using script constructConfigFile.py\n"
 
-USAGE_STRING = "Usage:  CGPMwrapper.py <userDirectory>"
+USAGE_STRING = "Usage:  cgp_wrapper.py <userDirectory>"
 
 ##### Variables
 
 projectDirectory = ""  # user's project directory, passed by calling code (i.e., CGPMdriver.py)
-configFile = "CGPMwrapper.config"  # needs to be prepended with user's project directory
+configFile = "cgp_wrapper.config"  # needs to be prepended with user's project directory
 
 ##### Get command-line arguments
 
@@ -89,27 +88,27 @@ argCount = len(sys.argv)
 if argCount in ACCEPTABLE_ARG_COUNT:
     match = re.search("help", sys.argv[1].lower())
     if match:
-        print HELP_STRING
+        print (HELP_STRING)
         exit(0)
     match = re.search("input", sys.argv[1].lower())
     match2 = re.search("config", sys.argv[1].lower())  # note: config file may have 'input' string in filename
     if match and not match2:
-        print INPUT_STRING
+        print (INPUT_STRING)
         exit(0)
     match = re.search("usage", sys.argv[1].lower())
     if match:
-        print USAGE_STRING
+        print (USAGE_STRING)
         exit(0)
     else:
         projectDirectory = sys.argv[1]
         LOGFILE.write("%s%s\n" % ("Project directory is ", projectDirectory))
 else:
-    print USAGE_STRING
+    print (USAGE_STRING)
     exit(0)
 
 ##### Parse config file; construct lists of BASE_DIRS and FILES
 
-configFile = os.path.join(projectDirectory, configFile) # prepend the directory path to user's directory
+configFile = os.path.join(PHATE_PIPELINE_OUTPUT_DIR, configFile) # prepend the directory path to user's directory
 LOGFILE.write("%s%s\n" % ("Parsing configFile: ",configFile))
 CONFIG_FILE = open(configFile,"r")
 
@@ -130,7 +129,8 @@ fLines = CONFIG_FILE.read().splitlines()
 numLines = len(fLines)
 LOGFILE.write("%s%s\n" % ("Number of lines in config file is ",numLines))
 nextFiles = copy.deepcopy(inFiles)
-for i in xrange(0, numLines):
+#for i in xrange(0, numLines):
+for i in list(range(0, numLines)):
     if i%7 == 0:
         nextFiles["dir"] = fLines[i]
     elif i%7 == 1:
@@ -153,7 +153,7 @@ LOGFILE.write("%s%s\n" % ("inFileList is:",inFileList))
 
 currentTime = int(time.time())
 LOGFILE.write("%s%s\n" % ("Executing compareGeneProfiles_main.py at ",currentTime))
-print "Executing compareGeneProfiles_main.py....\n"
+print ("Executing compareGeneProfiles_main.py....\n")
 count = 0
 for fileSet in inFileList:
     count += 1
@@ -172,7 +172,7 @@ for fileSet in inFileList:
 
 currentTime = int(time.time())
 LOGFILE.write("%s%s%s%s\n" % ("Execution complete. ",count," jobs completed at ",currentTime))
-print "Execution complete.", count, "jobs completed."
+print ("Execution complete.", count, "jobs completed.")
 
 ##### Clean up
 

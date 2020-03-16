@@ -1,5 +1,5 @@
 #############################################################
-# Module: phate_fastaSequence.py
+# Module: cgp_fastaSequence.py
 #
 # Programmer: Carol L. Ecale Zhou
 # 
@@ -64,7 +64,9 @@
 # THIS CODE IS COVERED BY THE BSD LICENSE. SEE INCLUDED FILE BSD.PDF FOR DETAILS.
 
 import re, string
-import phate_annotation
+from Bio.Seq import Seq
+from Bio.Alphabet import generic_dna, generic_protein
+import cgp_annotation as annotation
 from Bio import SeqIO  
 import os
 
@@ -339,9 +341,11 @@ class fasta(object):
 
     def reverseComplement(self):
         if self.sequenceType.lower() == "nt":
-            complements = string.maketrans('acgtrymkbdhvACGTRYMKBDHV','tgcayrkmvhdbTGCAYRKMVHDB')
-            revCompl = self.sequence.translate(complements)[::-1]
-            self.sequence = revCompl
+            #complements = string.maketrans('acgtrymkbdhvACGTRYMKBDHV','tgcayrkmvhdbTGCAYRKMVHDB')
+            #revCompl = self.sequence.translate(complements)[::-1]
+            #self.sequence = revCompl
+            tempSeq = Seq(self.sequence)
+            self.sequence = tempSeq.reverse_complement()
             return True
         return False
 
@@ -458,32 +462,56 @@ class fasta(object):
         else:
             FILE_HANDLE.write("%s\n" % ("Sequence too long to print. See file."))
 
-    def printData2file_GFF(self,FILE_HANDLE,feature):
+    def printData2file_GFF(self,FILE_HANDLE,feature,contigName):
+        # Note: pragmas are printed by calling method (ex: phate_genomeSequence/printGenomeData2file_GFF)
         GFF_annotationString = ''
-        FILE_HANDLE.write("%s\t" % (GFF_SOURCE)) 
-        FILE_HANDLE.write("%s\t" % (feature))    # feature type
-        if self.moleculeType == 'peptide' or self.moleculeType == 'protein' or self.sequenceType == 'aa':
-            # use parent's (ie, gene's) start/end
-            FILE_HANDLE.write("%s\t" % (self.parentStart))
-            FILE_HANDLE.write("%s\t" % (self.parentEnd))
-        else:  # use gene start/end
-            FILE_HANDLE.write("%s\t" % (self.start)) 
-            FILE_HANDLE.write("%s\t" % (self.end)) 
-        FILE_HANDLE.write("%s\t" % (GFF_SCORE)) 
-        FILE_HANDLE.write("%s\t" % (self.strand)) 
-        FILE_HANDLE.write("%s\t" % (GFF_PHASE)) 
+        GFF_type = "unknown"
         FIRST = True
+
+        # Construct data fields
+        GFF_parentName = self.parentName        # column 1
+        GFF_source     = GFF_SOURCE             # column 2
+
+        if self.moleculeType == 'peptide' or self.moleculeType == 'protein' or self.sequenceType == 'aa' or feature == 'CDS':
+            GFF_type   = "CDS"                  # column 3
+            GFF_start  = str(self.parentStart)  # column 4
+            GFF_end    = str(self.parentEnd)    # column 5
+        elif self.moleculeType == 'gene' or self.sequenceType == 'nt' or feature == 'gene':
+            GFF_type   = "gene"                 # column 3
+            GFF_start  = str(self.start)        # colunn 4
+            GFF_end    = str(self.end)          # column 5
+
+        GFF_score      = GFF_SCORE              # column 6
+        GFF_strand     = self.strand            # column 7
+        GFF_phase      = GFF_PHASE              # column 8
+
+        # Last one is complicated...
+        # Column 9 has many sub-fields, starting with sequence identifier and parent
+        if self.moleculeType == 'peptide' or self.moleculeType == 'protein' or self.sequenceType == 'aa':
+            GFF_identifier = "ID=" + self.header + "_cds"
+        elif self.moleculeType == 'gene' or self.sequenceType == 'nt':
+            GFF_identifier = "ID=" + self.header
+
+        # Write 1st 8 columns of data to file
+        FILE_HANDLE.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t" % (contigName,GFF_source, GFF_type,GFF_start,GFF_end,GFF_score,GFF_strand,GFF_phase))
+
+        # Write identifier to column 9
+        FILE_HANDLE.write("%s%s" % (GFF_identifier, ';'))
+
+        # Column 9 has many sub-fields, continuing with the annotation homologies
+        count = 1
         if len(self.annotationList) > 0:
             for annotation in self.annotationList:
-                if FIRST:
+                annotNo = "annot" + str(count) + '='
+                if fIRST:
+                    FILE_HANDLE.write("%s" % (annotNo))
                     annotation.returnGFFannotationRecord(FILE_HANDLE)
                     FIRST = False
                 else:
-                    FILE_HANDLE.write("%s" % ('; '))
+                    FILE_HANDLE.write("%s%s" % ('; ',annotNo))
                     annotation.returnGFFannotationRecord(FILE_HANDLE)
-        else:
-            FILE_HANDLE.write("%s" % ('.'))
-        FILE_HANDLE.write("\n")
+                count += 1
+        FILE_HANDLE.write("\n" % ())
 
     #*** Fill out this method as printAll() above
     def printAll2file(self,FILE_HANDLE):  # Dump everything: useful for testing  

@@ -4,7 +4,8 @@
 #
 # Program Title:  multiPhate2.py (/multiPhate2/)
 #
-# Last Update:  21 February 2020
+# Programmer:  Carol L. Ecale Zhou
+# Last Update:  04 March 2020
 #
 # Description: Script multiPhate.py runs an annotation pipeline (phate_runPipeline.py) over any
 #    number of genomes specified in the user's input configuration file (multPhate.config). It then
@@ -183,7 +184,7 @@ CGP_DIR_DEFAULT             = BASE_DIR_DEFAULT + "CompareGeneProfiles/"
 PHATE_PIPELINE_CODE         = 'phate_runPipeline.py' # The annotaton engine
 GENE_FILE                   = 'gene.fnt'             # default filename where gene sequences are written, per genome's PipelineOutput/
 PROTEIN_FILE                = 'protein.faa'          # default filename where protein sequences are written, per genome's PipelineOutput/ 
-CGP_CODE_NAME               = 'CGPMdriver.py'        # top-level, driver program for running CompareGeneProfiles pipeline
+CGP_CODE_NAME               = 'cgp_driver.py'        # top-level, driver program for running CompareGeneProfiles pipeline
 CGP_CODE                    = CGP_DIR_DEFAULT + CGP_CODE_NAME # absolute path of top-level, driver for CompareGeneProfiles pipeline
 
 # naming the custom gene caller
@@ -356,7 +357,6 @@ CODE_BASE          = "multiPhate"
 CODE               = CODE_BASE + ".py"
 CONFIG_FILE        = "multiPhate.config"     # by default, but user should name their own, ending in ".config"
 SAMPLE_CONFIG_FILE = "sample_" + CONFIG_FILE # Sample config file; user should copy, then modify. 
-#CGP_CONFIG_FILE    = CGP_DIR + "cgpNxN.config"
 CGP_CONFIG_FILE    = PIPELINE_OUTPUT_DIR + "cgpNxN.config"
 print("Line 361 - CGP_CONFIG_FILE:", CGP_CONFIG_FILE)
 
@@ -1746,7 +1746,7 @@ if runCGP and not translateOnly and len(genomeList) > 1:
             genomeFile = PIPELINE_INPUT_DIR  + genome["genomeFile"]
             gffFile    = PIPELINE_OUTPUT_DIR + genome["outputSubdir"] + GFF_OUTFILE 
             # Print data line for each genome
-            dataLine = genomeFile + ' ' + gffFile + '\n'
+            dataLine = genomeFile + ' ' + gffFile
             CGP_CONFIG_H.write("%s\n" % (dataLine))
         CGP_CONFIG_H.close()
     except:

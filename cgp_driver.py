@@ -2,17 +2,16 @@
 
 #######################################################
 #
-# CGPMdriver.py - command-line version 1.0.0 (/multiPhATE2/)
+# cgp_driver.py - command-line version 1.0.0 (/multiPhATE2/)
 #
 # Programmer:  Carol L. Ecale Zhou
-#
-# Last update: 21 February 2020
+# Last update: 04 March 2020
 #
 # This script inputs a config file, cgpNxN.config, which lists the
 # base directory containing input fasta and annotation files for
 # processing through compareGeneProfiles_main.py.
 #
-# CGPMdriver.py reads the input config file and handles all downstream
+# cgp_driver.py reads the input config file and handles all downstream
 # processing of the CompareGeneProfiles pipeline. Overall the pipeline
 # processes are as follows:
 # 0) Take as input, file cgpNxN.config, then...
@@ -42,8 +41,8 @@ from subprocess import call
 
 ##### CONSTANTS and CONFIGURABLES
 CODE_BASE_DIR = os.environ["PHATE_BASE_DIR"] + "CompareGeneProfiles/"     # Location of this and subordinate codes
-CONSTRUCT_CONFIG_FILE_CODE = os.path.join(CODE_BASE_DIR, "constructConfigFile.py")
-COMPARE_GENE_PROFILES_WRAPPER_CODE = os.path.join(CODE_BASE_DIR, "CGPMwrapper.py")
+CONSTRUCT_CONFIG_FILE_CODE = os.path.join(CODE_BASE_DIR, "cgp_constructConfigFile.py")
+COMPARE_GENE_PROFILES_WRAPPER_CODE = os.path.join(CODE_BASE_DIR, "cgp_wrapper.py")
 
 # Set environmental variables for CGP's dependent codes
 os.environ["CGP_CODE_BASE_DIR"] = CODE_BASE_DIR
@@ -54,7 +53,7 @@ HELP_STRING = "This code is a wrapper for running the compareGeneProfiles pipeli
 
 INPUT_STRING = "Provide as input the fully qualified directory path to the users project directory.\nPrepare your config file to specify the following information:\nLine 1: The fully qualified path of the project directory\nLines 2-n: name of each genome and its corresponding annotation file, separated by a single space,\nprepended with the name of the subdirectory for this genome-annotation pair.\n"
 
-USAGE_STRING = "Usage:  CGPMdriver.py project_directory_pathname"
+USAGE_STRING = "Usage:  cgp_driver.py project_directory_pathname"
 
 ##### Variables
 
@@ -62,13 +61,13 @@ userProjectDir = os.environ["PHATE_PIPELINE_OUTPUT_DIR"] # This is where CGP out
 
 #### FILES
 
-logFile = os.path.join(CODE_BASE_DIR, "CGPMdriver.log")
+logFile = os.path.join(CODE_BASE_DIR, "cgp_driver.log")
 LOGFILE = open(logFile,"a")
 LOGFILE.write("%s\n" % ("==================================="))
 today = os.popen('date')
 LOGFILE.write("%s%s\n" % ("Begin log file at ",today.read()))
 in_configFilename    = "cgpNxN.config"
-cgpm_configFilename = "CGPMwrapper.config"
+cgpm_configFilename = "cgp_wrapper.config"
 cgpm_configFile = ""
 
 ##### Get command-line arguments

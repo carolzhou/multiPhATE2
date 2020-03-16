@@ -125,9 +125,11 @@ class fasta(object):
         self.customHeader = ""            # a customized header; could be anything, but written for pVOGs
         self.name = "none"                # name will be geneCaller + number, if gene|protein from gene call
         self.sequence = ""                # store sequence as continuous lower-case string, sans numbers, white space
+        self.sequenceLength = 0           # length of sequence
         self.sequenceType = "unknown"     # "nt" or "aa"; not "gene" or "dna" or the like
         self.moleculeType = "unknown"     # eg, 'contig', 'peptide', 'protein', or 'gene'
         self.parentSequence = ""          # eg, for gene, the contig that the gene is on
+        self.parentSequenceLength = 0     # need this for passing info to method for printing GFF output; 
         self.truncation = 15              # number of characters (N) in header to retain, by default
         self.annotationList = []          # list of annotationRecord objects 
         self.paralogList = []             # list of paralog objects (header + blast hit)
@@ -177,6 +179,11 @@ class fasta(object):
                 self.sequenceType = geneData["type"]
             if "parentSequence" in list(geneData.keys()):
                 self.parentSequence = geneData["parentSequence"]
+                if self.parentSequenc != '':
+                    self.parentSequenceLength = len(self.parentSequence)
+                else:
+                    self.parentSequenceLength = -99   #***
+                    print("WARNING: in phage_fastaSequence, sequence not entered for parent")
             if "parentName" in list(geneData.keys()):
                 self.parentName = geneData["parentName"]
             if "parentStart" in list(geneData.keys()):
@@ -185,6 +192,7 @@ class fasta(object):
                 self.parentEnd = geneData["parentEnd"]
             if "order" in list(geneData.keys()):
                 self.order = geneData["order"]
+            self.moleculeType = 'gene'
             return True
         else:
             return False
@@ -458,32 +466,54 @@ class fasta(object):
         else:
             FILE_HANDLE.write("%s\n" % ("Sequence too long to print. See file."))
 
-    def printData2file_GFF(self,FILE_HANDLE,feature):
+    def printData2file_GFF(self,FILE_HANDLE,feature,contigName):
+        # Note: pragmas are printed by calling method (ex: phate_genomeSequence/printGenomeData2file_GFF)
+
         GFF_annotationString = ''
-        FILE_HANDLE.write("%s\t" % (GFF_SOURCE)) 
-        FILE_HANDLE.write("%s\t" % (feature))    # feature type
-        if self.moleculeType == 'peptide' or self.moleculeType == 'protein' or self.sequenceType == 'aa':
-            # use parent's (ie, gene's) start/end
-            FILE_HANDLE.write("%s\t" % (self.parentStart))
-            FILE_HANDLE.write("%s\t" % (self.parentEnd))
-        else:  # use gene start/end
-            FILE_HANDLE.write("%s\t" % (self.start)) 
-            FILE_HANDLE.write("%s\t" % (self.end)) 
-        FILE_HANDLE.write("%s\t" % (GFF_SCORE)) 
-        FILE_HANDLE.write("%s\t" % (self.strand)) 
-        FILE_HANDLE.write("%s\t" % (GFF_PHASE)) 
+        GFF_type = "unknown"
         FIRST = True
+
+        # Construct data fields
+        GFF_parentName = self.parentName         # column 1
+        GFF_source     = GFF_SOURCE              # column 2
+
+        if self.moleculeType == 'peptide' or self.moleculeType == 'protein' or self.sequenceType == 'aa' or feature == 'CDS':
+            GFF_type    = "CDS"                  # column 3
+            GFF_start   = str(self.parentStart)  # column 4
+            GFF_end     = str(self.parentEnd)    # column 5
+        elif self.moleculeType == 'gene' or self.sequenceType == 'nt' or feature == 'gene':
+            GFF_type    = "gene"                 # column 3
+            GFF_start   = str(self.start)        # column 4
+            GFF_end     = str(self.end)          # column 5
+
+        GFF_score       = GFF_SCORE              # column 6
+        GFF_strand      = self.strand            # column 7
+        GFF_phase       = GFF_PHASE              # column 8
+
+        # Last one is complicated...
+        # Column 9 has many sub-fields, starting with sequence identifier and parent
+        if self.moleculeType == 'peptide' or self.moleculeType == 'protein' or self.sequenceType == 'aa':
+            GFF_identifier = "ID=" + self.header + "_cds"
+        elif self.moleculeType == 'gene' or self.sequenceType == 'nt':
+            GFF_identifier = "ID=" + self.header
+
+        # Write 1st 8 columns of data to file
+        FILE_HANDLE.write("%s%s" % (GFF_identifier, ';'))
+
+        # Column 9 has many sub-fields, continuing with the annotation homologies
+        count = 1
         if len(self.annotationList) > 0:
             for annotation in self.annotationList:
+                annotNo = "annot" + str(count) + '='
                 if FIRST:
+                    FILE_HANDLE.write("%s" % (annotNo))
                     annotation.returnGFFannotationRecord(FILE_HANDLE)
                     FIRST = False
                 else:
-                    FILE_HANDLE.write("%s" % ('; '))
+                    FILE_HANDLE.write("%s%s" % ('; ',annotNo))
                     annotation.returnGFFannotationRecord(FILE_HANDLE)
-        else:
-            FILE_HANDLE.write("%s" % ('.'))
-        FILE_HANDLE.write("\n")
+                count += 1
+            FILE_HANDLE.write("\n" % ())
 
     #*** Fill out this method as printAll() above
     def printAll2file(self,FILE_HANDLE):  # Dump everything: useful for testing  

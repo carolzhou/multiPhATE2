@@ -491,15 +491,20 @@ class genome(object):
         FILE_HANDLE.write("%s\n" % (GFF_COMMENT))
         print("There are", len(self.geneSet.fastaList), "genes, and", len(self.proteinSet.fastaList), "proteins")
         print("Writing data to GFF file")
-        #for gene in self.geneSet.fastaList:
-        #    gene.printData2file_GFF(FILE_HANDLE,'gene')
-        #for protein in self.proteinSet.fastaList:
-        #    protein.printData2file_GFF(FILE_HANDLE,'CDS')
         #*** NOTE: The following code assumes that the list of proteins corresponds precisely to
         #*** the list of genes.  Oh, for the want of a pointer!!!
+
+        lastContig = "notAname"; nextContig = ""
         for i in range(0, len(self.geneSet.fastaList)-1):
-            self.geneSet.fastaList[i].printData2file_GFF(FILE_HANDLE,'gene')
-            self.proteinSet.fastaList[i].printData2file_GFF(FILE_HANDLE,'CDS')
+            nextContig = self.geneSet.fastaList[i].parentName
+            if lastContig != nextContig:
+                contig = self.geneSet.fastaList[i].parentName
+                end    = self.geneSet.fastaList[i].parentSequenceLength
+                FILE_HANDLE.write("%s%s%s%s\n" % ("##sequence-region,contig ",contig,' 0 ',str(end)))
+                lastContig = nextContig
+            # Print data lines
+            self.geneSet.fastaList[i].printData2file_GFF(FILE_HANDLE,'gene',contig)
+            self.proteinSet.fastaList[i].printData2file_GFF(FILE_HANDLE,'CDS',contig)
 
     def printAll(self):
         print("Contigs =====================================================")

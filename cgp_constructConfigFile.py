@@ -25,7 +25,7 @@
 # and there is a single space preceeding the gff file.
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last update: 21 February 2020
+# Last update: 04 March 2020
 #
 #################################################################
 '''
@@ -105,11 +105,13 @@ LOGFILE.write("%s%s\n" % ("Reading names of genome and annotation files and writ
 print ("Writing output config file,",outFile) 
 jobNumber = 0  # i.e., comparison number
 FIRST = True
-for i in xrange(1, len(fLines)):
+#for i in xrange(1, len(fLines)):
+for i in list(range(1, len(fLines))):
     print ("i is", i)
     (genome1,annotation1) = fLines[i].split(' ')
     print ("genome1 is", genome1)
-    for j in xrange(i+1, len(fLines)):
+    #for j in xrange(i+1, len(fLines)):
+    for j in list(range(i+1, len(fLines))):
         jobNumber += 1 
         print ("jobNumber is", jobNumber)
         resultDir = baseDir + '/c' + str(jobNumber)

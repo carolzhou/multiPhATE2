@@ -6,7 +6,7 @@
 # queryCGPMresults.py
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last update:  08 September 2014
+# Last update:  04 March 2020
 #
 #################################################################
 '''

@@ -1,8 +1,8 @@
 ###########################################################
-# Module: phate_annotation.py
+# Module: cgp_annotation.py
 # Programmer: Carol L. Ecale Zhou
 #
-# Latest update: 2 January 2020
+# Latest update: 04 March 2020
 #
 # Description: Module containing classes and methods for representing annotation results from various sources 
 #
@@ -435,7 +435,7 @@ class annotationRecord(object):
         pfamList   = []; uniprotList     = []; koList    = [] # hold specific annotations
         figList    = []
         annotationString = "" # string containing all dbxref annotations found
-        annotation = ""
+        annotation_item = ""
 
         if self.name == "" or self.name == "none":
             if PHATE_WARNINGS == 'True':
@@ -490,8 +490,8 @@ class annotationRecord(object):
         if DEBUG: 
             print("dbxrefList:", dbxrefList)
 
-        for annotation in dbxrefList:
-            nextAnnot = ' | ' + annotation
+        for annotation_item in dbxrefList:
+            nextAnnot = ' | ' + annotation_item
             annotationString += nextAnnot
         self.description = annotationString
 
