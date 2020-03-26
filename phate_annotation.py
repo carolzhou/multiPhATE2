@@ -36,8 +36,8 @@
 
 import re, os, subprocess
 
-#DEBUG = True
-DEBUG = False
+DEBUG = True
+#DEBUG = False
 
 p_comment = re.compile('^#')
 
@@ -94,7 +94,7 @@ class annotationRecord(object):
             "fileName" : "",   # PSAT output file
             }
         self.psatOutDir = ""   # need to set
-        self.annotationSTring = ""      # used to construct a summary of annotation(s) for GFF output
+        self.annotationString = ""      # used to construct a summary of annotation(s) for GFF output
 
     def addPVOGid2list(self,pVOG):
         self.pVOGlist.append(pVOG)
@@ -536,33 +536,46 @@ class annotationRecord(object):
 
     # Return annotations as a semicolon-delimited string
     def returnGFFannotationRecord(self,FILE_HANDLE):
-        annot = ''
-        if self.annotationType == 'gene':
+        if DEBUG:
+            print("In phate_annotation/returnGFFannotationRecord")
+        self.annotationString = ''; annot = ''; annotationList = []
+        if self.annotationType.lower() == 'gene':
             annot = '(gene) ' + self.start + '/' + self.end + '/' + self.strand + ' ' + self.method 
-        elif self.annotationType == 'functional':
-            annot = '(func) ' + self.method + ' ' + self.description
-        elif self.annotationType == 'homology':
+            annotationList.append(annot)
+        elif self.annotationType.lower() == 'functional':
+            annot = '(function) ' + self.method + ' ' + self.description
+            annotationList.append(annot)
+        elif self.annotationType.lower() == 'homology':
             homologName = self.name
             newName = re.sub(';','',homologName)  # Remove embedded ';' because GFF uses this delimiter
-            annot = '(homolog) ' + self.method + ' ' + newName
-        elif self.annotationType == 'hmm search':
+            annot = '(homology) ' + self.method + ' ' + newName
+            annotationList.append(annot)
+        elif self.annotationType.lower() == 'hmm search':
             annot = '(hmm search) ' + self.method + ' ' + self.description
-        elif self.annotationType == 'profile search':
+        elif self.annotationType.lower() == 'profile search':
             annot = '(profile search) ' + self.method + ' ' + self.description
-        elif self.annotationType == 'cds':
+            annotationList.append(annot)
+        elif self.annotationType.lower() == 'cds':
             annot = '(cds)' + self.method + ' ' + self.description
-        elif self.annotationType == 'mrna':
+            annotationList.append(annot)
+        elif self.annotationType.lower() == 'mrna':
             annot = '(mrna)' + self.method + ' ' + self.description
-        elif self.annotationType == 'polypeptide':
+            annotationList.append(annot)
+        elif self.annotationType.lower() == 'polypeptide':
             annot = '(polypeptide) ' + self.method + ' ' + self.description
+            annotationList.append(annot)
         else:
             annot = '(unk type) ' + self.method + ' ' + self.description
-
-        annotationString = ""
-        for item in self.annotationList:
-            annotationString += item
-        annot += annotationString
-        FILE_HANDLE.write("%s" % (annot))
+            annotationList.append(annot)
+        if len(annotationList) > 0:
+            for i in range(0, len(annotationList)):
+                if i > 0:
+                    self.annotationString += '; ' + annotationList[i]
+                else:
+                    self.annotationString += annotationList[i]
+        if DEBUG:
+            print("phate_annotation says, writing self.annotationString:",self.annotationString)
+        FILE_HANDLE.write("%s" % (self.annotationString))
 
     def printAnnotationRecord2file(self,FILE_HANDLE):  #*** Update this
         FILE_HANDLE.write("%s%s%s" % ("Annotation source:",self.source,"\n"))

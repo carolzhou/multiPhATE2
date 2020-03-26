@@ -6,7 +6,7 @@
 # compareGeneProfiles_main.py
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last update: 10 March 2020
+# Last update: 17 March 2020
 #
 # This program compares the gene calls from 2 genomes and identifies genes that 
 # match, are similar, or are unique in each genome. This code is a re-write of
@@ -61,7 +61,9 @@ from subprocess import call
 import cgp_fastaSequence as fastaSequence
 import cgp_annotation as annotation
 import cgp_genomeSequence as genomeSequence
-import cgp_blastAnalysis as blastAnalysis
+#import cgp_blastAnalysis as blastAnalysis
+import blastAnalysis
+
 try:
     maketrans = ''.maketrans
 except:
@@ -103,7 +105,7 @@ ERROR_LOG        = ""   #
 ##### PATTERNS
 
 p_fasta = re.compile('\.(fasta)|(fna)|(fas)|(fnt)|(fa)')
-p_gff = re.compile('\.gff*')
+p_gff   = re.compile('\.gff*')
 
 ########################################################################
 ##### DECLARATIONS 
@@ -119,8 +121,8 @@ INPUT_STRING = "You may enter parameters interactively (via prompt) by typing: c
 ACCEPTABLE_ARG_COUNT = (2,3,9,11) # 2 if "help", "input", or "interactive"; 9 if 4 files provided with command-line labels (ie, '-g1')
                                # 3 if "config" mode; 11 if also including projectDirectory
 
-#DEBUG = True
-DEBUG = False
+DEBUG = True
+#DEBUG = False
 BLAST_ON = True    # controls whether blast is performed
 #BLAST_ON = False
 #PROTEIN = True     # controls whether protein sequences are blasted 
@@ -205,10 +207,10 @@ files = { # User's input files and other generated files go here
 "genomeFile2"          : "",  # user input
 "annotationFile1"      : "",  # user input
 "annotationFile2"      : "",  # user input
-"geneFile1"            : "",
-"geneFile2"            : "",
-"proteinFile1"         : "",
-"proteinFile2"         : "",
+"geneFile1"            : "",  # user input
+"geneFile2"            : "",  # user input
+"proteinFile1"         : "",  # user input
+"proteinFile2"         : "",  # user input
 "baseDir"              : "",  # user input
 "geneFile1_root"       : "",  # file name sans all directory prefixing
 "geneFile2_root"       : "",
@@ -264,6 +266,12 @@ def GetConfig(configString):
     files["genomeFile2"]     = stringList[2]
     files["annotationFile1"] = stringList[3]
     files["annotationFile2"] = stringList[4]
+    (pathRoot1, fileName1) = os.path.split(files["annotationFile1"])
+    (pathRoot2, fileName2) = os.path.split(files["annotationFile2"])
+    files["geneFile1"]       = os.path.join(pathRoot1, "cgp_gene.fnt")
+    files["geneFile2"]       = os.path.join(pathRoot2, "cgp_gene.fnt")
+    files["proteinFile1"]    = os.path.join(pathRoot1, "cgp_protein.faa")
+    files["proteinFile2"]    = os.path.join(pathRoot2, "cgp_protein.faa")
 
 # FUNCTION GetArguments - gets all input parameters from user interactively 
 def GetArguments(parameters,files):
@@ -365,6 +373,8 @@ ERROR_LOG.write("%s%s\n" % ("Reading command-line input at ",today.read()))
 argCount = len(sys.argv)
 print ("Number of command-line arguments:", argCount)
 if argCount in ACCEPTABLE_ARG_COUNT:
+    if DEBUG:
+        print("cgp_compareGeneProfiles_main says, sys.argv is:", sys.argv)
     match = re.search("help", sys.argv[1].lower())
     if match:
         print (HELP_STRING)
@@ -401,9 +411,20 @@ if argCount in ACCEPTABLE_ARG_COUNT:
                 BASE_DIR = files["projectDirectory"]
         print ("genomeFile1 is", files["genomeFile1"])
         print ("genomeFile2 is", files["genomeFile2"])
+        # compute gene files
+        (pathRoot1, fileName1) = os.path.split(files["annotationFile1"])
+        (pathRoot2, fileName2) = os.path.split(files["annotationFile2"])
+        files["geneFile1"]     = os.path.join(pathRoot1, "cgp_gene.fnt")
+        files["geneFile2"]     = os.path.join(pathRoot2, "cgp_gene.fnt")
+        files["proteinFile1"]  = os.path.join(pathRoot1, "cgp_protein.faa")
+        files["proteinFile2"]  = os.path.join(pathRoot2, "cgp_protein.faa")
+        print ("geneFile1 is",       files["geneFile1"])
+        print ("geneFile2 is",       files["geneFile2"])
+        print ("proteinFile1 is",    files["proteinFile1"])
+        print ("proteinFile2 is",    files["proteinFile2"])
         print ("annotationFile1 is", files["annotationFile1"])
         print ("annotationFile2 is", files["annotationFile2"])
-        print ("BASE_DIR is", files["projectDirectory"])
+        print ("BASE_DIR is",        files["projectDirectory"])
         print ("Done reading input parameters")
     else:
         print (USAGE_STRING)
@@ -549,10 +570,10 @@ GENOME_FILE2.close()
 
 # First, create names for gene/protein fasta and blast database files; inform user
 
-files["geneFile1"]    = ConstructNewFilename(files["genomeFile1"], "gene", "fnt")
-files["proteinFile1"] = ConstructNewFilename(files["genomeFile1"], "prot", "faa")
-files["geneFile2"]    = ConstructNewFilename(files["genomeFile2"], "gene", "fnt")
-files["proteinFile2"] = ConstructNewFilename(files["genomeFile2"], "prot", "fna")
+#files["geneFile1"]    = ConstructNewFilename(files["genomeFile1"], "gene", "fnt")
+#files["proteinFile1"] = ConstructNewFilename(files["genomeFile1"], "prot", "faa")
+#files["geneFile2"]    = ConstructNewFilename(files["genomeFile2"], "gene", "fnt")
+#files["proteinFile2"] = ConstructNewFilename(files["genomeFile2"], "prot", "fna")
 
 if PROTEIN: 
     print ("Blast databases for genome 1 genes & proteins will be:")
@@ -605,12 +626,14 @@ def extractGeneCalls(genomeX,lines):
     for line in lines:  # Extract gene fastas; create fasta object for gene; add to genome's geneSet
         match_comment = re.search('^#',line)
         if match_comment:
-            print("Skipping comment line,", line)
-            next
-        print("Processing line:",line)
+            continue 
+        if DEBUG:
+            print("Processing line:",line)
         geneCount += 1  # Don't need this, but diagnostic
         fields = line.split('\t')
-        print(fields)
+        if DEBUG:
+            for item in fields:
+                print ("item:",item)
         geneCallType = fields[2]
         if geneCallType.lower() == "cds":  # ie, skip '*RNA' and other entries (for now)
             geneCountCDS += 1
@@ -663,6 +686,8 @@ printFile1 = files["geneFile1"]
 print ("Printing to file", printFile1)
 print ("based on annotationFile1:", files["annotationFile1"])
 printFastas2fileArgs["filename"] = printFile1
+if DEBUG:
+    print("cgp_compareGeneProfiles says, calling printFastas2file, printFastas2fileArgs is",printFastas2fileArgs)
 success = genome1.printFastas2file(printFastas2fileArgs)
 print ("Success in printing gene fastas to file:", success)
 #genome1.printAll()
@@ -706,7 +731,10 @@ genome1.translateGenes(translationArgs)            # EMBOSS writes protein trans
 PROT_FILE = open(files["proteinFile1"],"r")
 fLines = PROT_FILE.read().splitlines()             # read lines into list, removing newlines
 genome1.write2proteinSet(fLines)                   # Store translations in genome object
-genome1.cleanUpAfterEMBOSS(translationArgs)        # EMBOSS messes with headers...so fix them
+if DEBUG:
+    print("cgp_compareGeneProfiles_main says, calling cleanUpAfterEMBOSS, with arg:",translationArgs)
+#genome1.cleanUpAfterEMBOSS(translationArgs)        # EMBOSS messes with headers...so fix them
+genome1.cleanUpAfterEMBOSS()                        # EMBOSS messes with headers...so fix them
 printFastas2fileArgs["filename"] = files["proteinFile1"]
 printFastas2fileArgs["mtype"] = "protein"
 genome1.printFastas2file(printFastas2fileArgs)     # Replace EMBOSS's file of translated proteins w/fixed fastas
@@ -719,7 +747,8 @@ genome2.translateGenes(translationArgs)            # EMBOSS writes protein trans
 PROT_FILE = open(files["proteinFile2"],"r")   
 fLines = PROT_FILE.read().splitlines()             # read lines into list, removing newlines
 genome2.write2proteinSet(fLines)                   # Store translations in genome object
-genome2.cleanUpAfterEMBOSS(translationArgs)        # EMBOSS messes with headers...so fix them
+#genome2.cleanUpAfterEMBOSS(translationArgs)        # EMBOSS messes with headers...so fix them
+genome2.cleanUpAfterEMBOSS()                       # EMBOSS messes with headers...so fix them
 printFastas2fileArgs["filename"] = files["proteinFile2"]
 genome2.printFastas2file(printFastas2fileArgs)     # Replace EMBOSS's file of translated proteins w/fixed fastas
 genome2.printGenomeData()

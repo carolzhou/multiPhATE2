@@ -242,6 +242,9 @@ class fasta(object):
             seqType = type(seq)
             return False
 
+    def restoreSlashesAfterEMBOSS(self):
+        pass
+
     def removeEMBOSSpostfix(self):  # Remove the pesky "_1" that EMBOSS adds
         self.assignHeader(self.header.rstrip("_1 "))
 
@@ -357,6 +360,16 @@ class fasta(object):
         seq = self.sequence
         print(hdr)
         print(seq)
+
+    def printHeaders(self):
+        print("header:",self.header)
+        print("cleanHeader:",self.cleanHeader)
+        print("truncHeader:",self.truncHeader)
+        print("shortHeader:",self.shortHeader)
+        print("compoundHeader:",self.compoundHeader)
+        print("blastHeader:",self.blastHeader)
+        print("sequentialHeader:",self.sequentialHeader)
+        print("customHeader:",self.customHeader)
 
     def printFasta2file(self,FILE_HANDLE,headerType="short"):
         if headerType.lower() == "compound":

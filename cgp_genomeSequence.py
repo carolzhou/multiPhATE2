@@ -55,8 +55,8 @@ PHATE_WARNINGS   = os.environ["PHATE_PHATE_WARNINGS"]
 PHATE_MESSAGES   = os.environ["PHATE_PHATE_MESSAGES"]
 PHATE_PROGRESS   = os.environ["PHATE_PHATE_PROGRESS"]
 
-DEBUG            = False
-#DEBUG           = True 
+#DEBUG            = False
+DEBUG           = True 
 
 # For GFF output
 GFF_COMMENT = "##gff-version 3"
@@ -527,6 +527,8 @@ class genome(object):
         self.geneSet.printAll()
 
     def printFastas2file(self,kvargs): # Prints to the file holding fastas (not a report/debug file) 
+        if DEBUG:
+            print("cgp_genomeSequence/printFastas2file says, kvargs is",kvargs)
         mtype = ""
         # Get arguments that were provided
         if "mtype" in list(kvargs.keys()):
@@ -562,6 +564,9 @@ class genome(object):
             return True
         elif mtype.lower() == "protein":
             for fa in self.proteinSet.fastaList:
+                print("cgp_genomeSequence says, printing fa:")
+                fa.printFasta()
+                fa.printHeaders()
                 if hdrType.lower() == "short":
                     hdr = fa.getShortHeader()
                 else:
@@ -609,6 +614,9 @@ class genome(object):
         return proteinString
 
     def translateGenes(self,kvargs):  # Clear proteinSet; translate geneSet fastas and load to proteinSet
+        # Note: Recent version of EMBOSS/transeq is messing even more with headers, changing '/' to '_'
+        # ...so, added code to reinstate the correct header strings (25 March 2020).
+        #*** MOVE THIS CODE TO cleanupAfterEmboss
         if "geneticCode" in list(kvargs.keys()):
             geneticCode = kvargs["geneticCode"]
         else:
@@ -617,8 +625,22 @@ class genome(object):
             geneFile = kvargs["geneFile"]
         if "proteinFile" in list(kvargs.keys()):
             protFile = kvargs["proteinFile"]
-        command = EMBOSS_PHATE_HOME + "transeq" + " -sequence " + geneFile + " -outseq " + protFile + " -table " + str(geneticCode)
+            tempProtFile = protFile + '.temp'
+        command = EMBOSS_PHATE_HOME + "transeq" + " -sequence " + geneFile + " -outseq " + tempProtFile + " -table " + str(geneticCode)
         result = os.system(command)
+        temp_h = open(tempProtFile,"r")
+        prot_h = open(protFile,"w")
+        lines = temp_h.read().splitlines()
+        for line in lines:
+            match_header = re.search("^>",line)
+            if match_header:
+                tempHeader = re.sub('_','/',line) 
+                newHeader  = re.sub('/1$','_1',tempHeader)
+                prot_h.write("%s\n" % (newHeader))
+            else:
+                prot_h.write("%s\n" % (line))
+        prot_h.close()
+        temp_h.close()
         return result 
     
     # MOVING THIS METHOD TO CLASS BLAST    
@@ -647,8 +669,23 @@ class genome(object):
         else:
             return False 
 
+    def restorSlashesAfterEMBOSS():
+        temp_h = open(tempProtFile,"r")
+        prot_h = open(protFile,"w")
+        lines = temp_h.read().splitlines()
+        for line in lines:
+            match_header = re.search("^>",line)
+            if match_header:
+                tempHeader = re.sub('_','/',line) 
+                newHeader  = re.sub('/1$','_1',tempHeader)
+                prot_h.write("%s\n" % (newHeader))
+            else:
+                prot_h.write("%s\n" % (line))
+        prot_h.close()
+
     def cleanUpAfterEMBOSS(self):  # removes the pesky characters that EMBOSS adds to fasta sequence
         self.proteinSet.removeEMBOSSpostfix()
         self.proteinSet.removeTerminalAsterisk()
+        #self.proteinSet.restorSlashesAfterEMBOSS()
         return 
 

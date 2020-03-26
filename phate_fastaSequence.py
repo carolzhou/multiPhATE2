@@ -1,4 +1,4 @@
-#############################################################
+############################################################
 # Module: phate_fastaSequence.py
 #
 # Programmer: Carol L. Ecale Zhou
@@ -179,11 +179,11 @@ class fasta(object):
                 self.sequenceType = geneData["type"]
             if "parentSequence" in list(geneData.keys()):
                 self.parentSequence = geneData["parentSequence"]
-                if self.parentSequenc != '':
+                if self.parentSequence != '':
                     self.parentSequenceLength = len(self.parentSequence)
                 else:
                     self.parentSequenceLength = -99   #***
-                    print("WARNING: in phage_fastaSequence, sequence not entered for parent")
+                    print("WARNING: in phate_fastaSequence, sequence not entered for parent")
             if "parentName" in list(geneData.keys()):
                 self.parentName = geneData["parentName"]
             if "parentStart" in list(geneData.keys()):
@@ -473,7 +473,7 @@ class fasta(object):
         GFF_type = "unknown"
         FIRST = True
 
-        # Construct data fields
+        # FIRST, assemble the data, per field
         GFF_parentName = self.parentName         # column 1
         GFF_source     = GFF_SOURCE              # column 2
 
@@ -497,7 +497,12 @@ class fasta(object):
         elif self.moleculeType == 'gene' or self.sequenceType == 'nt':
             GFF_identifier = "ID=" + self.header
 
+        # NEXT, write the data fields to the file
+
         # Write 1st 8 columns of data to file
+        FILE_HANDLE.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t" % (contigName,GFF_source,GFF_type,GFF_start,GFF_end,GFF_score,GFF_strand,GFF_phase))
+
+        # Write identifier to column 9
         FILE_HANDLE.write("%s%s" % (GFF_identifier, ';'))
 
         # Column 9 has many sub-fields, continuing with the annotation homologies
@@ -513,7 +518,7 @@ class fasta(object):
                     FILE_HANDLE.write("%s%s" % ('; ',annotNo))
                     annotation.returnGFFannotationRecord(FILE_HANDLE)
                 count += 1
-            FILE_HANDLE.write("\n" % ())
+        FILE_HANDLE.write("\n" % ())
 
     #*** Fill out this method as printAll() above
     def printAll2file(self,FILE_HANDLE):  # Dump everything: useful for testing  
