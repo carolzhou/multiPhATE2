@@ -266,12 +266,18 @@ def GetConfig(configString):
     files["genomeFile2"]     = stringList[2]
     files["annotationFile1"] = stringList[3]
     files["annotationFile2"] = stringList[4]
-    (pathRoot1, fileName1) = os.path.split(files["annotationFile1"])
-    (pathRoot2, fileName2) = os.path.split(files["annotationFile2"])
-    files["geneFile1"]       = os.path.join(pathRoot1, "cgp_gene.fnt")
-    files["geneFile2"]       = os.path.join(pathRoot2, "cgp_gene.fnt")
-    files["proteinFile1"]    = os.path.join(pathRoot1, "cgp_protein.faa")
-    files["proteinFile2"]    = os.path.join(pathRoot2, "cgp_protein.faa")
+    (pathRoot1, fileName1)   = os.path.split(files["annotationFile1"])
+    (pathRoot2, fileName2)   = os.path.split(files["annotationFile2"])
+    (pathHead1,pathTail1)    = os.path.split(pathRoot1)
+    (pathHead2,pathTail2)    = os.path.split(pathRoot2)
+    joinName1 = pathTail1 + "_cgp_gene.fnt"
+    joinName2 = pathTail2 + "_cgp_gene.fnt"
+    files["geneFile1"]       = os.path.join(pathRoot1, joinName1)
+    files["geneFile2"]       = os.path.join(pathRoot2, joinName2)
+    joinName1 = pathTail1 + "_cgp_protein.fnt"
+    joinName2 = pathTail2 + "_cgp_protein.fnt"
+    files["proteinFile1"]    = os.path.join(pathRoot1, joinName1)
+    files["proteinFile2"]    = os.path.join(pathRoot2, joinName2)
 
 # FUNCTION GetArguments - gets all input parameters from user interactively 
 def GetArguments(parameters,files):
@@ -371,6 +377,7 @@ ERROR_LOG = open(errorLog,"a")
 ERROR_LOG.write("%s%s\n" % ("Reading command-line input at ",today.read()))
 
 argCount = len(sys.argv)
+print ("cgp_compareGeneProfiles_main says, Reading input arguments")
 print ("Number of command-line arguments:", argCount)
 if argCount in ACCEPTABLE_ARG_COUNT:
     if DEBUG:
@@ -411,13 +418,21 @@ if argCount in ACCEPTABLE_ARG_COUNT:
                 BASE_DIR = files["projectDirectory"]
         print ("genomeFile1 is", files["genomeFile1"])
         print ("genomeFile2 is", files["genomeFile2"])
+
         # compute gene files
-        (pathRoot1, fileName1) = os.path.split(files["annotationFile1"])
-        (pathRoot2, fileName2) = os.path.split(files["annotationFile2"])
-        files["geneFile1"]     = os.path.join(pathRoot1, "cgp_gene.fnt")
-        files["geneFile2"]     = os.path.join(pathRoot2, "cgp_gene.fnt")
-        files["proteinFile1"]  = os.path.join(pathRoot1, "cgp_protein.faa")
-        files["proteinFile2"]  = os.path.join(pathRoot2, "cgp_protein.faa")
+        (pathRoot1, fileName1)   = os.path.split(files["annotationFile1"])
+        (pathRoot2, fileName2)   = os.path.split(files["annotationFile2"])
+        (pathHead1,pathTail1)    = os.path.split(pathRoot1)
+        (pathHead2,pathTail2)    = os.path.split(pathRoot2)
+        joinName1 = pathTail1 + "_cgp_gene.fnt"
+        joinName2 = pathTail2 + "_cgp_gene.fnt"
+        files["geneFile1"]       = os.path.join(pathRoot1, joinName1)
+        files["geneFile2"]       = os.path.join(pathRoot2, joinName2)
+        joinName1 = pathTail1 + "_cgp_protein.fnt"
+        joinName2 = pathTail2 + "_cgp_protein.fnt"
+        files["proteinFile1"]    = os.path.join(pathRoot1, joinName1)
+        files["proteinFile2"]    = os.path.join(pathRoot2, joinName2)
+
         print ("geneFile1 is",       files["geneFile1"])
         print ("geneFile2 is",       files["geneFile2"])
         print ("proteinFile1 is",    files["proteinFile1"])
@@ -824,6 +839,7 @@ files["protFile2_root"] = GetRootFile(files["proteinFile2"])
 
 outfile = OUT_DIR + files["geneFile1_root"] + "_" + files["geneFile2_root"] + "_" + "blastn_" +\
     str(blastArgs["evalue"]) + "_" + str(blastArgs["identity"]) + ".out"
+print("cpg_compareGeneProfiles_main says, genome1-genome2 outfile is",outfile)
 blastArgs["outfile"] = outfile
 files["g1_g2_blastn"] = outfile
 if BLAST_ON:
@@ -838,6 +854,7 @@ blastArgs["subject"] = files["geneFile1"]
 blastArgs["maxTargetSeqs"] = 1 
 outfile = OUT_DIR + files["geneFile2_root"] + "_" + files["geneFile1_root"] + "_" + "blastn_" +\
     str(blastArgs["evalue"]) + "_" + str(blastArgs["identity"]) + ".out"
+print("cpg_compareGeneProfiles_main says, genome2-genome1 outfile is",outfile)
 blastArgs["outfile"] = outfile
 files["g2_g1_blastn"] = outfile
 if BLAST_ON:
@@ -1114,6 +1131,6 @@ call(["cp", outFile,     outCopy])
 call(["cp", reportFile,  reportCopy])
 call(["cp", summaryFile, summaryCopy])
 
-print ("done!")
+print ("cpg_compareGeneProfiles_main says, done!")
 
 #######################################################################################################

@@ -102,7 +102,7 @@ LOGFILE.write("%s%s\n" % ("Number of lines in input file is ", numLines))
 baseDir = fLines[0]
 
 LOGFILE.write("%s%s\n" % ("Reading names of genome and annotation files and writing output config file",outFile))
-print ("Writing output config file,",outFile) 
+print ("cgp_constructuConfigFile says, Writing output config file,",outFile) 
 jobNumber = 0  # i.e., comparison number
 FIRST = True
 #for i in xrange(1, len(fLines)):
@@ -114,7 +114,8 @@ for i in list(range(1, len(fLines))):
     for j in list(range(i+1, len(fLines))):
         jobNumber += 1 
         print ("jobNumber is", jobNumber)
-        resultDir = baseDir + '/c' + str(jobNumber)
+        #resultDir = baseDir + '/c' + str(jobNumber)
+        resultDir = os.path.join(baseDir, '/c') + str(jobNumber)
         (genome2,annotation2) = fLines[j].split(' ')
         print ("genome2 is", genome2)
         print ("resultDir is", resultDir)
@@ -125,7 +126,7 @@ for i in list(range(1, len(fLines))):
         CONFIG_FILE.write("%s\n" % (annotation2))
         CONFIG_FILE.write("%s\n\n" % (resultDir))  
 LOGFILE.write("%s%s\n" % ("Number of jobs in config file = ", jobNumber))
-print ("Done! Config file is ", outFile)
+print ("cgp_constructeConfigFile says, Done! Config file is ", outFile)
 
 ##### Clean up
 
