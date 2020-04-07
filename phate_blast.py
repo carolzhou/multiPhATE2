@@ -5,6 +5,8 @@
 # This class performs blast against various phage-related databases. 
 #
 # Programmer:  Carol Zhou
+#
+# Last Update:  03 April 2020
 # 
 # Classes and Methods:
 #    multiBlast
@@ -40,6 +42,20 @@ from xml.etree.ElementTree import ElementTree as ET
 import phate_fastaSequence
 import phate_genomeSequence
 import phate_annotation
+
+# Constants
+HIT_SORT_CRITERION = 3 # for sorting blast hits
+    # 0 = evalue
+    # 1 = bit socre
+    # 2 = total score
+    # 3 = percent identity
+    # 4 = query coverage
+HSP_SORT_CRITERION = 3 # for sorting hsp's
+    # 0 = evalue
+    # 1 = score
+    # 2 = query start
+    # 3 = percent identity
+    # 4 = subject start
 
 # Get environment variables (set in phate_runPipeline.py)
 
@@ -289,6 +305,9 @@ class multiBlast(object):
                 " -best_hit_score_edge " + str(self.scoreEdge) + " -best_hit_overhang " + \
                 str(self.overhang) + " -outfmt " + str(self.outputFormat) + \
                 " -max_target_seqs " + str(self.topHitCount)
+                #" -max_target_seqs " + str(self.topHitCount) + \
+                #" -sorthits " + str(HIT_SORT_CRITERION) + \
+                #" -sorthsps " + str(HSP_SORT_CRITERION)
         else:
             if PHATE_WARNINGS == 'True':
                 print("ERROR in blast module: blast flavor not currently supported: ", self.blastFlavor)
@@ -443,6 +462,9 @@ class multiBlast(object):
                 resultString = 'alignlen=' + str(nextHitDataSet["hitHSPs"][0]["hspAlignLen"]) 
                 newAnnotation.annotationList.append(resultString)
                 resultString = 'evalue='   + str(nextHitDataSet["hitHSPs"][0]["hspEvalue"]) 
+                MEETS_IDENTITY_CUTOFF = False
+                if float(nextHitDataSet["hitHSPs"][0]["hspPercentIdentity"]) >= float(self.identityMin):
+                    MEETS_IDENTITY_CUTOFF = True
 
                 # If this is a pVOGs blast result, capture the pVOG identifiers in the annotation objecta
                 match_pVOG = re.search('pvog',newAnnotation.source.lower())
@@ -457,7 +479,13 @@ class multiBlast(object):
                 newAnnotation.link2databaseIdentifiers(database,dbName) # Get DBXREFs, packed into self.description
  
                 # Add this completed annotation to growing list for this fasta
-                fasta.annotationList.append(newAnnotation)
+                if MEETS_IDENTITY_CUTOFF:
+                    fasta.annotationList.append(newAnnotation)
+                    if DEBUG:
+                        print("phate_blast says, Adding annotation: meets identity cutoff of",self.identityMin," annot: ",newAnnotation.annotationList)
+                else:
+                    if DEBUG:
+                        print("phate_blast says, Deleting annotation: fails to meet identity cutoff:", newAnnotation.annotationList)
 
         # Parse from LIST-formatted blast output
         elif self.outputFormat == LIST:

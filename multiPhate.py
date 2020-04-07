@@ -5,7 +5,7 @@
 # Program Title:  multiPhate2.py (/multiPhate2/)
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last Update:  04 March 2020
+# Last Update:  06 April 2020
 #
 # Description: Script multiPhate.py runs an annotation pipeline (phate_runPipeline.py) over any
 #    number of genomes specified in the user's input configuration file (multPhate.config). It then
@@ -180,6 +180,8 @@ SOFTWARE_DIR_DEFAULT        = BASE_DIR_DEFAULT + "ExternalCodes/"
 PIPELINE_INPUT_DIR_DEFAULT  = BASE_DIR_DEFAULT + "PipelineInput/"    
 PIPELINE_OUTPUT_DIR_DEFAULT = BASE_DIR_DEFAULT + "PipelineOutput/"  
 CGP_DIR_DEFAULT             = BASE_DIR_DEFAULT + "CompareGeneProfiles/"
+CGP_RESULTS_DIR             = PIPELINE_OUTPUT_DIR_DEFAULT + "CGP_RESULTS/"
+JSON_DIR                    = BASE_DIR_DEFAULT + "JSON/"
 
 PHATE_PIPELINE_CODE         = 'phate_runPipeline.py' # The annotaton engine
 GENE_FILE                   = 'gene.fnt'             # default filename where gene sequences are written, per genome's PipelineOutput/
@@ -200,8 +202,8 @@ BLASTP_IDENTITY_DEFAULT     = 60
 BLASTN_IDENTITY_DEFAULT     = 60
 BLASTP_HIT_COUNT_DEFAULT    = 5
 BLASTN_HIT_COUNT_DEFAULT    = 5
-MIN_BLASTP_IDENTITY         = 20  # default; sets a lower limit based on value at which a structure model can provide information
-MIN_BLASTN_IDENTITY         = 20  # default; sets a lower limit based on value at which a structure model can provide information
+MIN_BLASTP_IDENTITY         = 5   # default; sets a lower limit based on value at which a structure model can provide information
+MIN_BLASTN_IDENTITY         = 5   # default; sets a lower limit based on value at which a structure model can provide information
 MAX_BLASTP_HIT_COUNT        = 100 # default; sets an upper limit; user's value should typically be well below this
 MAX_BLASTN_HIT_COUNT        = 100 # default; sets an upper limit
 SCORE_EDGE_MAX              = 1.0 # currently fixed setting for blast; modify here if need be 
@@ -1765,9 +1767,40 @@ if runCGP and not translateOnly and len(genomeList) > 1:
         print ("multiPhATE says, ERROR running CompareGeneProfiles")
 
     if CGP_PROGRESS:
-        print("Competed CompareGeneProfiles.")
+        print("Competed CompareGeneProfiles. Moving results to CGP_RESULTS/ directory")
+
+    if runCGP:
+
+        # Create output directory for loading CompareGeneProfiles results
+        try:
+            os.stat(CGP_RESULTS_DIR)
+        except:
+            os.mkdir(CGP_RESULTS_DIR)
+
+        # Move CompareGeneProfiles results directories and files to the CGP_RESULTS_DIR directory
+        try:  
+            # move directories and files
+            command = "mv " + PIPELINE_OUTPUT_DIR + "Results_* "                 + CGP_RESULTS_DIR + '.'
+            result = os.system(command)
+            command = "mv " + PIPELINE_OUTPUT_DIR + "cgpNxN.config "             + CGP_RESULTS_DIR + '.'
+            result = os.system(command)
+            command = "mv " + PIPELINE_OUTPUT_DIR + "cgp_wrapper.config "        + CGP_RESULTS_DIR + '.'
+            result = os.system(command)
+            # remove excess copies of CGP out files for final comparison
+            command = "rm " + PIPELINE_OUTPUT_DIR + "compareGeneProfiles_main*"
+            result = os.system(command)
+        except:
+            print("multiPhate says, ERROR: cannot move CGP results to output directory")
 
 ##### CLEAN UP
+
+# Move json files to a subdir to keep main dir tidy
+try:
+    os.stat(JSON_DIR)
+except:
+    os.mkdir(JSON_DIR)
+command = "mv *.json " + JSON_DIR + '.'
+result = os.system(command)
 
 if not HPC:
     LOG.write("%s%s\n" % ("End log file ",datetime.datetime.now()))

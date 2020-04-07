@@ -961,7 +961,7 @@ else:
         if PHATE_PROGRESS == 'True':
             print("Sequence annotation main says: Running Blast against phage genome database(s)...")
 
-        LOGFILE_H.write("%s%s%s%s\n" % (datetime.datetime.now(), " Preparing to run ", blast.blastFlavor, " at the following settings:"))
+        LOGFILE_H.write("%s%s%s%s\n" % (datetime.datetime.now(), " Preparing to run genome ", blast.blastFlavor, " at the following settings:"))
         blast.printParameters2file(LOGFILE_H)
         LOGFILE_H.write("%s\n" % ("Running Blast against phage genome database(s)..."))
         # Run Genome blast 
@@ -1004,7 +1004,8 @@ else:
 
         if PHATE_PROGRESS == 'True':
             print("Sequence annotation main says: Running Blast against gene database(s)...")
-        LOGFILE_H.write("%s\n" % ("Running Blast against gene databases..."))
+        LOGFILE_H.write("%s\n" % ("Running Blast against gene databases at the following settings:"))
+        blast.printParameters2file(LOGFILE_H)
 
         # Run Gene blast
         blast.runBlast(myGenome.geneSet,'gene')
@@ -1058,8 +1059,9 @@ else:
         blast.setBlastFlavor('blastp')
 
         if PHATE_PROGRESS == 'True': 
-            print("Sequence annotation main says: Running Blast against protein database(s)...")
-        LOGFILE_H.write("%s\n" % ("Running Blast against protein database(s)..."))
+            print("Sequence annotation main says: Running blastp against protein database(s)...")
+        LOGFILE_H.write("%s\n" % ("Running Blast against protein database(s) at the following settings:"))
+        blast.printParameters2file(LOGFILE_H)
 
         # Run protein blast
         blast.runBlast(myGenome.proteinSet,'protein')

@@ -495,7 +495,7 @@ class genome(object):
         #*** the list of genes.  Oh, for the want of a pointer!!!
 
         lastContig = "notAname"; nextContig = ""
-        for i in range(0, len(self.geneSet.fastaList)-1):
+        for i in range(0, len(self.geneSet.fastaList)):
             nextContig = self.geneSet.fastaList[i].parentName
             if lastContig != nextContig:
                 contig = self.geneSet.fastaList[i].parentName

@@ -335,7 +335,7 @@ def Convert_cgc2gff(cgcFile,gffFile):
             else:
                 if PHATE_WARNINGS == 'True':
                     print("WARNING: phate_geneCall says, Unexpected strand:", strand)
-            GFF_H.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (seqid,source,sesqType,start,end,strand,phase,attributes))
+            GFF_H.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (seqid,source,seqType,start,end,strand,phase,attributes))
         elif match_caller:
             caller = match_caller.group(1)
 
