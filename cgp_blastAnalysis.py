@@ -1,768 +1,796 @@
-############################################################################
+##############################################
+# Module: blastAnalysis.py
+# Programmer:  Carol L. Ecale Zhou
+# Date of last update:  16 July 2013
 #
-# Module:  phate_blast.py
+# Module comprising data structures and methods for blasting the genes and proteins
+#    of two genome objects and comparing the gene profiles and the nt and aa levels.
 #
-# This class performs blast against various phage-related databases. 
+# Classes and methods: 
+#     hit 
+#         printAll
+#         printAll2file
+#     hitList
+#         append
+#         printAll
+#         printAll2file
+#     homology
+#         reportStats
+#         printAll
+#         printAll2file
+#         mergeAll
+#     paralog
+#         printAll
+#         printAll2file
+#     blast
+#         identifyLoners
+#         identifyParalogs
+#         compareHits
+#         recordHits
+#         printHits
+#         printHits2file
+#         makeBlastDB
+#         performBlast
 #
-# Programmer:  Carol Zhou
-# 
-# Classes and Methods:
-#    multiBlast
-#       setBlastParameters(dict)
-#       setBlastFlavor(flavor)
-#       setIdentityMin(identity)
-#       setIdentitySelect(identity)
-#       setEvalueMin(evalue)
-#       setEvalueSelect(evalue)
-#       setTopHitCount(number)
-#       setTopHits
-#       getTopHits
-#       blast1fasta(fasta,outfile,database)
-#       runBlast(fastaSet,database)
-#       cleanBlastOutDir
-#       printParameters
-#       printParameters2file(file_h)
-#       printAnnotations
-#       printAll
-#       printAll2file(fileH)
-#       calculateStatistics  
-#
-############################################################################
+'''
+'''
 
-# This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
-# THIS CODE IS COVERED BY THE BSD LICENSE. SEE INCLUDED FILE BSD.PDF FOR DETAILS.
-
-import re
-import copy
-import os
-import subprocess
-from xml.etree.ElementTree import ElementTree as ET
+import string
 import cgp_fastaSequence as fastaSequence
 import cgp_genomeSequence as genomeSequence
 import cgp_annotation as annotation
+import re, os, copy
+import operator
+from itertools import groupby   # used in mergeAll method # changed sort method 16july2013
 
-# Get environment variables (set in phate_runPipeline.py)
+# Default values used if user- or program-defined defaults not provided
+GENE_MATCH_IDENTITY_DEFAULT = 95
+GENE_MATCH_COVERAGE_DEFAULT = 95
+GENE_SIMILARITY_IDENTITY_DEFAULT = 60
+GENE_SIMILARITY_COVERAGE_DEFAULT = 75
+DOMAIN_MATCH_IDENTITY_DEFAULT = 95
+DOMAIN_MATCH_COVERAGE_DEFAULT = 45
+DOMAIN_SIMILARITY_IDENTITY_DEFAULT = 60
+DOMAIN_SIMILARITY_COVERAGE_DEFAULT = 45
+PARALOG_MATCH_IDENTITY_DEFAULT = 95
+PARALOG_MATCH_COVERAGE_DEFAULT = 95
+PARALOG_SIMILARITY_IDENTITY_DEFAULT = 60
+PARALOG_SIMILARITY_COVERAGE_DEFAULT = 75
+PARALOG_DOMAIN_MATCH_IDENTITY_DEFAULT = 95
+PARALOG_DOMAIN_MATCH_COVERAGE_DEFAULT = 45
+PARALOG_DOMAIN_SIMILARITY_IDENTITY_DEFAULT = 60
+PARALOG_DOMAIN_SIMILARITY_COVERAGE_DEFAULT = 45
+PROTEIN_MATCH_IDENTITY_DEFAULT = 95
+PROTEIN_MATCH_COVERAGE_DEFAULT = 95
+PROTEIN_SIMILARITY_IDENTITY_DEFAULT = 60
+PROTEIN_SIMILARITY_COVERAGE_DEFAULT = 75
+PROTEIN_DOMAIN_MATCH_IDENTITY_DEFAULT = 95
+PROTEIN_DOMAIN_MATCH_COVERAGE_DEFAULT = 45
+PROTEIN_DOMAIN_SIMILARITY_IDENTITY_DEFAULT = 60
+PROTEIN_DOMAIN_SIMILARITY_COVERAGE_DEFAULT = 45
+PROTEIN_PARALOG_MATCH_IDENTITY_DEFAULT = 95
+PROTEIN_PARALOG_MATCH_COVERAGE_DEFAULT = 95
+PROTEIN_PARALOG_SIMILARITY_IDENTITY_DEFAULT = 60 
+PROTEIN_PARALOG_SIMILARITY_COVERAGE_DEFAULT = 75
+PROTEIN_PARALOG_DOMAIN_MATCH_IDENTITY_DEFAULT = 95
+PROTEIN_PARALOG_DOMAIN_MATCH_COVERAGE_DEFAULT = 45
+PROTEIN_PARALOG_DOMAIN_SIMILARITY_IDENTITY_DEFAULT = 60
+PROTEIN_PARALOG_DOMAIN_SIMILARITY_COVERAGE_DEFAULT = 45
 
-#EMBOSS_PHATE_HOME             = os.environ["PHATE_EMBOSS_PHATE_HOME"]
-BLAST_HOME                    = os.environ["PHATE_BLAST_HOME"]
-NCBI_VIRUS_GENOME_BLAST_HOME  = os.environ["PHATE_NCBI_VIRUS_GENOME_BLAST_HOME"]
-NCBI_VIRUS_PROTEIN_BLAST_HOME = os.environ["PHATE_NCBI_VIRUS_PROTEIN_BLAST_HOME"]
-REFSEQ_PROTEIN_BLAST_HOME     = os.environ["PHATE_REFSEQ_PROTEIN_BLAST_HOME"]
-REFSEQ_GENE_BLAST_HOME        = os.environ["PHATE_REFSEQ_GENE_BLAST_HOME"]
-PVOGS_BLAST_HOME              = os.environ["PHATE_PVOGS_BLAST_HOME"]
-PHANTOME_BLAST_HOME           = os.environ["PHATE_PHANTOME_BLAST_HOME"]
-KEGG_VIRUS_BLAST_HOME         = os.environ["PHATE_KEGG_VIRUS_BLAST_HOME"]
-SWISSPROT_BLAST_HOME          = os.environ["PHATE_SWISSPROT_BLAST_HOME"]
-PHAGE_ENZYME_BLAST_HOME       = os.environ["PHATE_PHAGE_ENZYME_BLAST_HOME"]
-PFAM_BLAST_HOME               = os.environ["PHATE_PFAM_BLAST_HOME"]
-SMART_BLAST_HOME              = os.environ["PHATE_SWISSPROT_BLAST_HOME"]
-UNIPROT_BLAST_HOME            = os.environ["PHATE_UNIPROT_BLAST_HOME"]
-NR_BLAST_HOME                 = os.environ["PHATE_NR_BLAST_HOME"]
-NCBI_TAXON_DIR                = os.environ["PHATE_NCBI_TAXON_DIR"]
-CUSTOM_GENOME_BLAST_HOME      = os.environ["PHATE_CUSTOM_GENOME_BLAST_HOME"]
-CUSTOM_GENE_BLAST_HOME        = os.environ["PHATE_CUSTOM_GENE_BLAST_HOME"]
-CUSTOM_PROTEIN_BLAST_HOME     = os.environ["PHATE_CUSTOM_PROTEIN_BLAST_HOME"]
+p_comment = re.compile('^#')
 
-# Blast parameters
-MIN_BLASTP_IDENTITY           = os.environ["PHATE_MIN_BLASTP_IDENTITY"]   # Sets a lower limit
-MIN_BLASTN_IDENTITY           = os.environ["PHATE_MIN_BLASTN_IDENTITY"]   # Sets a lower limit
-MAX_BLASTP_HIT_COUNT          = os.environ["PHATE_MAX_BLASTP_HIT_COUNT"]  # Sets an upper limit
-MAX_BLASTN_HIT_COUNT          = os.environ["PHATE_MAX_BLASTN_HIT_COUNT"]  # Sets an upper limit
-BLASTP_IDENTITY_DEFAULT       = os.environ["PHATE_BLASTP_IDENTITY_DEFAULT"]
-BLASTN_IDENTITY_DEFAULT       = os.environ["PHATE_BLASTN_IDENTITY_DEFAULT"]
-BLASTP_HIT_COUNT_DEFAULT      = os.environ["PHATE_BLASTP_HIT_COUNT_DEFAULT"]
-BLASTN_HIT_COUNT_DEFAULT      = os.environ["PHATE_BLASTN_HIT_COUNT_DEFAULT"]
-SCORE_EDGE_MAX                = float(os.environ["PHATE_SCORE_EDGE_MAX"]) 
-OVERHANG_MAX                  = int(os.environ["PHATE_OVERHANG_MAX"]) 
-HIT_COUNT_MAX                 = int(os.environ["PHATE_HIT_COUNT_MAX"])    # Limit set in multiPhate.py
-
-# Verbosity
-CLEAN_RAW_DATA                = os.environ["PHATE_CLEAN_RAW_DATA"]
-PHATE_WARNINGS                = os.environ["PHATE_PHATE_WARNINGS"]
-PHATE_MESSAGES                = os.environ["PHATE_PHATE_MESSAGES"]
-PHATE_PROGRESS                = os.environ["PHATE_PHATE_PROGRESS"]
-
-# Other configurables 
-
-GENE_CALL_DIR            = ""  # set by set method, via parameter list
-BLAST_OUT_DIR            = ""  # set by set method, via parameter list
-PVOGS_OUT_DIR            = ""  # set by set method, via parameter list
-
-#DEBUG  = True 
-DEBUG  = False 
-
-# blast formats
-XML = 5
-LIST = 7
-
-# templates 
-annotation = annotation.annotationRecord()
-
-class multiBlast(object):
-
+##############################################################################################
+class hit(object):
+   
     def __init__(self):
-        self.blastFlavor              = 'blastp'  # Select from 'blastp', 'blastn', 'blastx'; default = blastp
-        self.identityMin              = 50        # default: Invokes blast with this value (for phage maybe set much lower)
-        self.evalueMin                = 0.01      # default: Invokes blast with this value (for phage maybe set much lower)
-        self.identitySelect           = 70        # default: Selects best hit if meets or exceeds this value (for phage maybe set much lower)
-        self.evalueSelect             = 0.01      # default: Selects best hit if meets or exceeds this value (for phage maybe set to 10)
-        self.topHitCount              = 3         # default: Number of best hits to record
-        self.scoreEdge                = SCORE_EDGE_MAX # default: BLAST recommended default
-        self.overhang                 = OVERHANG_MAX   # default: BLAST recommended default
-        self.outputFormat             = 5         # default: XML output
-        self.blastAnnotations         = []        # List of phate_annotation objects; blast output get temporarily stored here
-        # move to hit class:  self.topHitList     = []        # 
-        self.geneCallDir              = ""        # needs to be set
-        self.blastOutDir              = ""        # needs to be set
-        self.pVOGsOutDir              = ""        # needs to be set
-        self.NCBI_VIRUS_GENOME_BLAST  = False     # assume not running this blast process, unless changed by parameter set method
-        self.NCBI_VIRUS_PROTEIN_BLAST = False     # ditto 
-        self.NR_BLAST                 = False     # ditto 
-        self.KEGG_VIRUS_BLAST         = False     # ditto
-        self.REFSEQ_PROTEIN_BLAST     = False     # ditto
-        self.REFSEQ_GENE_BLAST        = False     # ditto # not yet in service
-        self.PHANTOME_BLAST           = False     # ditto
-        self.PVOGS_BLAST              = False     # ditto
-        self.SWISSPROT_BLAST          = False     # ditto # not yet in service
-        self.PHAGE_ENZYME_BLAST       = False     # ditto # not yet in service
+        self.queryHeader     = ""
+        self.subjectHeader   = ""
+        self.identity        = ""
+        self.alignmentLength = 0
+        self.mismatches      = None
+        self.gapopens        = None
+        self.queryStart      = 0
+        self.queryEnd        = 0
+        self.subjectStart    = 0
+        self.subjectEnd      = 0
+        self.evalue          = 0
+        self.bitscore        = 0
+        self.queryCoverage   = 0  # calculate later, when we get q/s lengths
+        self.subjectCoverage = 0
+        self.hitType         = "unknown"  # fill in with "mutual best", "singular best"
 
-    ##### SET AND GET PARAMETERS
-
-    def setBlastParameters(self,paramset):
-        if isinstance(paramset,dict):
-            if 'blastFlavor' in list(paramset.keys()):
-                self.setBlastFlavor(paramset['blastFlavor'])
-            if 'identityMin' in list(paramset.keys()):
-                self.setIdentityMin(paramset['identityMin'])
-            if 'identitySelect' in list(paramset.keys()):
-                self.setIdentitySelect(paramset['identitySelect'])
-            if 'evalueMin' in list(paramset.keys()):
-                self.setEvalueMin(paramset['evalueMin'])
-            if 'evalueSelect' in list(paramset.keys()):
-                self.setEvalueSelect(paramset['evalueSelect'])
-            if 'topHitCount' in list(paramset.keys()):
-                self.setTopHitCount(paramset['topHitCount'])
-            if 'outputFormat' in list(paramset.keys()):
-                self.setOutputFormat(paramset['outputFormat'])
-            if 'scoreEdge' in list(paramset.keys()):
-                self.setScoreEdge(paramset['scoreEdge'])
-            if 'overhang' in list(paramset.keys()):
-                self.setOverhang(paramset['overhang'])
-            if 'geneCallDir' in list(paramset.keys()):
-                self.setGeneCallDir(paramset['geneCallDir'])
-            if 'blastOutDir' in list(paramset.keys()):
-                self.setBlastOutDir(paramset['blastOutDir'])
-            if 'pvogsOutDir' in list(paramset.keys()):
-                self.setPVOGsOutDir(paramset['pvogsOutDir'])
-            if 'ncbiVirusGenomeBlast' in list(paramset.keys()):
-                self.NCBI_VIRUS_GENOME_BLAST = paramset["ncbiVirusGenomeBlast"]
-            if 'ncbiVirusProteinBlast' in list(paramset.keys()):
-                self.NCBI_VIRUS_PROTEIN_BLAST = paramset["ncbiVirusProteinBlast"]
-            if 'nrBlast' in list(paramset.keys()):
-                self.NR_BLAST = paramset["nrBlast"]
-            if 'keggVirusBlast' in list(paramset.keys()):
-                self.KEGG_VIRUS_BLAST = paramset["keggVirusBlast"]
-            if 'refseqProteinBlast' in list(paramset.keys()):
-                self.REFSEQ_PROTEIN_BLAST = paramset["refseqProteinBlast"]
-            if 'refseqGeneBlast' in list(paramset.keys()):
-                self.REFSEQ_GENE_BLAST = paramset["refseqGeneBlast"]
-            if 'phantomeBlast' in list(paramset.keys()):
-                self.PHANTOME_BLAST = paramset["phantomeBlast"]
-            if 'pvogsBlast' in list(paramset.keys()):
-                self.PVOGS_BLAST = paramset["pvogsBlast"]
-            if 'swissprotBlast' in list(paramset.keys()):
-                self.SWISSPROT_BLAST = paramset["swissprotBlast"]
-            if 'phageEnzymeBlast' in list(paramset.keys()):
-                self.PHAGE_ENZYME_BLAST = paramset["phageEnzymeBlast"]
-
-    def setBlastFlavor(self,flavor):
-        if(flavor.lower() == 'blastp'):
-            self.blastFlavor = 'blastp'
-        elif(flavor.lower() == 'blastn'):
-            self.blastFlavor = 'blastn'
-        elif(flavor.lower() == 'blastx'):
-            self.blastFlavor = 'blastx'
-        elif(flavor.lower() == 'tblastx'):
-            self.blastFlavor = 'tblastx'
-        else:
-            if PHATE_WARNINGS == 'True':
-                print("WARNING in blast module: Unrecognized blast flavor:", flavor)
-
-    def setIdentityMin(self,identity):
-        if (int(identity) >= 1) and (int(identity) <= 100):
-            self.identityMin = int(identity)
-        else:
-            if PHATE_WARNINGS == 'True':
-                print("WARNING in blast module: Identity minimum should be from 1 to 100")
-
-    def setIdentitySelect(self,identity):
-        if (int(identity) >= 10) and (int(identity) <= 100):
-            self.identitySelect = int(identity)
-        else:
-            if PHATE_WARNINGS == 'True':
-                print("WARNING in blast module: Identity select should be from 10 to 100. If this is insufficient, you may change constants in phate_blast.py.")
-
-    def setEvalueMin(self,evalue):
-        if (float(evalue) >= 0.0) and (float(evalue) <= 10):
-            self.evalueMin = float(evalue)
-        else:
-            if PHATE_WARNINGS == 'True':
-                print("WARNING in blast module: Evalue minimum shold be from 0.0 to 10.0. If this is insufficient, you may change constants in phate_blast.py.")
-
-    def setEvalueSelect(self,evalue):
-        if (float(evalue) >= 0.0000001) and (float(evalue) <= 10.0):
-            self.evalueSelect = float(evalue)
-        else:
-            if PHATE_WARNINGS == 'True':
-                print("WARNING in blast module: Evalue select should be from 0.0000001 to 10.0. If this is insufficient, you may change constants in phate_blast.py.")
-
-    def setTopHitCount(self,number):
-        if (int(number) >= 1 and int(number) <= HIT_COUNT_MAX):
-            self.topHitCount = int(number)
-        else:
-            if PHATE_WARNINGS == 'True':
-                print("WARNING in blast module: You may capture from 1 to", HIT_COUNT_MAX, "hits per query. If this is insufficient, you may change HIT_COUNT_MAX in phate_blast.py.")
-
-    def setOutputFormat(self,outfmt):
-        if outfmt == XML:
-            self.outputFormat = XML
-        elif outfmt == LIST:
-            self.outputFormat = LIST 
-        else:
-            if PHATE_WARNINGS == 'True':
-                print("WARNING in blast module: Select from output formats", LIST, "or", XML)
-
-    def setScoreEdge(self,scoreEdge):
-        if scoreEdge > 0.0 and scoreEdge < SCORE_EDGE_MAX:
-            self.scoreEdge = scoreEdge
-        else:
-            if PHATE_WARNINGS == 'True':
-                print("WARNING in blast module: Score edge should be between 0.0 and", SCORE_EDGE_MAX, "If this is insufficient, you may change SCORE_EDGE_MAX in phate_blast.py.")
-
-    def setOverhang(self,overhang):
-        if overhang > 0 and overhang < OVERHANG_MAX:
-            self.overhang = overhang
-        else:
-            if PHATE_WARNINGS == 'True':
-                print("WARNING in blast module: Overhang should be between 0 and", OVERHANG_MAX, "If this is insufficient, you may change OVERHANG_MAX in phate_blast.py.")
-
-    def setGeneCallDir(self,geneCallDir):
-        self.geneCallDir = geneCallDir
-        GENE_CALL_DIR = geneCallDir
-
-    def setBlastOutDir(self,blastOutDir):
-        self.blastOutDir = blastOutDir
-        BLAST_OUT_DIR = blastOutDir
-
-    def setPVOGsOutDir(self,pVOGsOutDir):
-        self.pVOGsOutDir = pVOGsOutDir
-        PVOGS_OUT_DIR = pVOGsOutDir
-
-    def getTopHits(self):
-        return self.topHitList 
-
-    ##### PERFORM BLAST
-
-    def blast1fasta(self,fasta,outfile,database,dbName): # fasta is a phate_fastaSequence.fasta object
-        command = ""
-
-        # Write fasta sequence to temporary file
-        fastaFile = self.blastOutDir + "temp.fasta"
-        fastaFileH = open(fastaFile,"w")
-        if fasta.sequentialHeader == "unknown":  # unchanged from default
-            fasta.printFasta2file(fastaFileH,"blastHeader")
-        else:
-            fasta.printFasta2file(fastaFileH,"sequential")  # use sequential header format to avoid special chars issue
-        fastaFileH.close()
-
-        # Run blast
-        if self.blastFlavor == 'blastn':
-            command = BLAST_HOME + "blastn -query " + fastaFile + " -out " + outfile + \
-                " -task blastn -db " + database + " -evalue " + str(self.evalueMin) + \
-                " -best_hit_score_edge " + str(self.scoreEdge) + " -best_hit_overhang " + \
-                str(self.overhang) + " -outfmt " + str(self.outputFormat) + " -perc_identity " + \
-                str(self.identityMin) + " -max_target_seqs " + str(self.topHitCount) 
-
-        elif self.blastFlavor == 'blastp': # Recall: You can't specificy %identity, but can filter afterward
-            command = BLAST_HOME + "blastp -query " + fastaFile + " -out " + outfile + \
-                " -task blastp -db " + database + " -evalue " + str(self.evalueMin) + \
-                " -best_hit_score_edge " + str(self.scoreEdge) + " -best_hit_overhang " + \
-                str(self.overhang) + " -outfmt " + str(self.outputFormat) + \
-                " -max_target_seqs " + str(self.topHitCount)
-        else:
-            if PHATE_WARNINGS == 'True':
-                print("ERROR in blast module: blast flavor not currently supported: ", self.blastFlavor)
-            return
-        if DEBUG:
-            print("command is",command)
-        result = os.system(command)
-
-        # Capture result(s) and store as an annotation object for this fasta; Coded for -outfmt 7
-
-        # For XML parsing
-        MIN_LENGTH = 100 # shortest hit length that is of sufficient coverage
-        doPrint = False
-        count = 0
-        countGood = 0
-        nrList = {}
-        organismList = [] # holds the organisms identified in the deflines
-        hitList = [] # contains a list of hitDataSet objects
-        hitDataSet = {
-            "hitNumber"    : 0,
-            "hitID"        : "",
-            "hitDefline"   : "",
-            "hitAccession" : "",
-            "gi"           : "",  # gi identifier
-            "hitLength"    : 0,
-            "hitHSPs"      : [], # list of hspDataSet objects
-            }
-        hspDataSet = {
-            "hspSequence"        : "",
-            "hspNumber"          : 0,
-            "hspScore"           : 0,
-            "hspEvalue"          : 0,
-            "queryStart"         : 0,
-            "queryEnd"           : 0,
-            "hitStart"           : 0,
-            "hitEnd"             : 0,
-            "hspAlignLen"        : 0,
-            "hspBitScore"        : 0.0,
-            "hspIdentity"        : 0,
-            "hspPositives"       : 0,
-            "hspGaps"            : 0,
-            "hspPercentIdentity" : 0.0,
-            }
-        
-        p_organism = re.compile('\[[\w\d\s]+\]') # organism names are enclosed in brackets in defline
-        p_gi       = re.compile('^gi\|(\d*)|')   # gi number occurs at front of hit defline; capture number only via group(0)
-
-        # Parse from XML-formatted blast output
-        if self.outputFormat == XML:
-
-            blastDatabase = ""
-            blastProgram  = ""
-            blastQuery    = ""
-
-            # Load XML tree
-            tree = ET()
-            if DEBUG:
-                print("Attempting to parse outfile into tree", outfile)
-            tree.parse(outfile)
-            if DEBUG:
-                print("Attempt successful?")
-            root = tree.getroot()
-            for child in root:
-                if child.tag == 'BlastOutput_program':
-                    blastProgram = child.text
-                if child.tag == 'BlastOutput_db':
-                    blastDatabase = child.text
-                if child.tag == 'BlastOutput_query-def':  # CHECK: was this not "Blast_query-def" in other blastp outputs?
-                    blastQuery = child.text
-
-            # Find hits and extract hit data
-            for hit in root.getiterator('Hit'):  
-                # reset
-                speciesList = []; doPrint = False
-                #queryFrom = 0; queryTo = 0; span = 0; percentIdentity = 0
-                querySeq = ""; subjectSeq = ""; hitDefline = ""
-                # increment
-                count += 1
-                # capture salient data
-                nextHitDataSet = copy.deepcopy(hitDataSet)
-
-                # Identify hit
-                for hitData in hit:
-                    if hitData.tag == "Hit_num":
-                        nextHitDataSet["hitNumber"] = hitData.text
-                    if hitData.tag == "Hit_id":
-                        nextHitDataSet["hitID"] = hitData.text
-                    if hitData.tag == "Hit_def":
-                        defline = hitData.text
-                        match = re.findall(p_gi,defline)
-                        gi = match[0]
-                        nextHitDataSet["gi"] = gi
-                        nextHitDataSet["hitDefline"] = defline
-                        match = re.findall(p_organism,defline)
-                        if match:
-                            for m in match:
-                                organismList.append(m)
-                    if hitData.tag == "Hit_accession":
-                        nextHitDataSet["hitAccession"] = hitData.text
-                    if hitData.tag == "Hit_len":
-                        nextHitDataSet["hitLength"] = hitData.text
-                    if hitData.tag == "Hit_hsps":
-  
-                        # Capture one or more hsps
-                        for hsps in hitData:
-                            nextHspDataSet = copy.deepcopy(hspDataSet)
-                            for hsp in hsps:
-                                if hsp.tag == "Hsp_hseq":
-                                     nextHspDataSet["hspSequence"]= hsp.text
-                                if hsp.tag == "Hsp_num":
-                                     nextHspDataSet["hspNumber"] = hsp.text
-                                if hsp.tag == "Hsp_bit_score":
-                                     nextHspDataSet["hspBitScore"]= hsp.text
-                                if hsp.tag == "Hsp_evalue":
-                                     nextHspDataSet["hspEvalue"]= hsp.text
-                                if hsp.tag == "Hsp_query-from":
-                                     nextHspDataSet["queryStart"]= hsp.text
-                                if hsp.tag == "Hsp_query-to":
-                                     nextHspDataSet["queryEnd"]= hsp.text
-                                if hsp.tag == "Hsp_hit-from":
-                                     nextHspDataSet["hitStart"]= hsp.text
-                                if hsp.tag == "Hsp_hit-to":
-                                     nextHspDataSet["hitEnd"]= hsp.text
-                                if hsp.tag == "Hsp_identity":
-                                     nextHspDataSet["hspIdentity"]= hsp.text
-                                if hsp.tag == "Hsp_positive":
-                                     nextHspDataSet["hspPositives"]= hsp.text
-                                if hsp.tag == "Hsp_gaps":
-                                     nextHspDataSet["hspGaps"]= hsp.text
-                                if hsp.tag == "Hsp_align-len":
-                                     nextHspDataSet["hspAlignLen"] = hsp.text
-                                     if int(nextHspDataSet["hspAlignLen"]) > 0:
-                                         nextHspDataSet["hspPercentIdentity"] = int(nextHspDataSet["hspIdentity"])*100/int(nextHspDataSet["hspAlignLen"])
-                                          
-                            nextHitDataSet["hitHSPs"].append(nextHspDataSet)
-                hitList.append(nextHitDataSet)
-
-                if DEBUG:
-                    print("Number of hits:", len(hitList))
-                    print("Writing hit data to outfile", outfile)
-
-                # Store new blast annotation
-                newAnnotation = copy.deepcopy(annotation)
-                newAnnotation.source = blastDatabase
-                newAnnotation.method = self.blastFlavor
-                newAnnotation.annotationType = "homology"
-                newAnnotation.name  = nextHitDataSet["hitDefline"]               # subject
-                newAnnotation.start = nextHitDataSet["hitHSPs"][0]["queryStart"] # query start
-                newAnnotation.end   = nextHitDataSet["hitHSPs"][0]["queryEnd"]   # query end
-                resultString = 'identity=' + str(nextHitDataSet["hitHSPs"][0]["hspPercentIdentity"]) 
-                newAnnotation.annotationList.append(resultString)
-                resultString = 'alignlen=' + str(nextHitDataSet["hitHSPs"][0]["hspAlignLen"]) 
-                newAnnotation.annotationList.append(resultString)
-                resultString = 'evalue='   + str(nextHitDataSet["hitHSPs"][0]["hspEvalue"]) 
-
-                # If this is a pVOGs blast result, capture the pVOG identifiers in the annotation objecta
-                match_pVOG = re.search('pvog',newAnnotation.source.lower())
-                if match_pVOG: 
-                    pVOGidList = re.findall('VOG\d+',newAnnotation.name)
-                    for pVOGid in pVOGidList:
-                        if pVOGid not in newAnnotation.pVOGlist: #** cez: bug fix 05 sept 2017
-                            newAnnotation.pVOGlist.append(pVOGid)
-                newAnnotation.annotationList.append(resultString)
- 
-                # Get DBXREFs, packed into annotation object's self.description field
-                newAnnotation.link2databaseIdentifiers(database,dbName) # Get DBXREFs, packed into self.description
- 
-                # Add this completed annotation to growing list for this fasta
-                fasta.annotationList.append(newAnnotation)
-
-        # Parse from LIST-formatted blast output
-        elif self.outputFormat == LIST:
-            columns = []; hitList = []
-            outfileH = open(outfile,"r")
-            bLines = outfileH.read().splitlines()
-
-            for bLine in bLines:
-                match_comment = re.search('^#',bLine)
-                if match_comment:
-                    continue
-                if fasta.sequentialHeader == "unknown":  # unchanged from default
-                    match_query = re.search(fasta.blastHeader,bLine)  # Use blast header to avoid Blast's truncation issue 
-                else:  # Use the code-assigned benign header to avoid special chars issue
-                    match_query = re.search(fasta.sequentialHeader,bLine)  
-                if match_query:
-                    hitList.append(bLine) 
-
-            if hitList:
-                for hitLine in hitList:
-
-                    # Extract blast info from hitLine and stash into new annotation object
-                    newAnnotation = copy.deepcopy(annotation) 
-                    newAnnotation.source = database 
-                    newAnnotation.method = self.blastFlavor 
-                    newAnnotation.annotationType = "homology"
-                    columns = hitLine.split('\t')
-                    newAnnotation.name  = columns[1] # subject
-                    newAnnotation.start = columns[6] # query start
-                    newAnnotation.end   = columns[7] # query end
-                    resultString = 'identity=' + columns[2]
-                    newAnnotation.annotationList.append(resultString)
-                    resultString = 'alignlen=' + columns[3]
-                    newAnnotation.annotationList.append(resultString)
-                    resultString = 'evalue=' + columns[10]
-                    newAnnotation.annotationList.append(resultString)
-
-                    # Get DBXREFs, packed into annotation object's self.description field
-                    newAnnotation.link2databaseIdentifiers(database,dbName) # Get DBXREFs, packed into self.description
-
-                    # Add this completed annotation to growing list for this fasta
-                    fasta.annotationList.append(newAnnotation)
-            else:
-                if PHATE_MESSAGES == 'True':
-                    print("Blast module says: No hit found for query", fasta.blastHeader, "against", database)    
-            outfileH.close 
-
-        # Requested blast output format not supported
-        else:
-            if PHATE_WARNINGS == 'True':
-                print("WARNING in blast module: Output format", self.outputFormat, "not yet supported in phate_blast.py/blast1fasta(). Use blast out xml or list format for now.")
-
-    def runBlast(self,fastaSet,dbType="protein"): # fastaSet is a phate_fastaSequence.multiFasta object
-
-        # Set sequence type 
-        GENOME = False; GENE = False; PROTEIN = False
-        if dbType.lower() == "protein" or dbType.lower == "aa" or dbType.lower == "prot" or dbType.lower == "peptide":
-            PROTEIN = True
-        elif dbType.lower() == "genome":
-            GENOME = True
-        elif dbType.lower() == "gene":
-            GENE = True
-        else:
-            if PHATE_WARNINGS == 'True':
-                print("WARNING in blast module: unrecognized database type in runBlast:", dbType)
-            return
-               
-        # Set database variable, invoke blast for each fasta 
-        database = ''
-
-        if GENOME:
-            if self.NCBI_VIRUS_GENOME_BLAST:
-                database = NCBI_VIRUS_GENOME_BLAST_HOME
-                dbName   = 'ncbi'
-                count = 0
-                if PHATE_PROGRESS == 'True':
-                    print("Blast module says: Running NCBI blast:", database, dbName)
-                for fasta in fastaSet.fastaList:
-                    count += 1
-                    outfile = self.blastOutDir + self.blastFlavor + "_ncbi_" + str(count)
-                    self.blast1fasta(fasta,outfile,database,dbName)
-
-        if GENE:
-            if self.REFSEQ_GENE_BLAST:
-                database = REFSEQ_GENE_BLAST_HOME
-                dbName   = 'refseqGene'
-                count = 0
-                if PHATE_PROGRESS == 'True':
-                    print("Blast module says: Running Refseq gene blast:", database, dbName)
-                for fasta in fastaSet.fastaList:
-                    count += 1
-                    outfile = self.blastOutDir + self.blastFlavor + "_refseqGene_" + str(count)
-                    self.blast1fasta(fasta,outfile,database,dbName)  #*** CONTROL
-
-        if PROTEIN:
-            if self.NR_BLAST:  
-                database = NR_BLAST_HOME
-                dbName   = 'nr'
-                count = 0
-                if PHATE_PROGRESS == 'True':
-                    print("Blast module says: Running NR blast:", database, dbName)
-                for fasta in fastaSet.fastaList:
-                    count += 1
-                    outfile = self.blastOutDir + self.blastFlavor + "_nr_" + str(count)
-                    self.blast1fasta(fasta,outfile,database,dbName)  #*** CONTROL
-
-            if self.NCBI_VIRUS_PROTEIN_BLAST:  
-                database = NCBI_VIRUS_PROTEIN_BLAST_HOME
-                dbName   = 'ncbiVirusProtein'
-                count = 0
-                if PHATE_PROGRESS == 'True':
-                    print("Blast module says: Running NCBI_VIRUS_PROTEIN blast:", database, dbName)
-                for fasta in fastaSet.fastaList:
-                    count += 1
-                    outfile = self.blastOutDir + self.blastFlavor + "_ncbiVirProt_" + str(count)
-                    self.blast1fasta(fasta,outfile,database,dbName)  #*** CONTROL
-
-            if self.REFSEQ_PROTEIN_BLAST:
-                database = REFSEQ_PROTEIN_BLAST_HOME
-                dbName   = 'refseqProtein'
-                count = 0
-                if PHATE_PROGRESS == 'True':
-                    print("Blast module says: Running Refseq protein blast:", database, dbName)
-                for fasta in fastaSet.fastaList:
-                    count += 1
-                    outfile = self.blastOutDir + self.blastFlavor + "_refseqProtein_" + str(count)
-                    self.blast1fasta(fasta,outfile,database,dbName)  #*** CONTROL
-
-            if self.PHANTOME_BLAST:
-                database = PHANTOME_BLAST_HOME
-                dbName   = 'phantome'
-                count = 0 
-                if PHATE_PROGRESS == 'True':
-                    print("Blast module says: Running PHANTOME blast:", database, dbName)
-                for fasta in fastaSet.fastaList:
-                    count += 1
-                    outfile = self.blastOutDir + self.blastFlavor + "_phantome_" +str(count)
-                    self.blast1fasta(fasta,outfile,database,dbName)
-
-            if self.KEGG_VIRUS_BLAST: 
-                database = KEGG_VIRUS_BLAST_HOME
-                dbName   = 'kegg'
-                count = 0
-                if PHATE_PROGRESS == 'True':
-                    print("Blast module says: Running KEGG blast:", database, dbName)
-                for fasta in fastaSet.fastaList:
-                    count += 1
-                    outfile = self.blastOutDir + self.blastFlavor + "_kegg_" + str(count)
-                    self.blast1fasta(fasta,outfile,database,dbName)
-
-            if self.SWISSPROT_BLAST: 
-                database = SWISSPROT_BLAST_HOME
-                dbName   = 'swissprot'
-                count = 0
-                if PHATE_PROGRESS == 'True':
-                    print("Blast module says: Running Swissprot blast:", database, dbName)
-                for fasta in fastaSet.fastaList:
-                    count += 1
-                    outfile = self.blastOutDir + self.blastFlavor + "_swissprot_" + str(count)
-                    self.blast1fasta(fasta,outfile,database,dbName)   #*** CONTROL
-
-            if self.PHAGE_ENZYME_BLAST: 
-                database = PHAGE_ENZYME_BLAST_HOME
-                dbName   = 'phageEnzyme'
-                count = 0
-                if PHATE_PROGRESS == 'True':
-                    print("Blast module says: Running phageEnzyme blast:", database, dbName)
-                for fasta in fastaSet.fastaList:
-                    count += 1
-                    outfile = self.blastOutDir + self.blastFlavor + "_phageEnz_" + str(count)
-                    self.blast1fasta(fasta,outfile,database,dbName)   #*** CONTROL
-
-            if self.PVOGS_BLAST:  
-                database = PVOGS_BLAST_HOME
-                dbName   = 'pVOGs'
-                count = 0
-                if PHATE_PROGRESS == 'True':
-                    print("Blast module says: Running pVOGs blast:", database, dbName)
-                for fasta in fastaSet.fastaList:
-                    count += 1
-                    outfile = self.blastOutDir + self.blastFlavor + "_pvog_" + str(count)
-                    self.blast1fasta(fasta,outfile,database,dbName)
-
-                if PHATE_PROGRESS == 'True':
-                    print("Blast module says: Done!")
-                    print("Blast module says: Collecting and saving pVOG sequences corresponding to blast hit(s)")
-
-                # Next you want to create pVOG fasta group files so user can do alignments
-                # You need only one "alignment" file per pVOG group that the fasta hit (under blast cutoffs)
-                # Capture pVOG.faa lines
-                pVOGs_h = open(database,"r")
-                pVOGlines = pVOGs_h.read().splitlines()
-                if DEBUG:
-                    print("There are", len(pVOGlines), "pVOG database lines to search")
-                count = 0; countA = 0
-                for fasta in fastaSet.fastaList:
-                    pvogPrintedList = []  # keeps track of pVOGs that have already been printed for current fasta
-                    count += 1 
-                    countA = 0
-                    for annot in fasta.annotationList:
-                        for pVOG in annot.pVOGlist:  # There may be multiple annotations to inspect
-                            # Avoid redundancy in printing pVOG groups for this fasta; only once per pVOG ID that was a blast hit
-                            if pVOG not in pvogPrintedList:
-                                pvogPrintedList.append(pVOG)  # Record this pVOG identifier as "done"
-                                # create dynamic file name
-                                countA += 1 
-                                outfilePVOG = self.pVOGsOutDir + "pvogGroup_" + str(count) + '_' + str(countA) + '.faa' 
-                                if DEBUG:
-                                    print("Writing to outfile", outfilePVOG, "pVOG group", pVOG, "pvogPrintedList:", pvogPrintedList)
-                                # open file and write current fasta pluse each corresponding pVOG fasta
-                                outfilePVOG_h = open(outfilePVOG,'w')
-                                outfilePVOG_h.write("%c%s\n%s\n" % ('>',fasta.header,fasta.sequence)) # write the current peptide fasta,
-                                self.writePVOGsequences2file(outfilePVOG_h,pVOGlines,pVOG)                  # followed by the pVOG group
-                                outfilePVOG_h.close()
-
-        if CLEAN_RAW_DATA == 'True':
-            if PHATE_PROGRESS == 'True':
-                print("Blast module says: removing raw data files.")
-            self.cleanBlastOutDir()
-
-    def writePVOGsequences2file(self,FILE_H,lines,pVOG):
-        pVOGheader = ""; pVOGsequence = ""; GET_SEQ = False
-        for i in range(0,len(lines)-1):
-            nextLine = lines[i]
-            match_header = re.search('>',nextLine)
-            match_pVOG = re.search(pVOG,nextLine)
-
-            if match_header:   
-                if GET_SEQ:
-                    if DEBUG:
-                        print("Writing sequence to file for header", pVOGheader)
-                    FILE_H.write("%s\n%s\n" % (pVOGheader,pVOGsequence))
-                    pVOGheader = ""; pVOGsequence = ""
-                    GET_SEQ = False
-
-                if match_pVOG:
-                    pVOGheader = nextLine
-                    GET_SEQ = True
-
-            elif GET_SEQ:
-                pVOGsequence = pVOGsequence + nextLine
-
-    def cleanBlastOutDir(self):  # Remove temporary files from BLAST_OUT_DIR
-        #command = "ls " + BLAST_OUT_DIR  #*** FIX: list only files, not directories too
-        command = "ls " + self.blastOutDir  #*** FIX: list only files, not directories too
-        proc = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
-        (rawresult, err) = proc.communicate()
-        result = rawresult.decode('utf-8')
-        if DEBUG:
-            print("Result of listing blast out dir,", self.blastOutDir) 
-        fileList = str(result).split('\n')   # Python3
-        for filename in fileList:
-            file2delete = self.blastOutDir + filename
-            if re.search('blast',file2delete):
-                command = "rm " + file2delete
-                proc = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
-                (result, err) = proc.communicate()
-
-    ##### PRINT METHODS
-
-    def printParameters(self):
-        print("Parameters:")
-        print("   blast flavor:   ", self.blastFlavor)
-        print("   identity min:   ", self.identityMin)
-        print("   evalue min:     ", self.evalueMin)
-        print("   identity select:", self.identitySelect)
-        print("   evalue select:  ", self.evalueSelect)
-        print("   topHitCount:    ", self.topHitCount)
-        print("   scoreEdge:      ", self.scoreEdge)
-        print("   overhang:       ", self.overhang)
-        print("   outputFormat:   ", self.outputFormat)
-
-    def printParameters2file(self,fileHandle):
-        fileHandle.write("%s\n" % ("Parameters:"))
-        fileHandle.write("%s%s\n" % ("   blast flavor ",self.blastFlavor))
-        fileHandle.write("%s%s\n" % ("   identity min ",self.identityMin))
-        fileHandle.write("%s%s\n" % ("   evalue min ",self.evalueMin))
-        fileHandle.write("%s%s\n" % ("   identity select: ",self.identitySelect))
-        fileHandle.write("%s%s\n" % ("   evalue select: ",self.evalueSelect))
-        fileHandle.write("%s%s\n" % ("   topHitCount: ",self.topHitCount))
-        fileHandle.write("%s%s\n" % ("   scoreEdge: ",self.scoreEdge))
-        fileHandle.write("%s%s\n" % ("   overhang ",self.overhang))
-        fileHandle.write("%s%s\n" % ("   outputFormat: ",self.outputFormat))
-
-    def printAnnotations(self):  #*** Don't need this; don't use, because code writes directoy to fasta's annotation object
-        print("Annotations:")
-        if self.annotations:
-            for annotation in self.annotations:
-                print("   ", annotation.PrintAll())
-        else:
-            print("   There are no annotations")
+    def computeCoverage(self,queryLength,subjectLength):
+        errorCode = [] # for debug
+        if queryLength == 0 or subjectLength == 0:
+            errorCode.append(1) 
+            return errorCode
+        qLen = float(queryLength)
+        sLen = float(subjectLength)
+        qSpan = float(int(self.queryEnd) - int(self.queryStart) + 1)
+        sSpan = float(int(self.subjectEnd) - int(self.subjectStart) + 1)
+        self.queryCoverage = int(round(100*qSpan/qLen))
+        self.subjectCoverage = int(round(100*sSpan/sLen))
+        return (self.queryCoverage,self.subjectCoverage) 
 
     def printAll(self):
-        self.printParameters()
-        #self.printAnnotations()
+        print ("query:", self.queryHeader)
+        print ("subject:", self.subjectHeader)
+        print ("hit type:", self.hitType)
+        print ("identity:", self.identity)
+        print ("alignment length:", self.alignmentLength)
+        print ("mismatches:", self.mismatches)
+        print ("gapopens:", self.gapopens)
+        print ("query start/end:", self.queryStart, "/", self.queryEnd)
+        print ("subject start/end:", self.subjectStart, "/", self.subjectEnd)
+        print ("evalue:", self.evalue)
+        print ("bitscore:", self.bitscore)
+        print ("query/subject coverage:", self.queryCoverage, "/", self.subjectCoverage)
 
-    def printAll2file(self,fileHandle):
-        fileHandle.write("%s%s\n" % ("blast flavor:   ", self.blastFlavor))
-        fileHandle.write("%s%s\n" % ("identity min:   ", self.identityMin))
-        fileHandle.write("%s%s\n" % ("evalue min:     ", self.evalueMin))
-        fileHandle.write("%s%s\n" % ("identity select:", self.identitySelect))
-        fileHandle.write("%s%s\n" % ("evalue select:  ", self.evalueSelect))
+    def printAll2file(self,FILE_HANDLE):
+        FILE_HANDLE.write("%s%s%s" % ("query:",self.queryHeader,"\n"))
+        FILE_HANDLE.write("%s%s%s" % ("subject:",self.subjectHeader,"\n"))
+        FILE_HANDLE.write("%s%s%s" % ("hit type:",self.hitType,"\n"))
+        FILE_HANDLE.write("%s%s%s" % ("identity:",self.identity,"\n"))
+        FILE_HANDLE.write("%s%s%s" % ("alignment length:",self.alignmentLength,"\n"))
+        FILE_HANDLE.write("%s%s%s" % ("mismatches:",self.mismatches,"\n"))
+        FILE_HANDLE.write("%s%s%s" % ("gapopens:",self.gapopens,"\n"))
+        FILE_HANDLE.write("%s%s%s%s%s" % ("query start/end:",self.queryStart,"/",self.queryEnd,"\n"))
+        FILE_HANDLE.write("%s%s%s%s%s" % ("subject start/end:",self.subjectStart,"/",self.subjectEnd,"\n"))
+        FILE_HANDLE.write("%s%s%s" % ("evalue:",self.evalue,"\n"))
+        FILE_HANDLE.write("%s%s%s" % ("bitscore:",self.bitscore,"\n"))
+        FILE_HANDLE.write("%s%s%s%s%s" % ("query/subject coverage:",self.queryCoverage,"/",self.subjectCoverage,"\n"))
 
-    ##### STATISTICS
+###########################################################################################################
+class hitList(object): # Holds output from a blast run plus meta-data about the run
 
-    def calculateStatistics(self):
-        pass
+    def __init__(self):
+        self.blastHits = []  # list of hit objects
+        self.type = "unknown"  # "mutual best", "singular", "loner", "paralog"
+        self.identityCutoff = "unknown" 
+        self.evalueCutoff   = "unknown" 
 
+    def append(self,newHit):
+        self.blastHits.append(newHit)
+
+    def printAll(self):
+        for hit in self.blastHits:
+            hit.printAll()
+
+    def printAll2file(self,FILE_HANDLE):
+        for hit in self.blastHits:
+            hit.printAll2file(FILE_HANDLE)
+
+###########################################################################################################
+class homology(object):  # holds comparative information between 2 gene/protein sets
+    
+    def __init__(self):
+        self.mutualBestHits = { #*** CHECK WHETHER THE VALUES SHOULD BE TYPE "None" (can Python accept user-defined type?) 
+            "set1" : [],   # NOTE: using literal list of hit objects here; python doesn't like my user-defined type
+            "set2" : []    # type list of hit objects 
+        }
+        self.singularHits = {
+            "set1" : [],   # type list of hit objects 
+            "set2" : []    # type list of hit objects 
+        } 
+        self.loners = {
+            "set1" : [],   # type FastaSequence
+            "set2" : []    # type FastaSequence
+        }
+
+    def computeCoverage(self,seqList1,seqList2):  # NEEDS TESTING 
+        # This method fills in fields hit.queryCoverage and hit.subjectCoverage
+        seqLength1 = {}
+        seqLength2 = {}
+        for seq in seqList1:
+            seqLength1[seqList1.header] = len(seqList1.sequence)
+        for seq in seqList2:
+            seqLength2[seqList2.header] = len(seqList2.sequence)
+        for hit in self.mutualBestHits["set1"]:
+            hit.computeCoverage(seqLength1[hit.queryHeader],seqLength2[hit.subjectHeader])
+        for hit in self.mutualBestHits["set2"]:
+            hit.computeCoverage(seqLength2[hit.queryHeader],seqLength1[hit.subjectHeader])
+        for hit in self.singularHits["set1"]:
+            hit.computeCoverage(seqLength1[hit.queryHeader],seqLength2[hit.subjectHeader])
+        for hit in self.singluarHits["set2"]:
+            hit.computeCoverage(seqLength2[hit.queryHeader],seqLength1[hit.subjectHeader])
+
+    def mergeAll(self,seqList1,seqList2):  
+        # This method merges all of the hit types (plus loners) for both genomes.
+        # First, a list is constructed 
+        # comprising the reference genome's genes and their mutual best and singular
+        # hits to the other genome's genes; this list includes genome 1's loners.
+        # Then, genome 2's singular hits are added, with reference location based
+        # on the reference genome--thus, according to the start positions of the
+        # subject (gene in reference genome that was hit by genome 2's gene). Then
+        # this combined list is sorted by genome 1's gene start positions.
+        # Genome 2's loners are then merged in by fitting them in between the closest
+        # (mutual or singular) hits (i.e., subject start) to reference genome genes.
+        # Note that there may not be a single uniquely best location to place genome 
+        # 2's loners, but a reasonably good position is found using this approach.
+
+        errorCode      = [] # for debugging
+        mergeList      = [] # array/list of hits and loners for gene/protein set1 (i.e., seqList1)
+        hitLine        = [] # array if items to be appended to mergeList
+
+        #########################################################################################
+        # Fields for hitLine (0-19):
+        # 0: sortPostion                               - used below to sort all hitLines relative to genome 1
+        # 1: genome_hitType - "genome1"|"genome2" + "_" + "mutual"|"singular"|"loner"
+        # 2-5: qStart,qEnd,sStart,sEnd                 - query/subject start/end values from blast output 
+        # 6-7: identity,evalue                         - from blast output
+        # 8: "query"|"subject"|"loner"                 - role in blast hit, or if no hit was found 
+        # 9: g1header                                  - header of query sequence
+        # 10: g1 query sequence contig (ie, parent sequence of gene)  #*** new
+        # 11: g1annotations                             - annotations attached to query sequence
+        # 12-14: g1Start_onGenome,g1End_onGenome,g1Strand - gene/protein start/end on its genome
+        # 15: "query"|"subject"|"loner"
+        # 16: g2header                                 - header of subject sequence
+        # 17: g2 subject sequence contig (ie, parent sequence of gene) #*** new
+        # 18: g2annotations                            - annotations attached to subject sequence
+        # 19-21: g2Start_onGenome,g2sEnd_onGenome,g2Strand - subject gene/protein start/end on its genome
+        # 22: G1coverage                               - genome1's gene/protein coverage in blast hit
+        # 23: G2coverage                               - genome2's gene/protein coverage in blast hit
+        # 24: alignmentLength                          - reported by blast
+        # 25: gapopens                                 - reported by blast
+        # 26: g1segment                                - span within blast alignment
+        # 27: g1length                                 - length of g1 gene
+        # 28: g2segment                                - span within blast alignment
+        # 29: g2length                                 - length of g2 gene
+        #########################################################################################
+
+        # Fields for hitLine (0-32):
+        SORT_POSITION      = 0
+        GENOME_HIT_TYPE    = 1
+        Q_START            = 2
+        Q_END              = 3
+        S_START            = 4
+        S_END              = 5
+        IDENTITY           = 6
+        EVALUE             = 7
+        G1_HIT_TYPE        = 8
+        G1_HEADER          = 9
+        G1_CONTIG          = 10
+        G1_ANNOTATIONS     = 11
+        G1_START_ON_GENOME = 12
+        G1_END_ON_GENOME   = 13
+        G1_STRAND          = 14
+        G2_HIT_TYPE        = 15
+        G2_HEADER          = 16
+        G2_CONTIG          = 17
+        G2_ANNOTATIONS     = 18
+        G2_START_ON_GENOME = 19
+        G2_END_ON_GENOME   = 20
+        G2_STRAND          = 21 
+        G1_COVERAGE        = 22
+        G2_COVERAGE        = 23
+        ALIGNMENT_LENGTH   = 24
+        GAP_OPENS          = 25
+        G1_SPAN            = 26
+        G1_LENGTH          = 27
+        G2_SPAN            = 28
+        G2_LENGTH          = 29
+        ALERT_LIST         = 30  # list of detected items of note and anomalies
+        G1_SEQUENCE        = 31  # fill this in if possible alternate start site(s)
+        G2_SEQUENCE        = 32  # ditto
+ 
+        #########################################################################################
+
+        ##### Set up data structures for quick access to annotations and sequence lengths
+        #seqAnnot1  = {}   # key = header, value = annotations, for genome1 genes/proteins
+        #seqAnnot2  = {}   # ditto, for genome2
+        #seqLength1 = {}   # key = header, value = length of sequence for genome1 genes/proteins
+        #seqLength2 = {}   # ditto, for genome2
+        #seqContig1 = {}   # key = header, value = parent sequence (ie, contig name) for genome1 gene
+
+        ##### Set up data structures for quick access to annotations and sequence lengths
+        seqAnnot1  = {}   # key = header, value = annotations, for genome1 genes/proteins
+        seqAnnot2  = {}   # ditto, for genome2
+        seqLength1 = {}   # key = header, value = length of sequence for genome1 genes/proteins
+        seqLength2 = {}   # ditto, for genome2
+        seqContig1 = {}   # key = header, value = parent sequence (ie, contig name) for genome1 gene
+        seqContig2 = {}   # ditto, for genome2
+
+        annotations = []
+        for seq in seqList1.fastaList:
+            aList = list(seq.annotationList)
+            for annot in aList:
+                annotations.append(list(annot.annotationList))
+            seqAnnot1[seq.header] = list(annotations) 
+            annotations = []  # reset
+            seqLength1[seq.header] = len(seq.sequence)
+            seqContig1[seq.header] = seq.parentSequence
+        for seq in seqList2.fastaList:
+            aList = list(seq.annotationList)
+            for annot in aList:
+                annotations.append(list(annot.annotationList))
+            seqAnnot2[seq.header] = list(annotations)
+            annotations = []  # reset 
+            seqLength2[seq.header] = len(seq.sequence)
+            seqContig2[seq.header] = seq.parentSequence
+
+        # Create lists to hold different categories of hits and loners 
+        quickMutual1   = []
+        quickSingular1 = []
+        quickLoner1    = []
+        quickSingular2 = []
+        quickLoner2    = [] 
+
+        # Capture mutual Best Hits for Genome 1   #*** CONTINUE HERE
+        for hit in self.mutualBestHits["set1"]:  
+            (qLocusTag,qStrand,qStart,qEnd,junk) = hit.queryHeader.split('/') #*** should split to list then pull data by index
+            (sLocusTag,sStrand,sStart,sEnd,junk) = hit.subjectHeader.split('/')
+            try:
+                qAnnotations = seqAnnot1[hit.queryHeader]
+                sAnnotations = seqAnnot2[hit.subjectHeader]
+            except:
+                print("blastAnalysis says, error retrieving qAnnotations or sAnnotations")
+                print("hit.queryHeader is",hit.queryHeader)
+                print("hit.subjectHeader is",hit.subjectHeader)
+                continue 
+            g1segment    = int(hit.queryEnd)   - int(hit.queryStart) + 1
+            g2segment    = int(hit.subjectEnd) - int(hit.subjectStart) + 1
+            g1length     = seqLength1[hit.queryHeader]
+            g2length     = seqLength2[hit.subjectHeader]
+            g1Contig     = seqContig1[hit.queryHeader]
+            g2Contig     = seqContig2[hit.subjectHeader]
+            (g1coverage,g2coverage) = hit.computeCoverage(g1length,g2length)
+            sortPosition = qStart   # start position of query gene/protein, relative to genome1
+            hitLine = [sortPosition,"genome1_mutual",hit.queryStart,hit.queryEnd,hit.subjectStart,hit.subjectEnd,hit.identity,hit.evalue,"query",hit.queryHeader,g1Contig,qAnnotations,qStart,qEnd,qStrand,"subject",hit.subjectHeader,g2Contig,sAnnotations,sStart,sEnd,sStrand,g1coverage,g2coverage,hit.alignmentLength,hit.gapopens,g1segment,g1length,g2segment,g2length]
+            quickMutual1.append(hitLine)
+
+        # Capture singular Best Hits for Genome 1
+        for hit in self.singularHits["set1"]:
+            (qLocusTag,qStrand,qStart,qEnd,junk) = hit.queryHeader.split('/')
+            (sLocusTag,sStrand,sStart,sEnd,junk) = hit.subjectHeader.split('/')
+            try:
+                qAnnotations = seqAnnot1[hit.queryHeader]
+                sAnnotations = seqAnnot2[hit.subjectHeader]
+            except:
+                print("blastAnalysis says, error retrieving qAnnotations or sAnnotations")
+                print("hit.queryHeader is",hit.queryHeader)
+                print("hit.subjectHeader is",hit.subjectHeader)
+                continue 
+            g1segment    = int(hit.queryEnd) - int(hit.queryStart) + 1
+            g2segment    = int(hit.subjectEnd) - int(hit.subjectStart) + 1
+            g1length     = seqLength1[hit.queryHeader]
+            g2length     = seqLength2[hit.subjectHeader]
+            g1Contig     = seqContig1[hit.queryHeader]
+            g2Contig     = seqContig2[hit.subjectHeader]
+            (g1coverage,g2coverage) = hit.computeCoverage(g1length,g2length)
+            sortPosition = qStart     # start position of query gene/protein, relative to genome1
+            hitLine = [sortPosition,"genome1_singular",hit.queryStart,hit.queryEnd,hit.subjectStart,hit.subjectEnd,hit.identity,hit.evalue,"query",hit.queryHeader,g1Contig,qAnnotations,qStart,qEnd,qStrand,"subject",hit.subjectHeader,g2Contig,sAnnotations,sStart,sEnd,sStrand,g1coverage,g2coverage,hit.alignmentLength,hit.gapopens,g1segment,g1length,g2segment,g2length]
+            quickSingular1.append(hitLine)
+
+        # Capture loners for Genome 1
+        for seq in self.loners["set1"]:
+            annotations = seqAnnot1[seq.header] 
+            g1Contig    = seqContig1[seq.header]
+            (locusTag,strand,start,end,junk) = seq.header.split('/')
+            sortPosition = start             # no hit, actually; reference position is gene/protein start on genome 1
+            hitLine = [sortPosition,"genome1_loner","","","","","","","loner",seq.header,g1Contig,annotations,start,end,strand,"","","","","","","","","","","","","","",""] 
+            quickLoner1.append(hitLine)
+
+        # Load hits & loners for genome 1 (i.e., reference genome's genes/proteins) into merge list 
+        for hitLine in quickMutual1:
+            mergeList.append(hitLine)
+        for hitLine in quickSingular1:
+            mergeList.append(hitLine)
+        for loner in quickLoner1:
+            mergeList.append(loner)
+
+        # Prepare to insert genome2's singular hits and loners to mergeList
+        # First, capture genome2's singular hits and loners in 'hitList' format 
+
+        # Capture singular hits for genome2
+        for hit in self.singularHits["set2"]:
+            try:
+                qAnnotations = seqAnnot1[hit.queryHeader]
+                sAnnotations = seqAnnot2[hit.subjectHeader]
+            except:
+                print("blastAnalysis says, error retrieving qAnnotations or sAnnotations")
+                print("hit.queryHeader is",hit.queryHeader)
+                print("hit.subjectHeader is",hit.subjectHeader)
+                continue 
+            g1segment    = int(hit.subjectEnd) - int(hit.subjectStart) + 1
+            g2segment    = int(hit.queryEnd)   - int(hit.queryStart) + 1
+            g1length     = seqLength1[hit.subjectHeader]
+            g2length     = seqLength2[hit.queryHeader]
+            g1Contig     = seqContig1[hit.subjectHeader]
+            g2Contig     = seqContig2[hit.queryHeader]
+            (g2coverage,g1coverage) = hit.computeCoverage(g2length,g1length)
+            (qLocusTag,qStrand,qStart,qEnd,junk) = hit.queryHeader.split('/')
+            (sLocusTag,sStrand,sStart,sEnd,junk) = hit.subjectHeader.split('/')
+            sortPosition = sStart  # relative to genome1 (the subject)
+            hitLine = [sortPosition,"genome2_singular",hit.queryStart,hit.queryEnd,hit.subjectStart,hit.subjectEnd,hit.identity,hit.evalue,"subject",hit.subjectHeader,g1Contig,sAnnotations,sStart,sEnd,sStrand,"query",hit.queryHeader,g2Contig,qAnnotations,qStart,qEnd,qStrand,g1coverage,g2coverage,hit.alignmentLength,hit.gapopens,g1segment,g1length,g2segment,g2length]
+            quickSingular2.append(hitLine) 
+
+        # Capture loners for genome 2, but note that there is no hit, so no reference to genome 1
+        for seq in self.loners["set2"]:
+            annotations = seqAnnot2[seq.header]
+            g2Contig    = seqContig2[seq.header]
+            (locusTag,strand,start,end,junk) = seq.header.split('/')
+            hitLine = ["0","genome2_loner","","","","","","","","","","","","","","loner",seq.header,g2Contig,annotations,start,end,strand,"","","","","","","",""]
+            quickLoner2.append(hitLine) 
+
+        # Append genome2's singular hits to mergeList and sort mergeList
+        for hitLine in quickSingular2:
+            mergeList.append(hitLine)
+        g1contig_position = lambda x: (x[G1_CONTIG], int(x[SORT_POSITION]))
+        mergeList.sort(key=g1contig_position)
+
+        # Find a suitable location for each genome2 loner (place according to cds number along genome 2) #*** Try, but maybe better to lump at top
+        for loner in quickLoner2:
+            lonerIndex = 0  # will place loner at front of mergeList unless a better location is found (see below)
+            lonerContig     = loner[G2_CONTIG]
+            lonerHeader     = loner[G2_HEADER]
+            lonerHeaderList = lonerHeader.split('/')
+            lonerCDSlist    = lonerHeaderList[0].split('cds') 
+            lonerCDSnumber  = lonerCDSlist[1] 
+            # Identify location for genome2's loner after line containing that genome's previous cds number
+            for hitLine in mergeList: 
+                if lonerContig == hitLine[G2_CONTIG]: # look for location within same contig on genome 2
+                    g2Header     = hitLine[G2_HEADER]
+                    g2HeaderList = g2Header.split('/')
+                    g2CDSlist    = g2HeaderList[0].split('cds') 
+                    g2CDSnumber  = g2CDSlist[1] 
+                    # CDSs should be (pretty much) in order, based on having been sorted (above)
+                    if int(lonerCDSnumber) > int(g2CDSnumber):  
+                        # find index of this g2 data line in mergeList...
+                        lonerIndex = mergeList.index(hitLine) + 1   #  place loner just after 
+                        break  # found where to insert
+            # Lastly, add genome2's loner to mergeList at position lonerIndex
+            mergeList.insert(lonerIndex,loner)
+
+        # Create a header for the mergeList; Make deep copy (new memory) of mergeList and return it
+        headerLine = ["#sortPos","genome_type","qStart","qEnd","sStart","sEnd","identity","evalue","Q|S|Loner","G1header","G1contig","G1annotations","G1geneStart","G1geneEnd","G1strand","Q|S|Loner","G2header","G2contig","G2annotations","G2geneStart","G2geneEnd","G2strand","G1coverage","G2coverage","alignmentLength","gapOpens","g1span","g1length","g2span","g2length"]
+        mergeList.insert(0,headerLine)
+        newMergeList = copy.deepcopy(mergeList)  #*** ? Pretty sure dynamic memory is needed
+        return newMergeList  
+
+    def reportStats(self):
+        statsList = []
+        set1mutuals = len(self.mutualBestHits["set1"])
+        set2mutuals = len(self.mutualBestHits["set2"])
+        set1singulars = len(self.singularHits["set1"])
+        set2singulars = len(self.singularHits["set2"])
+        set1loners = len(self.loners["set1"])
+        set2loners = len(self.loners["set2"])
+
+        print ("Set 1 mutual best hits:", set1mutuals)
+        print ("Set 2 mutual best hits:", set2mutuals)
+        print ("Set 1 singular hits:", set1singulars)
+        print ("Set 2 singular hits:", set2singulars)
+        print ("Set 1 loners:", set1loners)
+        print ("Set 2 loners:", set2loners) 
+
+        statsList.append("Set 1 mutual best hits: " + str(set1mutuals))
+        statsList.append("Set 2 mutual best hits: " + str(set2mutuals))
+        statsList.append("Set 1 singular hits: " + str(set1singulars))
+        statsList.append("Set 2 singular hits:" + str(set2singulars))
+        statsList.append("Set 1 loners: " + str(set1loners))
+        statsList.append("Set 2 loners: " + str(set2loners))
+        return statsList
+
+    def printAll(self):
+        print ("List of mutual best hits for set 1:")
+        for hit in self.mutualBestHits["set1"]:   #*** Test if it works to say, "self.mutualBestHits["set1"].printAll()"
+            hit.printAll()
+        print ("End list of mutual best hits for set 1.")
+        print ("List of mutual best hits for set 2:")
+        for hit in self.mutualBestHits["set2"]:
+            hit.printAll()
+        print ("End of list of mutual best hits for set 2.")
+        print ("List of singular best hits for set 1:")
+        for hit in self.singularHits["set1"]:
+            hit.printAll()
+        print ("End of list of singular best hits for set 1.")
+        print ("List of singular best hits for set 2:")
+        for hit in self.singularHits["set2"]:
+            hit.printAll()
+        print ("End of list of singular best hits for set 2.")
+        print ("List of loners for set 1:")
+        for seq in self.loners["set1"]:
+            seq.printAll()
+        print ("End of list of loners for set 1.")
+        print ("List of loners for set 2:")
+        for seq in self.loners["set2"]:
+            seq.printAll()
+        print ("End of list of loners for set 2.")
+
+    def printAll2file(self,FILE_HANDLE): 
+        FILE_HANDLE.write("%s" % ("List of mutual best hits for set 1:\n"))
+        for hit in self.mutualBestHits["set1"]:   
+            hit.printAll2file(FILE_HANDLE)
+        FILE_HANDLE.write("%s" % ("End list of mutual best hits for set 1.\n"))
+        FILE_HANDLE.write("%s" % ("List of mutual best hits for set 2:\n"))
+        for hit in self.mutualBestHits["set2"]:
+            hit.printAll2file(FILE_HANDLE)
+        FILE_HANDLE.write("%s" % ("End of list of mutual best hits for set 2.\n"))
+        FILE_HANDLE.write("%s" % ("List of singular best hits for set 1:\n"))
+        for hit in self.singularHits["set1"]:
+            hit.printAll2file(FILE_HANDLE)
+        FILE_HANDLE.write("%s" % ("End of list of singular best hits for set 1.\n"))
+        FILE_HANDLE.write("%s" % ("List of singular best hits for set 2:\n"))
+        for hit in self.singularHits["set2"]:
+            hit.printAll2file(FILE_HANDLE)
+        FILE_HANDLE.write("%s" % ("End of list of singular best hits for set 2.\n"))
+        FILE_HANDLE.write("%s" % ("List of loners for set 1:\n"))
+        for seq in self.loners["set1"]:
+            seq.printAll2file(FILE_HANDLE)
+        FILE_HANDLE.write("%s" % ("End of list of loners for set 1.\n"))
+        FILE_HANDLE.write("%s" % ("List of loners for set 2:\n"))
+        for seq in self.loners["set2"]:
+            seq.printAll2file(FILE_HANDLE)
+        FILE_HANDLE.write("%s" % ("End of list of loners for set 2.\n"))
+
+###########################################################################################################
+class paralog(object):  #
+    def __init__(self):
+        self.header = ""      # header of paralog's fasta sequence
+        self.blastHit = None  # hit object that links this paralog
+
+    def printAll(self):
+        print ("Paralogs information:")
+        print ("header:", self.header)
+        print ("blast hit:")
+        self.blastHit.printAll()
+
+    def printAll2file(self,FILE_HANDLE):
+        FILE_HANDLE.write("%s" % ("Paralogs information:\n"))
+        FILE_HANDLE.write("%s%s%s" % ("header:",self.header,"\n"))
+        FILE_HANDLE.write("%s" % ("blast hit:\n"))
+        self.blastHit.printAll2file(FILE_HANDLE)
+        
+###########################################################################################################
+class blast(object):
+
+    # Class blast creates blast databases and performs blast between 2 fasta sets and compares results
+
+    def __init__(self):
+        self.blastHits = hitList()  # List of hit objects w/associated data 
+        self.blastHit = hit()
+        self.paralogT = paralog()   # paralog template
+        self.homologs = homology()
+
+    def identifyLoners(self,kvargs):  # kvargs contains 2 sequence lists and a homology object
+        if "seqList1" in kvargs.keys():       # a multi-fasta object
+            seqList1 = kvargs["seqList1"]
+        else:
+            return False
+        if "seqList2" in kvargs.keys():       # a multi-fasta object
+            seqList2 = kvargs["seqList2"]
+        else:
+            return False
+        if "comparedHits" in kvargs.keys():   # a homology object
+            comparedHits = kvargs["comparedHits"]
+        else:
+            return False
+
+        mutualHitList1   = comparedHits.mutualBestHits["set1"]
+        mutualHitList2   = comparedHits.mutualBestHits["set2"]
+        singularHitList1 = comparedHits.singularHits["set1"]
+        singularHitList2 = comparedHits.singularHits["set2"]
+        lonerList1       = comparedHits.loners["set1"]
+        lonerList2       = comparedHits.loners["set2"]
+
+        hadahit = False
+        for seq in seqList1.fastaList:
+            for hit in mutualHitList1:  
+                if seq.header == hit.queryHeader:
+                    hadahit = True
+            for hit in singularHitList1:
+                if seq.header == hit.queryHeader:
+                    hadahit = True 
+            if not hadahit:
+                lonerList1.append(seq)
+            hadahit = False  # reset
+
+        hadahit = False
+        for seq in seqList2.fastaList:
+            for hit in mutualHitList2:
+                if seq.header == hit.queryHeader:
+                    hadahit = True
+            for hit in singularHitList2:
+                if seq.header == hit.queryHeader:
+                    hadahit = True
+            if not hadahit:
+                lonerList2.append(seq)
+            hadahit = False  # reset
+        return comparedHits   # returns a homology object
+ 
+    def identifyParalogs(self,inList1,inList2,kvargs):
+        paralogCount = 0
+        if "type" in kvargs.keys():
+            mType = kvargs["type"]
+        if mType.lower() == "gene":
+            if "paralogMatchIdentity" in kvargs.keys():
+                identity = kvargs["paralogMatchIdentity"]
+            else:
+                identity = PARALOG_MATCH_IDENTITY_DEFAULT
+            if "paralogMatchCoverage" in kvargs.keys():
+                coverage = kvargs["paralogMatchCoverage"]
+            else:
+                coverage = PARALOG_MATCH_IDENTITY_DEFAULT
+        elif mType.lower() == "protein":
+            if "proteinParalogMatchIdentity" in kvargs.keys():
+                identity = kvargs["proteinParalogMatchIdentity"]
+            else:
+                identity = PROTEIN_PARALOG_MATCH_IDENTITY_DEFAULT
+            if "proteinParalogMatchCoverage" in kvargs.keys():
+                coverage = kvargs["proteinParalogMatchCoverage"]
+            else:
+                coverage = PROTEIN_PARALOG_MATCH_IDENTITY_DEFAULT
+        else:
+            return False
+
+        # For each sequence, record any qualifying hits to other sequences in the genome 
+        for seq in inList1.fastaList:
+            for nextHit in inList2.blastHits:  # check if it's a hit of seq against non-self seq
+                if seq.header == nextHit.queryHeader and nextHit.queryHeader != nextHit.subjectHeader:
+                    if float(nextHit.identity) >= float(identity):  # check hit quality
+                        newParalog = copy.deepcopy(self.paralogT) # replicate the paralog template
+                        newParalog.header = nextHit.subjectHeader
+                        newParalog.blastHit = nextHit
+                        seq.paralogList.append(newParalog) # add to list of paralogs for this sequence object
+                        paralogCount += 1 
+        return paralogCount 
+
+    def compareHits(self,inList1,inList2,kvargs): # Compare hits between 2 gene/protein sets
+        newComparison = copy.deepcopy(self.homologs)
+        errorCode = []  # for debug
+        if "type" in kvargs.keys():
+            mType = kvargs["type"]
+        if mType.lower() == "gene":
+            if "geneMatchIdentity" in kvargs.keys():
+                identity = kvargs["geneMatchIdentity"]
+            else:
+                identity = GENE_MATCH_IDENTITY_DEFAULT
+            if "geneMatchCoverage" in kvargs.keys():
+                coverage = kvargs["geneMatchCoverage"]
+            else:
+                coverage = GENE_MATCH_COVERAGE_DEFAULT
+        elif mType.lower() == "protein":
+            if "proteinMatchIdentity" in kvargs.keys():
+                identity = kvargs["proteinMatchIdentity"]
+            else:
+                identity = PROTEIN_MATCH_IDENTITY_DEFAULT
+            if "proteinMatchCoverage" in kvargs.keys():
+                coverage = kvargs["proteinMatchCoverage"]
+            else:
+                coverage = PROTEIN_MATCH_COVERAGE_DEFAULT
+        else:
+            errorCode.append(1)
+
+        # Compare hits between 2 input hitList objects 
+        for hit1 in inList1.blastHits:
+            for hit2 in inList2.blastHits: 
+                if hit1.subjectHeader == hit2.queryHeader and hit2.subjectHeader == hit1.queryHeader:
+                    newComparison.mutualBestHits["set1"].append(hit1)
+                    newComparison.mutualBestHits["set2"].append(hit2)
+                    hit1.hitType = "mutual best"
+                    hit2.hitType = "mutual best"
+                elif hit1.subjectHeader == hit2.queryHeader:  # hit1's top (but not mutual)
+                    newComparison.singularHits["set1"].append(hit1)
+                    hit1.hitType = "singular best"
+                elif hit2.subjectHeader == hit1.queryHeader:  # hit2's top (but not mutual)
+                    newComparison.singularHits["set2"].append(hit2)
+                    hit2.hitType = "singlular best"
+        if errorCode:
+            print ("Method compareHits errorCode:", errorCode)
+        return newComparison
+
+    def recordHits(self,filename):
+        HIT_FILE = open(filename,"r")
+        newHitList = copy.deepcopy(self.blastHits) 
+        fLines = HIT_FILE.read().splitlines()  # read lines into list, removing newlines
+        for line in fLines:
+            match = re.search(p_comment, line)
+            if not match:
+                fields = line.split('\t')
+                newHit = copy.deepcopy(self.blastHit)
+                newHit.queryHeader     = fields[0]
+                newHit.subjectHeader   = fields[1]
+                newHit.identity        = fields[2]
+                newHit.alignmentLength = fields[3]
+                newHit.mismatches      = fields[4]
+                newHit.gapopens        = fields[5]
+                newHit.queryStart      = fields[6]
+                newHit.queryEnd        = fields[7]
+                newHit.subjectStart    = fields[8]
+                newHit.subjectEnd      = fields[9]
+                newHit.evalue          = fields[10]
+                newHit.bitscore        = fields[11]
+                newHitList.append(newHit)
+        HIT_FILE.close()
+        return(newHitList)
+
+    def printHits(self,hitList):
+        hitList.printAll()
+
+    def printHits2file(self,hitList,FILE_HANDLE):
+        hitList.printAll2file(FILE_HANDLE)
+
+    def makeBlastDB(self,kvargs):  # Create blastDBs for contigs, genes, proteins
+        if "dbType" in kvargs.keys():
+            databaseType = kvargs["dbType"].lower()
+        else:
+            databaseType = "nucl"
+        if "filename" in kvargs.keys():
+            filename = kvargs["filename"]
+        else:
+            return False
+        if databaseType == "nucl" or databaseType == "nt" or databaseType == "dna":
+            command = "makeblastdb -in " + filename + " -dbtype nucl -logfile " + filename + ".blastdb1_nucl_log"
+        elif databaseType == "prot" or databaseType == "aa" or databaseType == "protein":
+            command = "makeblastdb -in " + filename + " -dbtype prot -logfile " + filename + ".blastdb1_prot_log"
+        else:
+            return False
+        myResult = os.system(command)
+        return myResult
+
+    def performBlast(self,kvargs):
+        command = ""
+        errorList = []
+
+        # Gather parameters for blast
+        if "query" in kvargs.keys():        # The sequences being blasted
+            query = kvargs["query"]
+        else:
+            errorList.append(1) 
+        if "subject" in kvargs.keys():      # The database that is being blasted against
+            subject = kvargs["subject"]
+        else:
+            errorList.append(2)
+        if "mtype" in kvargs.keys():
+            mtype = kvargs["mtype"]
+        else:
+            errorList.append(3) 
+        if "evalue" in kvargs.keys():
+            evalue = str(kvargs["evalue"])
+        else:
+            evalue = str(0.01)              # default
+        if "identity" in kvargs.keys():
+            identity = str(kvargs["identity"])
+        else:
+            identity = str(50)              # default
+        if "scoreEdge" in kvargs.keys():    # Best hit score edge
+            scoreEdge = str(kvargs["scoreEdge"])
+        else:
+            scoreEdge = str(0.05)           # default
+        if "maxTargetSeqs" in kvargs.keys():
+            maxTargetSeqs = str(kvargs["maxTargetSeqs"])
+        else:
+            maxTargetSeqs = str(1)          # default
+        if "overhang" in kvargs.keys():     # Blast hit overhang
+            overhang = str(kvargs["overhang"])
+        else:
+            overhang = str(0.25)            # default
+        if "outputFormat" in kvargs.keys():
+            outputFormat = str(kvargs["outputFormat"])
+        else:
+            outputFormat = str(7)           # tabbed list by default
+        if "outfile" in kvargs.keys():
+            outfile = kvargs["outfile"]
+        else:
+            errorList.append(4)
+
+        # Blast
+        if mtype == "nucl" or mtype == "nt" or mtype == "gene" or mtype == "nucleotide":
+            command = "blastn -query " + query + " -out " + outfile + " -task blastn -db " + subject + \
+                " -evalue " + evalue + " -best_hit_score_edge " + scoreEdge + " -best_hit_overhang " + \
+                overhang + " -outfmt " + outputFormat + " -perc_identity " + identity + \
+                " -max_target_seqs " + maxTargetSeqs + " -max_hsps 1"
+        elif mtype == "prot" or mtype == "aa" or mtype == "protein" or mtype == "peptide":
+            command = "blastp -query " + query + " -out " + outfile + " -task blastp -db " + subject + \
+                " -evalue " + evalue + " -best_hit_score_edge " + scoreEdge + " -best_hit_overhang " + \
+                overhang + " -outfmt " + outputFormat + " -max_target_seqs " + maxTargetSeqs + \
+                " -max_hsps 1" 
+        else:
+            errorList.append(10)
+        print("performBlast says, maxTargetSeqs is",maxTargetSeqs)
+        print("performBlast says, command is",command)
+        result = os.system(command)
+        errorList.append(result)
+ 
+        return errorList 
+  

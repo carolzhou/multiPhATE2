@@ -62,7 +62,10 @@ import cgp_fastaSequence as fastaSequence
 import cgp_annotation as annotation
 import cgp_genomeSequence as genomeSequence
 #import cgp_blastAnalysis as blastAnalysis
-import blastAnalysis
+import cgp_blastAnalysis as blastAnalysis
+
+#Constants
+PARALOG_MAX = 5 # max number of paralogs to be detected
 
 try:
     maketrans = ''.maketrans
@@ -617,15 +620,16 @@ def extractGeneCalls(genomeX,lines):
     geneTemplate = fastaSequence.fasta()  # generic gene object
     annotationTemplate = annotation.annotationRecord()  # generic annotation object  
     gff = {  # for passing data to annotation class
-        "source"       : "RAST",  #***
-        "method"       : "RAST",
-        "type"         : "gene",
         "contig"       : "unknown",
+        "method"       : "PhATE",
+        "type"         : "gene",
         "start"        : 0,
         "end"          : 0,
+        "score"        : 0,
         "strand"       : 0,
         "readingFrame" : 0,
-        "annotation"   : ""
+        "annotation"   : "",
+        "source"       : "multiPhATE",  #***
         }  
     gene = {  # for passing data to fasta class
         "header"         : "",
@@ -634,7 +638,7 @@ def extractGeneCalls(genomeX,lines):
         "type"           : "nt",
         "parentSequence" : "",
         "order"          : 0,
-        "annotationList" : []
+        "annotationList" : [],
         }
     print("extractGeneCalls says, removing this line:",lines[0])
     lines.remove(lines[0]) # skip header line 
@@ -647,14 +651,18 @@ def extractGeneCalls(genomeX,lines):
         geneCount += 1  # Don't need this, but diagnostic
         fields = line.split('\t')
         if DEBUG:
-            for item in fields:
-                print ("item:",item)
+            pass
+            #for item in fields:
+            #    print ("item:",item)
         geneCallType = fields[2]
-        if geneCallType.lower() == "cds":  # ie, skip '*RNA' and other entries (for now)
+        if geneCallType.lower() == "cds":  # ie, skip '*RNA', 'gene', and other entries (for now)
             geneCountCDS += 1
             gff["contig"]          = fields[0]
+            gff["method"]          = fields[1]       # should be "PhATE"
+            gff["type"]            = fields[2]       # "gene" or "CDS"
             gff["start"]           = int(fields[3])
             gff["end"]             = int(fields[4])
+            gff["score"]           = fields[5]       # not used in this code 
             gff["strand"]          = fields[6]
             gff["readingFrame"]    = fields[7]
             gff["annotation"]      = fields[8]
@@ -681,6 +689,9 @@ def extractGeneCalls(genomeX,lines):
 # ...construct gene fasta sequence objects and insert into multiFasta objects;
 # Write gene fastas to file.
 #########################################################################################
+
+if DEBUG:
+    print("BEGIN CompareGeneProfiles Processing")
 
 printFastas2fileArgs = {  # for passing parameters to class genome/
     "mtype"      : "gene",   # "gene" (default), "protein", or "contig"
@@ -753,6 +764,8 @@ genome1.cleanUpAfterEMBOSS()                        # EMBOSS messes with headers
 printFastas2fileArgs["filename"] = files["proteinFile1"]
 printFastas2fileArgs["mtype"] = "protein"
 genome1.printFastas2file(printFastas2fileArgs)     # Replace EMBOSS's file of translated proteins w/fixed fastas
+if DEBUG:
+    print("Printing genome 1 data...")
 genome1.printGenomeData()
 PROT_FILE.close()
 
@@ -766,6 +779,8 @@ genome2.write2proteinSet(fLines)                   # Store translations in genom
 genome2.cleanUpAfterEMBOSS()                       # EMBOSS messes with headers...so fix them
 printFastas2fileArgs["filename"] = files["proteinFile2"]
 genome2.printFastas2file(printFastas2fileArgs)     # Replace EMBOSS's file of translated proteins w/fixed fastas
+if DEBUG:
+    print("Printing genome 2 data...")
 genome2.printGenomeData()
 PROT_FILE.close()
 
@@ -824,11 +839,6 @@ blastArgs = {
 print ("Blasting gene sets...")
 blastArgs["mtype"]   = "nucl"
 
-print ("Genome 1 genes against genome 2 genes...")
-blastArgs["query"]   = files["geneFile1"]
-blastArgs["subject"] = files["geneFile2"]
-blastArgs["maxTargetSeqs"] = 1 
-
 # Need the raw filename (without directory information) to construct blast output filenames
 files["geneFile1_root"] = GetRootFile(files["geneFile1"])
 files["geneFile2_root"] = GetRootFile(files["geneFile2"])
@@ -837,6 +847,10 @@ files["protFile2_root"] = GetRootFile(files["proteinFile2"])
 
 ### Genome 1 - Genome 2
 
+print ("Genome 1 genes against genome 2 genes...")
+blastArgs["query"]   = files["geneFile1"]
+blastArgs["subject"] = files["geneFile2"]
+blastArgs["maxTargetSeqs"] = 1 
 outfile = OUT_DIR + files["geneFile1_root"] + "_" + files["geneFile2_root"] + "_" + "blastn_" +\
     str(blastArgs["evalue"]) + "_" + str(blastArgs["identity"]) + ".out"
 print("cpg_compareGeneProfiles_main says, genome1-genome2 outfile is",outfile)
@@ -866,7 +880,7 @@ if BLAST_ON:
 print ("Genome 1 genes against self...")
 blastArgs["query"]   = files["geneFile1"]
 blastArgs["subject"] = files["geneFile1"]
-blastArgs["maxTargetSeqs"] = 5 
+blastArgs["maxTargetSeqs"] = PARALOG_MAX 
 outfile = OUT_DIR + files["geneFile1_root"] + "_" + files["geneFile1_root"] + "_" + "blastn_" +\
     str(blastArgs["evalue"]) + "_" + str(blastArgs["identity"]) + ".out"
 blastArgs["outfile"] = outfile
@@ -880,7 +894,7 @@ if BLAST_ON:
 print ("Genome 2 genes against self...")
 blastArgs["query"]   = files["geneFile2"]
 blastArgs["subject"] = files["geneFile2"]
-blastArgs["maxTargetSeqs"] = 5 
+blastArgs["maxTargetSeqs"] = PARALOG_MAX 
 outfile = OUT_DIR + files["geneFile2_root"] + "_" + files["geneFile2_root"] + "_" + "blastn_" +\
     str(blastArgs["evalue"]) + "_" + str(blastArgs["identity"]) + ".out"
 blastArgs["outfile"] = outfile
@@ -927,7 +941,7 @@ if PROTEIN:
     print ("Genome 1 proteins against self...")
     blastArgs["query"]   = files["proteinFile1"]
     blastArgs["subject"] = files["proteinFile1"]
-    blastArgs["maxTargetSeqs"] = 5 
+    blastArgs["maxTargetSeqs"] = PARALOG_MAX 
     outfile = OUT_DIR + files["protFile1_root"] + "_" + files["protFile1_root"] + "_" + "blastn_" +\
         str(blastArgs["evalue"]) + "_" + str(blastArgs["identity"]) + ".out"
     blastArgs["outfile"] = outfile
@@ -941,7 +955,7 @@ if PROTEIN:
     print ("Genome 2 proteins against self...")
     blastArgs["query"]   = files["proteinFile2"]
     blastArgs["subject"] = files["proteinFile2"]
-    blastArgs["maxTargetSeqs"] = 5 
+    blastArgs["maxTargetSeqs"] = PARALOG_MAX 
     outfile = OUT_DIR + files["protFile2_root"] + "_" + files["protFile2_root"] + "_" + "blastn_" +\
         str(blastArgs["evalue"]) + "_" + str(blastArgs["identity"]) + ".out"
     blastArgs["outfile"] = outfile
