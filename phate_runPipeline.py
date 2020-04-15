@@ -4,7 +4,7 @@
 #
 # Program Title:  phate_runPipeline.py ()
 #
-# Most recent update:  30 December 2019
+# Most recent update:  10 April 2020
 #
 # Description: Runs the phate annotation pipeline.  This code runs under Python 3.7, and requires
 #    dependent packages.
@@ -385,7 +385,7 @@ else:
 # Create objects for passing genecall, blast, and hmm parameters to subordinate codes 
 
 if DEBUG:
-    print("TESTING: pvogsHmm is ", pvogsHmm)
+    print("phate_runPipeline says, DEBUG: pvogsHmm is ", pvogsHmm)
 
 if genomeType.lower() == 'phage' and primaryCallsFile != 'phanotate.cgc':
     if PHATE_WARNINGS == 'True':
@@ -535,7 +535,7 @@ RUNLOG.write("%s%s\n" % ("geneFile is ",    geneFile))
 RUNLOG.write("%s%s\n" % ("proteinFile is ", proteinFile))
 
 if PHATE_PROGRESS == 'True':
-    print("Checking files...")
+    print("phate_runPipeline says, Checking files...")
 RUNLOG.write("%s\n" % ("Checking files..."))
 fileError = False
 
@@ -550,7 +550,7 @@ except IOError as e:
 
 if fileError:
     print(USAGE_STRING)
-    print("Check your genome file,", genomeFile)
+    print("phate_runPipeline says, ERROR: Check your genome file,", genomeFile)
     LOGFILE.write("%s%s%s%s\n" % ("ERROR:  Genome file could not be opened: ", genomeFile, "; End log ", datetime.datetime.now()))
     LOGFILE.close(); exit(0)
 GENOME_H.close()
@@ -561,14 +561,14 @@ command = "cp " + jsonFile + ' ' + jsonSave
 os.system(command)
 
 if PHATE_PROGRESS == 'True':
-    print("Configuration complete.")
+    print("phate_runPipeline says, Configuration complete.")
 
 ##### BEGIN MAIN ########################################################################################
 
 ##### Run Gene-calling Module
 
 if PHATE_PROGRESS == 'True':
-    print("Preparing to run genecall module...")
+    print("phate_runPipeline says, Preparing to run genecall module...")
 RUNLOG.write("%s\n" % ("Preparing to run genecall module..."))
 
 param2 = outputDir[:-1]  # remove terminal '/' because subordinate code adds it explicitly
@@ -595,9 +595,9 @@ if customGeneCalls:
         command = 'cp ' + PIPELINE_INPUT_DIR + customGeneCallerOutfile + ' ' + PIPELINE_OUTPUT_SUBDIR + customGeneCallerOutfile
         result = os.system(command)
     except:
-        print ("ERROR in phate_runPipeline: could not copy custom genecall file ",customGeneCallerOutfile, " to working subdirectory ",PIPELINE_OUTPUT_SUBDIR)
+        print ("phate_runPipeline says, ERROR: could not copy custom genecall file ",customGeneCallerOutfile, " to working subdirectory ",PIPELINE_OUTPUT_SUBDIR)
         if primaryCalls == 'custom':
-            print("ERROR in phate_runPipeline: cannot use custom calls as primary")
+            print("phate_runPipeline says, ERROR: cannot use custom calls as primary")
             exit(0)
 
 if geneCallerCount >= 2:
@@ -620,9 +620,9 @@ if MULTIPLE_CALLERS:
 command = "python " + GENECALL_CODE + ' ' + genomeFile + ' ' + param2 + ' ' + param3 + ' ' + customGeneCallerOutfile 
 
 if PHATE_PROGRESS == 'True':
-    print("Calling the gene-call module.")
+    print("phate_runPipeline says, Calling the gene-call module.")
 if PHATE_MESSAGES == 'True':
-    print("Command is,", command)
+    print("phate_runPipeline says, command is,", command)
 RUNLOG.write("%s%s\n" % ("Calling the gene-call module. Command is ", command))
 
 # OS system matters; choose alternate system call if you get error message on this line
@@ -630,7 +630,7 @@ result = os.system(command)
 #result = subprocess.check_output(command,shell=True)
 
 if PHATE_PROGRESS == 'True':
-    print("Done!")
+    print("phate_runPipeline says, Gene-call processing complete.")
 RUNLOG.write("%s%s\n" % ("Gene-call processing complete at ", datetime.datetime.now()))
 
 ##### Run Sequence Annotation Module
@@ -640,7 +640,7 @@ RUNLOG.write("%s\n" % ("Preparing to call sequence annotation module..."))
 # Construct command line parameter string
 
 if PHATE_PROGRESS == 'True':
-    print("Preparing command strings for homology searches...")
+    print("phate_runPipeline says, Preparing command strings for homology searches...")
 
 # First, construct string listing the names of databases to be blasted
 
@@ -751,22 +751,23 @@ if translateOnly:
 else:
     command = commandRoot 
 
-print("In phate_runPipeline, command is ",command)
+if PHATE_MESSAGES:
+    print("phate_runPipeline says, command is ",command)
 # Communicate and execute
 if PHATE_PROGRESS == 'True':
-    print("Calling the sequence annotation module.")
+    print("phate_runPipeline says, Calling the sequence annotation module.")
 if PHATE_MESSAGES == 'True':
-    print("Command is,", command)
+    print("phate_runPipeline says, command is,", command)
 RUNLOG.write("%s%s\n" % ("Calling the sequence annotation module. Command is ", command))
 result = os.system(command)
 if PHATE_PROGRESS == 'True':
-    print("Done!")
+    print("phate_runPipeline says, Sequence annotation processing is complete.")
 RUNLOG.write("%s%s\n" % ("Sequence annotation processing complete at ", datetime.datetime.now()))
 
 ##### CLEAN UP
 
 if PHATE_PROGRESS == 'True':
-    print("Code completed at", datetime.datetime.now())
+    print("phate_runPipeline says, Code completed at", datetime.datetime.now())
 OUTFILE.write("%s%s\n" %("Pipeline output is in output file created by code ",SEQANNOTATION_CODE))
 OUTFILE.close()
 LOGFILE.write("%s%s\n" % ("Code completed at ", datetime.datetime.now()))

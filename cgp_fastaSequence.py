@@ -70,6 +70,26 @@ import cgp_annotation as annotation
 from Bio import SeqIO  
 import os
 
+# Boolean control of verbosity
+
+PHATE_PROGRESS = False
+PHATE_MESSAGES = False
+PHATE_WARNINGS = False
+
+PHATE_PROGRESS_STRING = os.environ["PHATE_PHATE_PROGRESS"]
+PHATE_MESSAGES_STRING = os.environ["PHATE_PHATE_MESSAGES"]
+PHATE_WARNINGS_STRING = os.environ["PHATE_PHATE_WARNINGS"]
+
+if PHATE_PROGRESS_STRING.lower() == 'true':
+    PHATE_PROGRESS = True
+if PHATE_MESSAGES_STRING.lower() == 'true':
+    PHATE_MESSAGES = True
+if PHATE_WARNINGS_STRING.lower() == 'true':
+    PHATE_WARNINGS = True
+
+CLEAN_RAW_DATA = os.environ["PHATE_CLEAN_RAW_DATA"]
+
+#DEBUG = True
 DEBUG = False  # For maximal verbosity
 
 # For GFF formatting of output
@@ -95,12 +115,6 @@ p_comment    = re.compile('^#')
 p_up2space   = re.compile('^\S*')   # find 1st instance of everything that's not white space (check this)
 p_startCodon = re.compile('atg')  # standard start codon sequence (recall: storing sequence as lower case)
 
-# Verbosity
-
-CLEAN_RAW_DATA  = os.environ["PHATE_CLEAN_RAW_DATA"]
-PHATE_WARNINGS  = os.environ["PHATE_PHATE_WARNINGS"]
-PHATE_MESSAGES  = os.environ["PHATE_PHATE_MESSAGES"]
-PHATE_PROGRESS  = os.environ["PHATE_PHATE_PROGRESS"]
 
 #######################################################################################
 
@@ -295,7 +309,7 @@ class fasta(object):
             return ('>' + self.customHeader)
         else:
             if PHATE_WARNINGS == 'True':
-                print("WARNING in fastaSequence module: Invalid header type:", hdrType, "--Choose full, clean, trunc, short, compound, blast")
+                print("cgp_fastaSequence says, WARNING: Invalid header type:", hdrType, "--Choose full, clean, trunc, short, compound, blast")
 
     def getStartCodon(self):
         if self.sequence != "":
@@ -612,23 +626,24 @@ class multiFasta(object):
             match_string2header = re.search(searchString,fasta.header)
             if match_string2header:
                 if DEBUG:
-                    print("Found the header:", fasta.header, "for string:", searchString)
+                    print("cgp_fastaSequence says, Found the header:", fasta.header, "for string:", searchString)
                 return(fasta)
         if PHATE_WARNINGS == 'True':
-            print("WARNING in fastaSequence module: Fasta not found for", searchString)
+            print("cgp_fastaSequence says, WARNING: Fasta not found for", searchString)
         return(0)
 
     def reportStats(self):
         stats = []
-        print("Sequence from file name:", self.filename)
         stats.append("Sequence from file name:" + self.filename)
-        print("Number of fasta sequences:", len(self.fastaList))
         stats.append("Number of fasta sequence:" + str(len(self.fastaList)))
-        print("Number of annotations:", len(self.annotationList))
         stats.append("Number of annotations:" + str(len(self.annotationList)))
-        print("Annotations:", self.annotationList)
-        print("No. of fasta sequences with paralogs:", self.countParalogs()) 
         stats.append("No. of fasta sequence with paralogs: " + str(self.countParalogs()))
+        if PHATE_MESSAGES:
+            print("Sequence from file name:", self.filename)
+            print("Number of fasta sequences:", len(self.fastaList))
+            print("Number of annotations:", len(self.annotationList))
+            print("Annotations:", self.annotationList)
+            print("No. of fasta sequences with paralogs:", self.countParalogs()) 
         return stats
 
     def countParalogs(self):  # count no. of fastas that have paralogs (not total paralog hits)
@@ -696,7 +711,7 @@ class multiFasta(object):
     def addFastasFromFile(self,mtype):
         if self.filename == "unknown" or self.filename == '':
             if PHATE_WARNINGS == 'True':
-                print("ERROR in fastaSequence module: First you must set the filename in addFastasFromFile()")
+                print("cgp_fastaSequence says, ERROR: First you must set the filename in addFastasFromFile()")
         else:
             fastaFile = open(self.filename,"r")
             fLines = fastaFile.read().splitlines()

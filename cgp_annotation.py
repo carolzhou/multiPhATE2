@@ -2,7 +2,7 @@
 # Module: cgp_annotation.py
 # Programmer: Carol L. Ecale Zhou
 #
-# Latest update: 04 March 2020
+# Latest update: 11 April 2020
 #
 # Description: Module containing classes and methods for representing annotation results from various sources 
 #
@@ -41,17 +41,31 @@ DEBUG = False
 
 p_comment = re.compile('^#')
 
-KEGG_VIRUS_BASE_DIR = os.environ["PHATE_KEGG_VIRUS_BASE_DIR"]
-NCBI_VIRUS_BASE_DIR = os.environ["PHATE_NCBI_VIRUS_BASE_DIR"]
-PHANTOME_BASE_DIR   = os.environ["PHATE_PHANTOME_BASE_DIR"]
-NCBI_TAXON_DIR      = os.environ["PHATE_NCBI_TAXON_DIR"]
-PVOGS_BASE_DIR      = os.environ["PHATE_PVOGS_BASE_DIR"]
+KEGG_VIRUS_BASE_DIR   = os.environ["PHATE_KEGG_VIRUS_BASE_DIR"]
+NCBI_VIRUS_BASE_DIR   = os.environ["PHATE_NCBI_VIRUS_BASE_DIR"]
+PHANTOME_BASE_DIR     = os.environ["PHATE_PHANTOME_BASE_DIR"]
+NCBI_TAXON_DIR        = os.environ["PHATE_NCBI_TAXON_DIR"]
+PVOGS_BASE_DIR        = os.environ["PHATE_PVOGS_BASE_DIR"]
 
 # Verbosity
-CLEAN_RAW_DATA      = os.environ["PHATE_CLEAN_RAW_DATA"]
-PHATE_WARNINGS      = os.environ["PHATE_PHATE_WARNINGS"]
-PHATE_MESSAGES      = os.environ["PHATE_PHATE_MESSAGES"]
-PHATE_PROGRESS      = os.environ["PHATE_PHATE_PROGRESS"]
+CLEAN_RAW_DATA_STRING = os.environ["PHATE_CLEAN_RAW_DATA"]
+PHATE_PROGRESS_STRING = os.environ["PHATE_PHATE_PROGRESS"]
+PHATE_MESSAGES_STRING = os.environ["PHATE_PHATE_MESSAGES"]
+PHATE_WARNINGS_STRING = os.environ["PHATE_PHATE_WARNINGS"]
+
+CLEAN_RAW_DATA = False
+PHATE_PROGRESS = False
+PHATE_MESSAGES = False
+PHATE_WARNINGS = False
+
+if CLEAN_RAW_DATA_STRING.lower() == 'true':
+    CLEAN_RAW_DATA = True
+if PHATE_PROGRESS_STRING.lower() == 'true':
+    PHATE_PROGRESS = True
+if PHATE_MESSAGES_STRING.lower() == 'true':
+    PHATE_MESSAGES = True
+if PHATE_WARNINGS_STRING.lower() == 'true':
+    PHATE_WARNINGS = True
 
 # External links
 NCBI_TAXON_LINK = "https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id="
@@ -169,13 +183,13 @@ class annotationRecord(object):
         psatAnnotationList = []
         tempList = []; columns = []
 
-        if PHATE_MESSAGES == 'True':
-            print("Annotation module says: Recording PSAT annotations.")
+        if PHATE_MESSAGES:
+            print("cgp_annotation says: Recording PSAT annotations.")
 
         ### Capture lines corresponding to the gene
         pLines = PSAT_H.read().splitlines()
         if DEBUG:
-            print("There are this many pLines:", len(pLines))
+            print("cgp_annotation says, There are this many pLines:", len(pLines))
 
         # Capture all annotation lines for this gene
         for pLine in pLines:
@@ -185,13 +199,13 @@ class annotationRecord(object):
             if match_gene:
                 tempList.append(pLine)
         if DEBUG:
-            print("Protein", proteinHeader, "Temp list:", tempList)
+            print("cgp_annotation says, DEBUG: Protein", proteinHeader, "Temp list:", tempList)
 
         ### Parse each annotation line, capture annotations and format for genbank
         for line in tempList:
 
             if DEBUG:
-                print("Processing PSAT hit line:", line)
+                print("cgp_annotaton says, DEBUG: Processing PSAT hit line:", line)
             annotationString = ""
             EC = ""
             ecDescription = ""
@@ -276,7 +290,7 @@ class annotationRecord(object):
                         end      = match_signalp2.group(2)
                     else:
                         if DEBUG:
-                            print("DID NOT FIND A signalp2 MATCH for YES", pLine)
+                            print("cgp_annotation says, DEBUG: Did not find a signalp2 match for YES", pLine)
                     
                 annotationString = "signal_peptide:" + signalp1 + ' ' + signalp2 
                 self.annotationList.append(annotationString)
@@ -325,8 +339,8 @@ class annotationRecord(object):
                     if len(fields) > 1:
                         dbxref = fields[1]
                     else:
-                        if PHATE_WARNINGS == 'True':
-                            print("WARNING in annotation module: no dbxref found for", self.name, "in database", database, "given line", line)
+                        if PHATE_WARNINGS:
+                            print("cgp_annotation says, WARNING: no dbxref found for", self.name, "in database", database, "given line", line)
                     idList.append(dbxref)
         return idList
 
@@ -336,13 +350,13 @@ class annotationRecord(object):
         DATABASE_H = open(database,"r")
         dLines = DATABASE_H.read().splitlines()
         if DEBUG:
-            print("TESTING: original searchTerm is", searchTerm)
+            print("cgp_annotation says, DEBUG: original searchTerm is", searchTerm)
         match_truncate = re.search(p_truncatedSearchTerm,searchTerm)
         if match_truncate:
             truncatedSearchTerm = match_truncate.group(1)
             searchTerm = truncatedSearchTerm
             if DEBUG:
-                print("TESTING: searchTerm was changed to", searchTerm) 
+                print("cgp_annotation says, DEBUG: searchTerm was changed to", searchTerm) 
         for dLine in dLines:
             match_searchTerm = re.search(searchTerm,dLine)
             if match_searchTerm:
@@ -368,8 +382,8 @@ class annotationRecord(object):
                     infoString += ' | ' + info
                 dbxrefList.append(infoString) 
         else:
-            if PHATE_WARNINGS == 'True':
-                print("WARNING in annotation module:  Unexpected name encountered in phate_annotation.py/getFigDescription:", self.name) 
+            if PHATE_WARNINGS:
+                print("cgp_annotaton says, WARNING: Unexpected name encountered in phate_annotation.py/getFigDescription:", self.name) 
         return dbxrefList 
 
     def getPvogMembers(self,database): # database should be the pVOGs headers file, but fasta file will work (slowly)
@@ -394,7 +408,7 @@ class annotationRecord(object):
         p_taxID   = re.compile('[\d\w\_]\s+[\d\w\_\.]+\s+([\d]+)\s+[\d]+')
         if self.name == '' and self.name == 'none':
             if DEBUG:
-                print("name field blank in getNCBItaxonomy") 
+                print("cgp_annotation says, DEBUG: name field blank in getNCBItaxonomy") 
         else:
             fields = self.name.split('|')  # Hit's fasta header has several fields, delimited w/'|'
             if len(fields) > 4:
@@ -410,11 +424,11 @@ class annotationRecord(object):
                     searchTerm = searchTermString
                 command = 'grep \"' + searchTerm + '\" ' + database
                 if DEBUG:
-                    print("command is", command) 
+                    print("cgp_annotation says, DEBUG: command is", command) 
                 proc = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
                 out, err = proc.communicate()
                 if DEBUG:
-                    print("Result of grep is", out)
+                    print("cgp_annotation says, DEBUG: Result of grep is", out)
                 if out != '':
                     match_taxID = re.search(p_taxID,out)
                     taxonomyID = match_taxID.group(1)
@@ -423,10 +437,10 @@ class annotationRecord(object):
                     ncbiTaxonLink = NCBI_TAXON_LINK + taxonomyID
                     ncbiTaxonList.append(ncbiTaxonLink)
             else:
-                if PHATE_WARNINGS == 'True':
-                    print("WARNING: NCBI hit header has improper format or is missing:", self.name)
+                if PHATE_WARNINGS:
+                    print("cgp_annotation says, WARNING: NCBI hit header has improper format or is missing:", self.name)
         if DEBUG:
-            print("ncbiTaxonList is", ncbiTaxonList)
+            print("cgp_annotaton says, DEBUG: ncbiTaxonList is", ncbiTaxonList)
         return ncbiTaxonList
 
     def link2databaseIdentifiers(self,database,dbName):
@@ -438,8 +452,8 @@ class annotationRecord(object):
         annotation_item = ""
 
         if self.name == "" or self.name == "none":
-            if PHATE_WARNINGS == 'True':
-                print("No name for identification of dbxref in phate_annotation/link2databaseIdentifiers")
+            if PHATE_WARNINGS:
+                print("cgp_annotation says, WARNING: No name for identification of dbxref in phate_annotation/link2databaseIdentifiers")
             return 
         else:
             if dbName.lower() == 'kegg':
@@ -484,11 +498,11 @@ class annotationRecord(object):
                 pass
  
             else:
-                if PHATE_WARNINGS == 'True':
-                    print("WARNING in annotation module: Unrecognized database:", dbName) 
+                if PHATE_WARNINGS:
+                    print("cgp_annotation says, WARNING: Unrecognized database:", dbName) 
 
         if DEBUG: 
-            print("dbxrefList:", dbxrefList)
+            print("cgp_annotation says, DEBUG: dbxrefList:", dbxrefList)
 
         for annotation_item in dbxrefList:
             nextAnnot = ' | ' + annotation_item

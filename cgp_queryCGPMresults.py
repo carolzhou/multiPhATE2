@@ -6,7 +6,7 @@
 # queryCGPMresults.py
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last update:  04 March 2020
+# Last update:  12 April 2020
 #
 #################################################################
 '''
@@ -17,6 +17,23 @@ import sys, os, re, string, copy
 import subprocess
 
 CODE_BASE_DIR = os.environ["CGP_CODE_BASE_DIR"]
+
+# Set messaging booleans
+PHATE_PROGRESS = False
+PHATE_MESSAGES = False
+PHATE_WARNINGS = False
+PHATE_PROGRESS_STRING = os.environ["PHATE_PHATE_PROGRESS"]
+PHATE_MESSAGES_STRING = os.environ["PHATE_PHATE_MESSAGES"]
+PHATE_WARNINGS_STRING = os.environ["PHATE_PHATE_WARNINGS"]
+if PHATE_PROGRESS_STRING.lower() == 'true':
+    PHATE_PROGRESS = True
+if PHATE_MESSAGES_STRING.lower() == 'true':
+    PHATE_MESSAGES = True
+if PHATE_WARNINGS_STRING.lower() == 'true':
+    PHATE_WARNINGS = True
+
+if PHATE_MESSAGES:
+    print("cgp_queryCGPMresults says, Begin processing.")
 
 #### FILES
 
@@ -89,12 +106,18 @@ cdsNumber = ""
 # This is rather complicated, but it filters some possible user error in
 # providing the wrong number of command-line arguments, for example
 # leaving out the "-letter" prefix for a parameter.
+
+if PHATE_PROGRESS:
+    print("cgp_queryCGPMresults says, Gathering input.")
+
 ACCEPTABLE_ARG_COUNT = []  
 ACCEPTABLE_ARG_COUNT.append(2)      # if only argument is 'help' etc. 
 for x in xrange((MAX_PARAMS+1)*2):  # otherwise, arguments come in pairs (eg, -d <dirsList>)
     if x % 2 == 1:  # x is odd      # recall: sys.argv[0] is the code itself
         ACCEPTABLE_ARG_COUNT.append(x)
 
+if PHATE_PROGRESS:
+    print("cgp_queryCGPMresults says, Determining query type(s).")
 argCount = len(sys.argv)
 if argCount in ACCEPTABLE_ARG_COUNT:
     if argCount == 2:
@@ -178,17 +201,18 @@ if argCount in ACCEPTABLE_ARG_COUNT:
                 cdsList = cdsString.split(',')
                 CDS = True
 
-    print ("Query will be run with the following parameters:")
-    print ("    genome ordering =", genomeOrdering)
-    print ("    sequence type =", sequenceType)
-    print ("    hit type =", hitType)
-    if inFile:
-        print ("    inFile =", inFile)
-    else:
-        print ("    inFile = none provided; using current directory list")
-    print ("    outFile =", outFile)
-    print ("    cds number =", cdsList)
-    print ("    interpretation codes are", interpretationCodes)
+    if PHATE_MESSAGES:
+        print ("cgp_queryCGPMresults says, Query will be run with the following parameters:")
+        print ("  genome ordering =", genomeOrdering)
+        print ("  sequence type =", sequenceType)
+        print ("  hit type =", hitType)
+        if inFile:
+            print ("  inFile =", inFile)
+        else:
+            print ("  inFile = none provided; using current directory list")
+        print ("  outFile =", outFile)
+        print ("  cds number =", cdsList)
+        print ("  interpretation codes are", interpretationCodes)
 
     LOGFILE.write("%s\n"   % ("Parameter files are: "))
     LOGFILE.write("%s%s\n" % ("    genomeOrdering: ",genomeOrdering))
@@ -215,10 +239,14 @@ baseDir = "./"  # default is current working directory
 
 match = re.search('\w',inFile)  # If user provided infile w/dir names, then use it
 if match:
+    if PHATE_PROGRESS:
+        print("cgp_queryCGPMresults says, Reading input file ",inFile)
     LOGFILE.write("%s%s\n" % ("Reading input file ",inFile))
     INFILE = open(inFile,"r")
     fLines = INFILE.read().splitlines()
     numLines = len(fLines)
+    if PHATE_MESSAGES:
+        print("cgp_queryCGPMresults says, Number of lines in input file with directories list is",numLines)
     LOGFILE.write("%s%s\n" % ("Number of lines in input file with directories list is ", numLines)) 
     for i in xrange(0,numLines):
         line = fLines[i]
@@ -235,12 +263,13 @@ else:  # If no infile w/dir names was provided, then assume Results dirs are in 
     proc = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True) 
     (out, err) = proc.communicate()
     if err:
-        print ("ERROR:", err)
+        print ("cgp_queryCGPMresults says, ERROR:", err)
     out = out.rstrip()  # remove pesky terminal newline character
     directoryList = out.split('\n')
 
 # Check directoryList
-print ("directoryList is", directoryList)
+if PHATE_PROGRESS:
+    print ("cgp_queryCgPMresults says, directoryList is", directoryList)
 
 OUTFILE = open(outFile,"w")
 #QUERY_FILE = open(queryFile,"w")
@@ -251,6 +280,8 @@ sysCommand = "> " + queryFile  # Reminder: queryFile holds intermediate results
 os.system(sysCommand)          # create or initialize query.out file 
 
 LOGFILE.write("%s\n" % ("Reading input directories and gathering information"))
+if PHATE_PROGRESS:
+    print("cgp_queryCGPMresults says, Reading input directories and gathering information.")
 
 ONE = False
 TWO = False
@@ -261,9 +292,11 @@ if genomeOrdering == 2:
 if genomeOrdering == 3:
     ONE = True; TWO = True
 
-print "Processing Results directories..."
+if PHATE_PROGRESS:
+    print ("cgp_queryCGPMresults says, Processing Results directories...")
 for dir in directoryList:
-    print "Next dir is", dir
+    if DEBUG:
+        print ("cgp_queryCGPMresults says, DEBUG: Next dir is", dir)
     nextDir = baseDir + dir
     nextLog = nextDir + "/" + ppCGPM_logFile
     NEXT_LOG = open (nextLog,"r")
@@ -287,7 +320,8 @@ for dir in directoryList:
     sysCommand = "echo \'# Gene Set 2 is\' " + genome2 + " >> " + queryFile
     os.system(sysCommand)
 
-    print ("CDS is", CDS)
+    if DEBUG:
+        print ("cgp_queryCGPMresults says, DEBUG: CDS is", CDS)
     if CDS and cdsList != []:
         for cds in cdsList:
             nextCDS = "cds" + cds + "/"
@@ -354,8 +388,11 @@ QUERY_FILE = open(queryFile,"r")
 dataLine = ""
 EMPTY = "[]"  #*** For now, annotation fields are empty for protein entries
 fLines = QUERY_FILE.read().splitlines()
-print ("Number of lines in query file: ", len(fLines))
+if PHATE_MESSAGES:
+    print ("cgp_queryCGPMresults says, Number of lines in query file: ", len(fLines))
 
+if PHATE_PROGRESS:
+    print("cpg_queryCGPMresults says, Selecting lines with query criteria.")
 count = 0
 for line in fLines:
     DO_SELECT = False
@@ -435,4 +472,5 @@ if inFile:
     INFILE.close()
 OUTFILE.close()
 LOGFILE.close()
-
+if PHATE_PROGRESS:
+    print("cgp_queryCGPMresults says, Processing complete.")

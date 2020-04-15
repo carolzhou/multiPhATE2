@@ -2,7 +2,7 @@
 # Module: phate_annotation.py
 # Programmer: Carol L. Ecale Zhou
 #
-# Latest update: 2 January 2020
+# Latest update: 10 April 2020
 #
 # Description: Module containing classes and methods for representing annotation results from various sources 
 #
@@ -36,8 +36,8 @@
 
 import re, os, subprocess
 
-DEBUG = True
-#DEBUG = False
+#DEBUG = True
+DEBUG = False
 
 p_comment = re.compile('^#')
 
@@ -170,12 +170,12 @@ class annotationRecord(object):
         tempList = []; columns = []
 
         if PHATE_MESSAGES == 'True':
-            print("Annotation module says: Recording PSAT annotations.")
+            print("phate_annotation says, Recording PSAT annotations.")
 
         ### Capture lines corresponding to the gene
         pLines = PSAT_H.read().splitlines()
         if DEBUG:
-            print("There are this many pLines:", len(pLines))
+            print("phate_annotation says, DEBUG: There are this many pLines:", len(pLines))
 
         # Capture all annotation lines for this gene
         for pLine in pLines:
@@ -185,13 +185,13 @@ class annotationRecord(object):
             if match_gene:
                 tempList.append(pLine)
         if DEBUG:
-            print("Protein", proteinHeader, "Temp list:", tempList)
+            print("phate_annotation says, DEBUG: Protein", proteinHeader, "Temp list:", tempList)
 
         ### Parse each annotation line, capture annotations and format for genbank
         for line in tempList:
 
             if DEBUG:
-                print("Processing PSAT hit line:", line)
+                print("phate_annotation says, DEBUG: Processing PSAT hit line:", line)
             annotationString = ""
             EC = ""
             ecDescription = ""
@@ -276,7 +276,7 @@ class annotationRecord(object):
                         end      = match_signalp2.group(2)
                     else:
                         if DEBUG:
-                            print("DID NOT FIND A signalp2 MATCH for YES", pLine)
+                            print("phate_annotation says, DEBUG: Did not find a signalp2 match for YES", pLine)
                     
                 annotationString = "signal_peptide:" + signalp1 + ' ' + signalp2 
                 self.annotationList.append(annotationString)
@@ -326,7 +326,7 @@ class annotationRecord(object):
                         dbxref = fields[1]
                     else:
                         if PHATE_WARNINGS == 'True':
-                            print("WARNING in annotation module: no dbxref found for", self.name, "in database", database, "given line", line)
+                            print("phate_annotation says, WARNING: no dbxref found for", self.name, "in database", database, "given line", line)
                     idList.append(dbxref)
         return idList
 
@@ -336,13 +336,13 @@ class annotationRecord(object):
         DATABASE_H = open(database,"r")
         dLines = DATABASE_H.read().splitlines()
         if DEBUG:
-            print("TESTING: original searchTerm is", searchTerm)
+            print("phate_annotation says, DEBUG: original searchTerm is", searchTerm)
         match_truncate = re.search(p_truncatedSearchTerm,searchTerm)
         if match_truncate:
             truncatedSearchTerm = match_truncate.group(1)
             searchTerm = truncatedSearchTerm
             if DEBUG:
-                print("TESTING: searchTerm was changed to", searchTerm) 
+                print("phate_annotation says, DEBUG: searchTerm was changed to", searchTerm) 
         for dLine in dLines:
             match_searchTerm = re.search(searchTerm,dLine)
             if match_searchTerm:
@@ -369,7 +369,7 @@ class annotationRecord(object):
                 dbxrefList.append(infoString) 
         else:
             if PHATE_WARNINGS == 'True':
-                print("WARNING in annotation module:  Unexpected name encountered in phate_annotation.py/getFigDescription:", self.name) 
+                print("phate_annotation says, WARNING:  Unexpected name encountered in phate_annotation.py/getFigDescription:", self.name) 
         return dbxrefList 
 
     def getPvogMembers(self,database): # database should be the pVOGs headers file, but fasta file will work (slowly)
@@ -394,7 +394,7 @@ class annotationRecord(object):
         p_taxID   = re.compile('[\d\w\_]\s+[\d\w\_\.]+\s+([\d]+)\s+[\d]+')
         if self.name == '' and self.name == 'none':
             if DEBUG:
-                print("name field blank in getNCBItaxonomy") 
+                print("phate_annotation says, DEBUG: name field blank in getNCBItaxonomy") 
         else:
             fields = self.name.split('|')  # Hit's fasta header has several fields, delimited w/'|'
             if len(fields) > 4:
@@ -410,11 +410,11 @@ class annotationRecord(object):
                     searchTerm = searchTermString
                 command = 'grep \"' + searchTerm + '\" ' + database
                 if DEBUG:
-                    print("command is", command) 
+                    print("phate_annotation says, DEBUG: command is", command) 
                 proc = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
                 out, err = proc.communicate()
                 if DEBUG:
-                    print("Result of grep is", out)
+                    print("phate_annotation says, DEBUG: Result of grep is", out)
                 if out != '':
                     match_taxID = re.search(p_taxID,out)
                     taxonomyID = match_taxID.group(1)
@@ -424,9 +424,9 @@ class annotationRecord(object):
                     ncbiTaxonList.append(ncbiTaxonLink)
             else:
                 if PHATE_WARNINGS == 'True':
-                    print("WARNING: NCBI hit header has improper format or is missing:", self.name)
+                    print("phate_annotation says, WARNING: NCBI hit header has improper format or is missing:", self.name)
         if DEBUG:
-            print("ncbiTaxonList is", ncbiTaxonList)
+            print("phate_annotation says, DEBUG: ncbiTaxonList is", ncbiTaxonList)
         return ncbiTaxonList
 
     def link2databaseIdentifiers(self,database,dbName):
@@ -439,7 +439,7 @@ class annotationRecord(object):
 
         if self.name == "" or self.name == "none":
             if PHATE_WARNINGS == 'True':
-                print("No name for identification of dbxref in phate_annotation/link2databaseIdentifiers")
+                print("phate_annotation says, WARNING: No name for identification of dbxref in phate_annotation/link2databaseIdentifiers")
             return 
         else:
             if dbName.lower() == 'kegg':
@@ -485,10 +485,10 @@ class annotationRecord(object):
  
             else:
                 if PHATE_WARNINGS == 'True':
-                    print("WARNING in annotation module: Unrecognized database:", dbName) 
+                    print("phate_annotation says, WARNING: Unrecognized database:", dbName) 
 
         if DEBUG: 
-            print("dbxrefList:", dbxrefList)
+            print("phate_annotation says, DEBUG: dbxrefList:", dbxrefList)
 
         for annotation in dbxrefList:
             nextAnnot = ' | ' + annotation
@@ -537,7 +537,7 @@ class annotationRecord(object):
     # Return annotations as a semicolon-delimited string
     def returnGFFannotationRecord(self,FILE_HANDLE):
         if DEBUG:
-            print("In phate_annotation/returnGFFannotationRecord")
+            print("phate_annotation says, DEBUG: In returnGFFannotationRecord()")
         self.annotationString = ''; annot = ''; annotationList = []
         if self.annotationType.lower() == 'gene':
             annot = '(gene) ' + self.start + '/' + self.end + '/' + self.strand + ' ' + self.method 
@@ -574,7 +574,7 @@ class annotationRecord(object):
                 else:
                     self.annotationString += annotationList[i]
         if DEBUG:
-            print("phate_annotation says, writing self.annotationString:",self.annotationString)
+            print("phate_annotation says, DEBUG: Writing self.annotationString:",self.annotationString)
         FILE_HANDLE.write("%s" % (self.annotationString))
 
     def printAnnotationRecord2file(self,FILE_HANDLE):  #*** Update this

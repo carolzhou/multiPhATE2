@@ -1,7 +1,7 @@
 ###############################################################
 # Module: cgp_genomeSequence.py
 # Programmer: Carol L. Ecale Zhou
-# Last Update: 05 March 2020
+# Last Update: 12 April 2020
 # 
 # Module comprising data structures for organizing genome information
 # Note:  EMBOSS messes with fasta headers; therefore, I am putting minimal info in the header and using only '/'
@@ -50,13 +50,27 @@ OUTPUT_DIR          = ""
 
 # Verbosity
 
-CLEAN_RAW_DATA   = os.environ["PHATE_CLEAN_RAW_DATA"]
-PHATE_WARNINGS   = os.environ["PHATE_PHATE_WARNINGS"]
-PHATE_MESSAGES   = os.environ["PHATE_PHATE_MESSAGES"]
-PHATE_PROGRESS   = os.environ["PHATE_PHATE_PROGRESS"]
+CLEAN_RAW_DATA_STRING   = os.environ["PHATE_CLEAN_RAW_DATA"]
+PHATE_PROGRESS_STRING   = os.environ["PHATE_PHATE_PROGRESS"]
+PHATE_MESSAGES_STRING   = os.environ["PHATE_PHATE_MESSAGES"]
+PHATE_WARNINGS_STRING   = os.environ["PHATE_PHATE_WARNINGS"]
 
-#DEBUG            = False
-DEBUG           = True 
+CLEAN_RAW_DATA = 'False'
+PHATE_PROGRESS = 'False'
+PHATE_MESSAGES = 'False'
+PHATE_WARNINGS = 'False'
+
+if CLEAN_RAW_DATA_STRING.lower() == 'true':
+    CLEAN_RAW_DATA = True
+if PHATE_PROGRESS_STRING.lower() == 'true':
+    PHATE_PROGRESS = True
+if PHATE_MESSAGES_STRING.lower() == 'true':
+    PHATE_MESSAGES = True
+if PHATE_WARNINGS_STRING.lower() == 'true':
+    PHATE_WARNINGS = True
+
+#DEBUG    = True 
+DEBUG    = False
 
 # For GFF output
 GFF_COMMENT = "##gff-version 3"
@@ -125,11 +139,11 @@ class genome(object):
         for fa in self.contigSet.fastaList:
             if fa.header == contig:
                 if DEBUG:
-                    print("Getting subsequence from A to B:", int(start)-1, int(end))
+                    print("cgp_genomeSequence says, DEBUG: Getting subsequence from A to B:", int(start)-1, int(end))
                 subSeq = fa.getSubsequence(int(start)-1,int(end)) #*** ???
             else:
                 if PHATE_WARNINGS == 'True':
-                    print("WARNING in genomeSequence module: fa.header", fa.header, "did not match contig", contig)
+                    print("cgp_genomeSequence says, WARNING: fa.header", fa.header, "did not match contig", contig)
         return subSeq           
 
     def getSubsequence(self,start,end,contig):  # Note: tailored to RAST
@@ -213,7 +227,7 @@ class genome(object):
                 geneCallFile = geneCallInfo['primaryCallsPathFile']
             else:
                 if PHATE_WARNINGS == 'True':
-                    print("WARNING in genomeSequence module: processGeneCalls(), no geneCall file provided")
+                    print("cgp_genomeSequence says, WARNING: processGeneCalls(), no geneCall file provided")
                 return (0)
 
         # Read gene-call lines from gene caller output file and create a new gene object
@@ -222,7 +236,7 @@ class genome(object):
             match_geneCall = re.search('^\d+',fLine)
             if match_geneCall:
                 if DEBUG:
-                    print("Translating:", fLine)
+                    print("cgp_genomeSequence says, DEBUG: Translating:", fLine)
                 # Format output by CGCparser.py is 6 columns, tabbed; final column is protein, but ignore
                 columns  = fLine.split('\t')
                 geneNo   = columns[0]
@@ -263,7 +277,7 @@ class genome(object):
                 else:
                     newGene.strand = 'x'
                     if PHATE_WARNINGS == 'True':
-                        print("ERROR in genomeSequence module: anomalous strand setting in processGeneCalls, phate_genomeSequence module:", newGene.strand)
+                        print("cgp_genomeSequence says, ERROR: anomalous strand setting in processGeneCalls, phate_genomeSequence module:", newGene.strand)
 
                 #*** BANDAID - to compensate for PHANOTATE sometimes starting gene at 0
                 if newGene.start == 0:
@@ -271,11 +285,11 @@ class genome(object):
 
                 # Extract gene from genome sequence
                 if DEBUG:
-                    print("Invoking translation...start,end,strand,contig:",newGene.start,newGene.end,newGene.strand,contig)
+                    print("cgp_genomeSequence says, DEBUG: Invoking translation...start,end,strand,contig:",newGene.start,newGene.end,newGene.strand,contig)
                 sequence = self.getCGCsubsequence(newGene.start,newGene.end,newGene.strand,contig)
                 newGene.sequence = sequence
                 if DEBUG:
-                    print("newGene.sequence is", newGene.sequence)
+                    print("cgp_genomeSequence says, DEBUG: newGene.sequence is", newGene.sequence)
 
                 # Reverse complement the string if on reverse strand
                 if newGene.strand == '-':
@@ -348,7 +362,8 @@ class genome(object):
                 protein.addAnnotation(newPSAT)
                 PSAT_H.close()
         else:
-            print("First you need to set the PSAT filename in phate_genomeSequence object") 
+            if PHATE_WARNINGS:
+                print("cgp_genomeSequence says, WARNING: First you need to set the PSAT filename in phate_genomeSequence object") 
         return 0
 
     def countAllAnnotations(self):
@@ -493,8 +508,9 @@ class genome(object):
 
     def printGenomeData2file_GFF(self,FILE_HANDLE):
         FILE_HANDLE.write("%s\n" % (GFF_COMMENT))
-        print("There are", len(self.geneSet.fastaList), "genes, and", len(self.proteinSet.fastaList), "proteins")
-        print("Writing data to GFF file")
+        if PHATE_PROGRESS:
+            print("cgp_genomeSequence says, There are", len(self.geneSet.fastaList), "genes, and", len(self.proteinSet.fastaList), "proteins")
+            print("cgp_genomeSequence says, Writing data to GFF file")
         #for gene in self.geneSet.fastaList:
         #    gene.printData2file_GFF(FILE_HANDLE,'gene')
         #for protein in self.proteinSet.fastaList:
@@ -528,7 +544,7 @@ class genome(object):
 
     def printFastas2file(self,kvargs): # Prints to the file holding fastas (not a report/debug file) 
         if DEBUG:
-            print("cgp_genomeSequence/printFastas2file says, kvargs is",kvargs)
+            print("cgp_genomeSequence says, DEBUG: printFastas2file: kvargs is",kvargs)
         mtype = ""
         # Get arguments that were provided
         if "mtype" in list(kvargs.keys()):
@@ -564,9 +580,10 @@ class genome(object):
             return True
         elif mtype.lower() == "protein":
             for fa in self.proteinSet.fastaList:
-                print("cgp_genomeSequence says, printing fa:")
-                fa.printFasta()
-                fa.printHeaders()
+                if DEBUG:
+                    print("cgp_genomeSequence says, DEBUG: Printing fa:")
+                    fa.printFasta()
+                    fa.printHeaders()
                 if hdrType.lower() == "short":
                     hdr = fa.getShortHeader()
                 else:

@@ -25,7 +25,7 @@
 # Output: postProcessCGPM.report, containing report as described above
 #
 # Programmer:  Carol L. Ecale Zhou 
-# Last update:  04 March 2020
+# Last update:  12 April 2020
 #
 ###################################################################
 '''
@@ -33,6 +33,20 @@
 
 import sys, os, re, string, copy
 import fastaSequence
+
+# Boolean control
+PHATE_PROGRESS = False
+PHATE_MESSAGES = False
+PHATE_WARNINGS = False
+PHATE_PROGRESS_STRING = os.environ["PHATE_PHATE_PROGRESS"]
+PHATE_MESSAGES_STRING = os.environ["PHATE_PHATE_MESSAGES"]
+PHATE_WARNINGS_STRING = os.environ["PHATE_PHATE_WARNINGS"]
+if PHATE_PROGRESS_STRING.lower() == 'true':
+    PHATE_PROGRESS = True
+if PHATE_MESSAGES_STRING.lower() == 'true':
+    PHATE_MESSAGES = True
+if PHATE_WARNINGS_STRING.lower() == 'true':
+    PHATE_WARNINGS = True
 
 ##### FILES
 
@@ -62,7 +76,7 @@ INPUT_STRING = "You may enter parameters interactively (via prompt) by typing: c
 ACCEPTABLE_ARG_COUNT = (2,4,7) # 2 if "help", "input", or "interactive" 
 
 #DEBUG = True
-#DEBUG = False
+DEBUG = False
 
 ##### VARIABLES
 
@@ -111,6 +125,9 @@ def GetArguments(parameters,files):
 # Get command-line arguments
 ################################################################################
 
+if PHATE_PROGRESS:
+    print("cgp_postProcessCGPM says, Reading input parameters.")
+
 argCount = len(sys.argv)
 if argCount in ACCEPTABLE_ARG_COUNT:
     match = re.search("help", sys.argv[1].lower())
@@ -156,10 +173,10 @@ match = re.search(p_report, files["inReportFile"])
 if not match:
     fileError = True
 if fileError:
-    print ("Check the formats of your input files:")
-    print ("    Gene fasta file #1:     ", files["geneFile1"])
-    print ("    Gene fasta file #2:     ", files["geneFile2"])
-    print ("    Report file:            ", files["inReportFile"])
+    print ("cgp_postProcessCGPM says, ERROR: Check the formats of your input files:")
+    print ("  Gene fasta file #1:     ", files["geneFile1"])
+    print ("  Gene fasta file #2:     ", files["geneFile2"])
+    print ("  Report file:            ", files["inReportFile"])
     print (USAGE_STRING)
     LOGFILE.close(); exit(0)
 
@@ -180,6 +197,7 @@ except IOError as e:
     fileError = True
     print (e)
 if fileError:
+    print("cgp_postProcessCGPM says, ERROR: Problem opening a file; exiting now.")
     LOGFILE.close(); exit(0)
 
 # Record to log and keep in touch with user
@@ -192,18 +210,23 @@ REPORT_FILE = open(files["outReportFile"],"w")
 REPORT_FILE.write("%s%s%s" % ("#gene file #1: ",files["geneFile1"],"\n"))
 REPORT_FILE.write("%s%s%s" % ("#gene file #2: ",files["geneFile2"],"\n"))
 
-print ("Parameters are:")
-print ("Gene file #1:", files["geneFile1"])
-print ("Gene file #2:", files["geneFile2"])
-print ("Input report file: ", files["inReportFile"])
-print ("Output report file: ", files["outReportFile"])
-print ("Parameters:")
-keys = list(parameters); keys.sort()
-for key in keys:
-    print (key, "is", parameters[key])
+if PHATE_PROGRESS:
+    print ("cgp_postProcessCGPM says, Parameters are:")
+    print ("  Gene file #1:", files["geneFile1"])
+    print ("  Gene file #2:", files["geneFile2"])
+    print ("  Input report file: ", files["inReportFile"])
+    print ("  Output report file: ", files["outReportFile"])
+if PHATE_MESSAGES:
+    print ("  Parameters:")
+    keys = list(parameters); keys.sort()
+    for key in keys:
+        print ("  ",key, "is", parameters[key])
 
 #########################################################################
 # Construct multi-fasta objects for geneFile1 and geneFile2 data sets
+
+if PHATE_PROGRESS:
+    print("cgp_postProcessCGPM says, Constructing multi-fasta objects for geneFile1 and geneFile2 data sets.")
 
 fLines = GENE_FILE1.read().splitlines() # read lines into list, removing newlines
 geneSet1 = fastaSequence.multiFasta()   # create multi-fasta object
@@ -311,6 +334,9 @@ alertString = ""
 FLIPPED = False
 PREVIOUS_FLIPPED = False
 
+if PHATE_PROGRESS:
+    print("cgp_postProcessCGPM says, Identifying anomalous matches.")
+
 # if SIMILAR_GENOMES:  # assume closely related for now; 
 IN_REPORT_FILE = open(files["inReportFile"],"r")
 fLines = IN_REPORT_FILE.read().splitlines()
@@ -318,6 +344,9 @@ IN_REPORT_FILE.close()
 #REPORT_FILE = open(files["outReportFile"],"w")  #*** already opened up at top
 today = os.popen('date')
 REPORT_FILE.write("%s%s%s" % ("#Post-processing of compareGeneProfiles.report on ", today.read(), "\n"))
+
+if PHATE_PROGRESS:
+    print("cgp_postProcessCGPM says, Processing report file lines")
 
 for line in fLines:
     commentLine = re.search(p_comment, line)
@@ -494,6 +523,9 @@ for line in fLines:
         REPORT_FILE.write("%s" % ("\n"))
         alertList = []  # reset
         alertString = ""
+
+if PHATE_PROGRESS:
+    print("cgp_postProcessCGPM says, Post processing complete.")
 
 REPORT_FILE.close() 
 LOGFILE.close()

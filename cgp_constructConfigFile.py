@@ -34,6 +34,23 @@
 import sys, os, re, string, copy
 from subprocess import call
 
+# Booleans
+PHATE_PROGRESS = False
+PHATE_MESSAGES = False
+PHATE_WARNINGS = False
+PHATE_PROGRESS_STRING = os.environ["PHATE_PHATE_PROGRESS"]
+PHATE_MESSAGES_STRING = os.environ["PHATE_PHATE_MESSAGES"]
+PHATE_WARNINGS_STRING = os.environ["PHATE_PHATE_WARNINGS"]
+if PHATE_PROGRESS_STRING.lower() == 'true':
+    PHATE_PROGRESS = True
+if PHATE_MESSAGES_STRING.lower() == 'true':
+    PHATE_MESSAGES = True
+if PHATE_WARNINGS_STRING.lower() == 'true':
+    PHATE_WARNINGS = True
+
+DEBUG = False
+#DEBUG = True
+
 #### FILES
 
 CODE_BASE_DIR = os.environ["CGP_CODE_BASE_DIR"]
@@ -95,6 +112,8 @@ annotation2 = ""
 compareDir = ""
 first = True
 
+if PHATE_PROGRESS:
+    print("cgp_constructConfigFile says, Reading input config file,",inFile)
 LOGFILE.write("%s%s\n" % ("Reading input config file ",inFile))
 fLines = INFILE.read().splitlines()
 numLines = len(fLines)
@@ -102,23 +121,24 @@ LOGFILE.write("%s%s\n" % ("Number of lines in input file is ", numLines))
 baseDir = fLines[0]
 
 LOGFILE.write("%s%s\n" % ("Reading names of genome and annotation files and writing output config file",outFile))
-print ("cgp_constructuConfigFile says, Writing output config file,",outFile) 
+if PHATE_PROGRESS:
+    print ("cgp_constructConfigFile says, Reading names of genome and annotation files; Writing output config file,",outFile) 
 jobNumber = 0  # i.e., comparison number
 FIRST = True
-#for i in xrange(1, len(fLines)):
 for i in list(range(1, len(fLines))):
-    print ("i is", i)
+    if DEBUG:
+        print ("cgp_constructConfigFile says, DEBUG: i is", i)
     (genome1,annotation1) = fLines[i].split(' ')
-    print ("genome1 is", genome1)
-    #for j in xrange(i+1, len(fLines)):
+    if PHATE_MESSAGES:
+        print ("cgp_constructConfigFile says, genome1 is", genome1)
     for j in list(range(i+1, len(fLines))):
         jobNumber += 1 
-        print ("jobNumber is", jobNumber)
-        #resultDir = baseDir + '/c' + str(jobNumber)
+        if PHATE_MESSAGES:
+            print ("cgp_constructConfigFile says, jobNumber is", jobNumber)
         resultDir = os.path.join(baseDir, '/c') + str(jobNumber)
         (genome2,annotation2) = fLines[j].split(' ')
-        print ("genome2 is", genome2)
-        print ("resultDir is", resultDir)
+        if PHATE_MESSAGES:
+            print ("cgp_constructConfigFile says, genome2 is", genome2, "and resultDir is", resultDir)
         CONFIG_FILE.write("%s\n" % (baseDir))
         CONFIG_FILE.write("%s\n" % (genome1))
         CONFIG_FILE.write("%s\n" % (genome2))
@@ -126,7 +146,8 @@ for i in list(range(1, len(fLines))):
         CONFIG_FILE.write("%s\n" % (annotation2))
         CONFIG_FILE.write("%s\n\n" % (resultDir))  
 LOGFILE.write("%s%s\n" % ("Number of jobs in config file = ", jobNumber))
-print ("cgp_constructeConfigFile says, Done! Config file is ", outFile)
+if PHATE_PROGRESS:
+    print ("cgp_constructeConfigFile says, Done! Config file is ", outFile)
 
 ##### Clean up
 

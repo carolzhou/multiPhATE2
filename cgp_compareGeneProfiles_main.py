@@ -6,7 +6,7 @@
 # compareGeneProfiles_main.py
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last update: 17 March 2020
+# Last update: 11 April 2020
 #
 # This program compares the gene calls from 2 genomes and identifies genes that 
 # match, are similar, or are unique in each genome. This code is a re-write of
@@ -64,8 +64,39 @@ import cgp_genomeSequence as genomeSequence
 #import cgp_blastAnalysis as blastAnalysis
 import cgp_blastAnalysis as blastAnalysis
 
+# Set messaging booleans
+
+PHATE_PROGRESS = False
+PHATE_MESSAGES = False
+PHATE_WARNINGS = False
+PHATE_PROGRESS_STRING = os.environ["PHATE_PHATE_PROGRESS"]
+PHATE_MESSAGES_STRING = os.environ["PHATE_PHATE_MESSAGES"]
+PHATE_WARNINGS_STRING = os.environ["PHATE_PHATE_WARNINGS"]
+if PHATE_PROGRESS_STRING.lower() == 'true':
+    PHATE_PROGRESS = True
+if PHATE_MESSAGES_STRING.lower() == 'true':
+    PHATE_MESSAGES = True
+if PHATE_WARNINGS_STRING.lower() == 'true':
+    PHATE_WARNINGS = True
+
+#DEBUG = True
+DEBUG = False
+
+BLAST_ON = True    # controls whether blast is performed (used during development to skip lengthy blast for testing)
+#BLAST_ON = False
+
+#PROTEIN = True     # controls whether protein sequences are blasted 
+PROTEIN = False
+
+REPORT_STATS = True  # controls whether reports are written
+#REPORT_STATS = False
+
+REPORT_ON = True  # controls whether reports are written
+#REPORT_ON = False
+
 #Constants
-PARALOG_MAX = 5 # max number of paralogs to be detected
+MAX_TARGET_SEQS = 1
+PARALOG_MAX     = 5 # max number of paralogs to be detected
 
 try:
     maketrans = ''.maketrans
@@ -123,13 +154,6 @@ INPUT_STRING = "You may enter parameters interactively (via prompt) by typing: c
 
 ACCEPTABLE_ARG_COUNT = (2,3,9,11) # 2 if "help", "input", or "interactive"; 9 if 4 files provided with command-line labels (ie, '-g1')
                                # 3 if "config" mode; 11 if also including projectDirectory
-
-DEBUG = True
-#DEBUG = False
-BLAST_ON = True    # controls whether blast is performed
-#BLAST_ON = False
-#PROTEIN = True     # controls whether protein sequences are blasted 
-PROTEIN = False
 
 ##### BLAST default parameters
 
@@ -232,7 +256,8 @@ def ConstructFilename(inFile,infix):  # infix is typically "gene" or "prot"
     extensionString = stringList[-1] # Take last element in list
     rootFilename = inFile.rstrip(extensionString)
     newFile = rootFilename + "_" + infix + extensionString
-    print ("newFile name: ", newFile)
+    if PHATE_MESSAGES:
+        print ("newFile name: ", newFile)
     return newFile
 
 # For inserting "gene" or "prot" into genome filename, for new gene, protein fasta files
@@ -242,7 +267,8 @@ def ConstructNewFilename(inFile,infix,extension):
     (fileRoot,exten) = myFile.split('.')
     filename = fileRoot + '_' + infix + '.' + extension
     newFile = os.path.join(PIPELINE_OUTPUT_DIR, filename)  
-    #print("ConstructNewFilename says: Just constructed a new filename,",newFile)
+    if DEBUG:
+        print("cgp_compareGeneProfiles_main says, DEBUG: ConstructNewFilename(): Just constructed a new filename,",newFile)
     return newFile
 
 # FUNCTION GetRootFile - Captures file name from directory-path/filename string
@@ -381,10 +407,10 @@ ERROR_LOG.write("%s%s\n" % ("Reading command-line input at ",today.read()))
 
 argCount = len(sys.argv)
 print ("cgp_compareGeneProfiles_main says, Reading input arguments")
-print ("Number of command-line arguments:", argCount)
+print ("  Number of command-line arguments:", argCount)
 if argCount in ACCEPTABLE_ARG_COUNT:
     if DEBUG:
-        print("cgp_compareGeneProfiles_main says, sys.argv is:", sys.argv)
+        print("cgp_compareGeneProfiles_main says, DEBUG: sys.argv is:", sys.argv)
     match = re.search("help", sys.argv[1].lower())
     if match:
         print (HELP_STRING)
@@ -406,7 +432,8 @@ if argCount in ACCEPTABLE_ARG_COUNT:
         GetConfig(configString)
 
     if argCount == 9 or argCount == 11:
-        print ("Reading input parameters")
+        if PHATE_PROGRESS:
+            print ("cgp_compareGeneProfiles_main says, Reading input parameters")
         for i in range(argCount):
             if sys.argv[i] == "-g1":
                 files["genomeFile1"] = sys.argv[i+1]
@@ -419,8 +446,9 @@ if argCount in ACCEPTABLE_ARG_COUNT:
             if sys.argv[i] == "-d":
                 files["projectDirectory"] = sys.argv[i+1]
                 BASE_DIR = files["projectDirectory"]
-        print ("genomeFile1 is", files["genomeFile1"])
-        print ("genomeFile2 is", files["genomeFile2"])
+        if PHATE_PROGRESS:
+            print ("  genomeFile1 is", files["genomeFile1"])
+            print ("  genomeFile2 is", files["genomeFile2"])
 
         # compute gene files
         (pathRoot1, fileName1)   = os.path.split(files["annotationFile1"])
@@ -436,14 +464,14 @@ if argCount in ACCEPTABLE_ARG_COUNT:
         files["proteinFile1"]    = os.path.join(pathRoot1, joinName1)
         files["proteinFile2"]    = os.path.join(pathRoot2, joinName2)
 
-        print ("geneFile1 is",       files["geneFile1"])
-        print ("geneFile2 is",       files["geneFile2"])
-        print ("proteinFile1 is",    files["proteinFile1"])
-        print ("proteinFile2 is",    files["proteinFile2"])
-        print ("annotationFile1 is", files["annotationFile1"])
-        print ("annotationFile2 is", files["annotationFile2"])
-        print ("BASE_DIR is",        files["projectDirectory"])
-        print ("Done reading input parameters")
+        print ("  geneFile1 is",       files["geneFile1"])
+        print ("  geneFile2 is",       files["geneFile2"])
+        print ("  proteinFile1 is",    files["proteinFile1"])
+        print ("  proteinFile2 is",    files["proteinFile2"])
+        print ("  annotationFile1 is", files["annotationFile1"])
+        print ("  annotationFile2 is", files["annotationFile2"])
+        print ("  BASE_DIR is",        files["projectDirectory"])
+        print ("  Done reading input parameters")
     else:
         print (USAGE_STRING)
         ERROR_LOG.close();  exit(0)
@@ -466,12 +494,12 @@ match = re.search(p_gff, files["annotationFile2"])
 if not match:
     fileError = True
 if fileError:
-    print ("Check the formats of your input files:")  
-    print ("   Genome file #1:         ", files["genomeFile1"])
-    print ("   Annotation file #1:     ", files["annotationFile1"])
-    print ("   Genome file #2:         ", files["genomeFile2"])
-    print ("   Annotation file #2:     ", files["annotationFile2"])
-    print ("   Project directory:      ", files["projectDirectory"])
+    print ("cgp_compareGeneProfiles says, ERROR: Check the formats of your input files:")  
+    print ("  Genome file #1:         ", files["genomeFile1"])
+    print ("  Annotation file #1:     ", files["annotationFile1"])
+    print ("  Genome file #2:         ", files["genomeFile2"])
+    print ("  Annotation file #2:     ", files["annotationFile2"])
+    print ("  Project directory:      ", files["projectDirectory"])
     print (USAGE_STRING)
     ERROR_LOG.write("%s\n" % ("ERROR in input file parameter"))
     ERROR_LOG.close(); exit(0)
@@ -480,23 +508,27 @@ else:
 
 # Prepend filenames with projectDirectory
 
-print ("1: OUT_DIR is", OUT_DIR)
 if SERVER:
     OUT_DIR      = os.path.join(files["projectDirectory"], OUT_DIR)
     reportFile   = os.path.join(OUT_DIR, "compareGeneProfiles_main.report")
     profilesFile = os.path.join(OUT_DIR, "compareGeneProfiles_main.out")
     logFile      = os.path.join(OUT_DIR, LOG_FILE)
 
-print ("2: SERVER is", SERVER)
-print ("3: OUT_DIR is", OUT_DIR)
+if PHATE_PROGRESS:
+    print ("cgp_compareGeneProfiles_main says...")
+    print ("  1: OUT_DIR is", OUT_DIR)
+    print ("  2: SERVER is", SERVER)
+    print ("  baseDir is", files["baseDir"])
 
 # Prepend file names with baseDir; ""/no change if not provided:
-print ("baseDir is", files["baseDir"])
 files["genomeFile1"] = os.path.join(files["baseDir"], files["genomeFile1"])
 files["genomeFile2"] = os.path.join(files["baseDir"], files["genomeFile2"])
 files["annotationFile1"] = os.path.join(files["baseDir"], files["annotationFile1"])
 files["annotationFile2"] = os.path.join(files["baseDir"], files["annotationFile2"])
 
+if DEBUG:
+    print("cgp_compareGeneProfiles_main says, DEBUG: annotationFile1 is",files["annotationFile1"])
+    print("cgp_compareGeneProfiles_main says, DEBUG: annotationFile2 is",files["annotationFile2"])
 ##### Open files
 
 try:
@@ -530,7 +562,8 @@ if SERVER:
 else:
     OUT_DIR = "./"
 
-print ("Making directory", OUT_DIR)
+if PHATE_MESSAGES:
+    print ("cgp_compareGeneProfiles_main says, Making directory", OUT_DIR)
 command = "mkdir " + OUT_DIR
 os.system(command)
 outFile      = os.path.join(OUT_DIR, OUT_FILE)     # Contains misc output
@@ -552,16 +585,17 @@ LOG.write("%s%s\n" % ("annotation file #2: ",files["annotationFile2"]))
 LOG.write("%s%s\n" % ("user directory is: ",files["projectDirectory"]))
 LOG.write("%s%s\n" % ("outFile is: ",outFile))
 
-print ("Parameters are:")
-print ("Genome file #1:", files["genomeFile1"])
-print ("Genome file #2:", files["genomeFile2"])
-print ("Annotation file #1:", files["annotationFile1"])
-print ("Annotation file #2:", files["annotationFile2"])
-print ("User directory:", files["projectDirectory"])
-print ("Out file:", outFile)
-keys = list(parameters); keys.sort()
-for key in keys:
-    print (key, "is", parameters[key])
+if PHATE_MESSAGES:
+    print ("cgp_compareGeneProfiles_main says, Parameters are:")
+    print ("  Genome file #1:", files["genomeFile1"])
+    print ("  Genome file #2:", files["genomeFile2"])
+    print ("  Annotation file #1:", files["annotationFile1"])
+    print ("  Annotation file #2:", files["annotationFile2"])
+    print ("  User directory:", files["projectDirectory"])
+    print ("  Out file:", outFile)
+    keys = list(parameters); keys.sort()
+    for key in keys:
+        print (key, "is", parameters[key])
 
 #########################################################################################################
 # Construct genome data structures
@@ -594,17 +628,21 @@ GENOME_FILE2.close()
 #files["proteinFile2"] = ConstructNewFilename(files["genomeFile2"], "prot", "fna")
 
 if PROTEIN: 
-    print ("Blast databases for genome 1 genes & proteins will be:")
-    print (files["geneFile1"], "and")
-    print (files["proteinFile1"])
-    print ("Blast databases for genome 2 genes & proteins will be:")
-    print (files["geneFile2"], "and")
-    print (files["proteinFile2"])
+    if PHATE_PROGRESS:
+        print ("cgp_compareGeneProfiles_main says...")
+        print ("  Blast databases for genome 1 genes & proteins will be:")
+        print ('  ',files["geneFile1"], "and")
+        print ('  ',files["proteinFile1"])
+        print ("  Blast databases for genome 2 genes & proteins will be:")
+        print ('  ',files["geneFile2"], "and")
+        print ('  ',files["proteinFile2"])
 else:
-    print ("Blast databases for genome 1 genes will be:")
-    print (files["geneFile1"])
-    print ("Blast databases for genome 2 genes will be:")
-    print (files["geneFile2"])
+    if PHATE_PROGRESS:
+        print ("cgp_compareGeneProfiles_main says...")
+        print ("  Blast databases for genome 1 genes will be:")
+        print ('  ',files["geneFile1"])
+        print ("  Blast databases for genome 2 genes will be:")
+        print ('  ',files["geneFile2"])
 
 # prepare to reverse complement
 #complements = string.maketrans('acgtrymkbdhvACGTRYMKBDHV', 'tgcayrkmvhdbTGCAYRKMVHDB')
@@ -691,7 +729,7 @@ def extractGeneCalls(genomeX,lines):
 #########################################################################################
 
 if DEBUG:
-    print("BEGIN CompareGeneProfiles Processing")
+    print("cgp_compareGeneProfiles_main says, DEBUG: Begin CompareGeneProfiles Processing")
 
 printFastas2fileArgs = {  # for passing parameters to class genome/
     "mtype"      : "gene",   # "gene" (default), "protein", or "contig"
@@ -703,19 +741,23 @@ import subprocess
 
 ##### Genome #1 genes
 fLines = ANNOTATION_FILE1.read().splitlines()
+if DEBUG:
+    print("cgp_compareGeneProfiles_main says, DEBUG: from ANNOTATION_FILE1, fLines has this many lines:",len(fLines))
 extractGeneCalls(genome1,fLines)
 ANNOTATION_FILE1.close()
 #p = subprocess.Popen(['pwd'],stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
 #pwd = p.stdout.read()[:-1]
 #printFile1 = pwd + "/" + files["geneFile1"]
 printFile1 = files["geneFile1"]
-print ("Printing to file", printFile1)
-print ("based on annotationFile1:", files["annotationFile1"])
+if PHATE_MESSAGES:
+    print ("cgp_compareGeneProfiles_main says, Printing to file", printFile1,"...")
+    print ("  based on annotationFile1:", files["annotationFile1"])
 printFastas2fileArgs["filename"] = printFile1
-if DEBUG:
-    print("cgp_compareGeneProfiles says, calling printFastas2file, printFastas2fileArgs is",printFastas2fileArgs)
+if PHATE_MESSAGES:
+    print("cgp_compareGeneProfiles_main says, Calling printFastas2file, printFastas2fileArgs is",printFastas2fileArgs)
 success = genome1.printFastas2file(printFastas2fileArgs)
-print ("Success in printing gene fastas to file:", success)
+if PHATE_MESSAGES: 
+    print ("cgp_compareGeneProfiles_main says, Success in printing gene fastas to file:", success)
 #genome1.printAll()
 
 ##### Genome #2 genes
@@ -726,11 +768,13 @@ ANNOTATION_FILE2.close()
 #pwd = p.stdout.read()[:-1]
 #printFile2 = pwd + "/" + files["geneFile2"]
 printFile2 = files["geneFile2"]
-print ("Printing to file", printFile2)
-print ("based on annotationFile2:", files["annotationFile2"])
+if PHATE_MESSAGES:
+    print ("cgp_compareGeneProfiles_main says, Printing to file", printFile2,"...")
+    print ("  based on annotationFile2:", files["annotationFile2"])
 printFastas2fileArgs["filename"] = printFile2
 success = genome2.printFastas2file(printFastas2fileArgs)
-print ("Success in printing gene fastas to file:", success)
+if PHATE_MESSAGES:
+    print ("cgp_compareGeneProfiles_main says, Success in printing gene fastas to file:", success)
 
 
 #########################################################################################
@@ -748,25 +792,27 @@ translationArgs = { # for passing parameters to class genomeSequence/genome.make
     "proteinFile" : ""
     }
 
-print ("Translating genes for both genomes....")
+if PHATE_PROGRESS:
+    print ("cgp_compareGeneProfiles_main says, Translating genes for both genomes....")
 
-translationArgs["geneFile"] = files["geneFile1"]
+translationArgs["geneFile"]    = files["geneFile1"]
 translationArgs["proteinFile"] = files["proteinFile1"]
-print ("translationArgs is:",translationArgs)
+if PHATE_MESSAGES:
+    print ("cgp_compareGeneProfiles_main says, translationArgs is:",translationArgs)
 genome1.translateGenes(translationArgs)            # EMBOSS writes protein translations to file
 PROT_FILE = open(files["proteinFile1"],"r")
 fLines = PROT_FILE.read().splitlines()             # read lines into list, removing newlines
 genome1.write2proteinSet(fLines)                   # Store translations in genome object
 if DEBUG:
-    print("cgp_compareGeneProfiles_main says, calling cleanUpAfterEMBOSS, with arg:",translationArgs)
+    print("cgp_compareGeneProfiles_main says, DEBUG: Calling cleanUpAfterEMBOSS, with arg:",translationArgs)
 #genome1.cleanUpAfterEMBOSS(translationArgs)        # EMBOSS messes with headers...so fix them
 genome1.cleanUpAfterEMBOSS()                        # EMBOSS messes with headers...so fix them
 printFastas2fileArgs["filename"] = files["proteinFile1"]
 printFastas2fileArgs["mtype"] = "protein"
 genome1.printFastas2file(printFastas2fileArgs)     # Replace EMBOSS's file of translated proteins w/fixed fastas
 if DEBUG:
-    print("Printing genome 1 data...")
-genome1.printGenomeData()
+    print("cgp_compareGeneProfiles_main says, DEBUG: Printing genome 1 data...")
+    genome1.printGenomeData()
 PROT_FILE.close()
 
 translationArgs["geneFile"] = files["geneFile2"]
@@ -780,11 +826,12 @@ genome2.cleanUpAfterEMBOSS()                       # EMBOSS messes with headers.
 printFastas2fileArgs["filename"] = files["proteinFile2"]
 genome2.printFastas2file(printFastas2fileArgs)     # Replace EMBOSS's file of translated proteins w/fixed fastas
 if DEBUG:
-    print("Printing genome 2 data...")
-genome2.printGenomeData()
+    print("cgp_compareGeneProfiles_main says, DEBUG: Printing genome 2 data...")
+    genome2.printGenomeData()
 PROT_FILE.close()
 
-print ("Translation complete.")
+if PHATE_PROGRESS:
+    print ("cgp_compareGeneProfiles_main says, Translation complete.")
 
 #########################################################################################################
 # Create blast databases for gene and protein multi-fasta files 
@@ -795,10 +842,11 @@ blastDBargs = {  # for passing parameters to class genomeSequence/makeBlastDBs m
     "filename" : ""
     }
 
-if PROTEIN:
-    print ("Creating blast databases for genome 1 and genome 2 gene and protein sets...")
-else:
-    print ("Creating blast databases for genome 1 and genome 2 gene sets...")
+if PHATE_PROGRESS:
+    if PROTEIN:
+        print ("Creating blast databases for genome 1 and genome 2 gene and protein sets...")
+    else:
+        print ("Creating blast databases for genome 1 and genome 2 gene sets...")
 
 myBlast = blastAnalysis.blast()                # Make blast object
 
@@ -815,7 +863,8 @@ if PROTEIN:
     blastDBargs["filename"] = files["proteinFile2"]
     myBlast.makeBlastDB(blastDBargs)
 
-print ("Blast database creation complete.")
+if PHATE_PROGRESS:
+    print ("cgp_compareGeneProfiles_main says, Blast database creation complete.")
 
 #####################################################################################
 # Perform blast of gene and protein sets between genomes and against self
@@ -836,7 +885,8 @@ blastArgs = {
     "outfile"       : ""
 }
 
-print ("Blasting gene sets...")
+if PHATE_PROGRESS:
+    print ("cgp_compareGeneProfiles_main says, Blasting gene sets...")
 blastArgs["mtype"]   = "nucl"
 
 # Need the raw filename (without directory information) to construct blast output filenames
@@ -853,31 +903,36 @@ blastArgs["subject"] = files["geneFile2"]
 blastArgs["maxTargetSeqs"] = 1 
 outfile = OUT_DIR + files["geneFile1_root"] + "_" + files["geneFile2_root"] + "_" + "blastn_" +\
     str(blastArgs["evalue"]) + "_" + str(blastArgs["identity"]) + ".out"
-print("cpg_compareGeneProfiles_main says, genome1-genome2 outfile is",outfile)
+if PHATE_PROGRESS:
+    print("cpg_compareGeneProfiles_main says, genome1-genome2 outfile is",outfile)
 blastArgs["outfile"] = outfile
 files["g1_g2_blastn"] = outfile
 if BLAST_ON:
     result = myBlast.performBlast(blastArgs)
-    print ("Result of blasting genes genome1-genome2:", result)
+    print ("cgp_compareGeneProfiles_main says, Result of blasting genes genome1-genome2:", result)
 
 ### Genome 2 - Genome 1
 
-print ("Genome 2 genes against genome 1 genes...")
+if PHATE_PROGRESS:
+    print ("cgp_compareGeneProfiles_main says, Genome 2 genes against genome 1 genes...")
 blastArgs["query"]   = files["geneFile2"]
 blastArgs["subject"] = files["geneFile1"]
-blastArgs["maxTargetSeqs"] = 1 
+blastArgs["maxTargetSeqs"] = MAX_TARGET_SEQS 
 outfile = OUT_DIR + files["geneFile2_root"] + "_" + files["geneFile1_root"] + "_" + "blastn_" +\
     str(blastArgs["evalue"]) + "_" + str(blastArgs["identity"]) + ".out"
-print("cpg_compareGeneProfiles_main says, genome2-genome1 outfile is",outfile)
+if PHATE_MESSAGES:
+    print("cpg_compareGeneProfiles_main says, genome2-genome1 outfile is",outfile)
 blastArgs["outfile"] = outfile
 files["g2_g1_blastn"] = outfile
 if BLAST_ON:
     result = myBlast.performBlast(blastArgs)
-    print ("Result of blasting genes genome2-genome1:", result)
+    if PHATE_PROGRESS:
+        print ("cgp_compareGeneProfiles_main says, Result of blasting genes genome2-genome1:", result)
 
 ### Genome 1 - Genome 1
 
-print ("Genome 1 genes against self...")
+if PHATE_PROGRESS:
+    print ("cgp_compareGeneProfiles_main says, Genome 1 genes against self...")
 blastArgs["query"]   = files["geneFile1"]
 blastArgs["subject"] = files["geneFile1"]
 blastArgs["maxTargetSeqs"] = PARALOG_MAX 
@@ -887,11 +942,13 @@ blastArgs["outfile"] = outfile
 files["g1_g1_blastn"] = outfile
 if BLAST_ON:
     result = myBlast.performBlast(blastArgs)
-    print ("Result of blasting genes genome1-genome1:", result)
+    if PHATE_PROGRESS:
+        print ("cgp_compareGeneProfiles_main says, Result of blasting genes genome1-genome1:", result)
 
 ### Genome 2 - Genome 2 
 
-print ("Genome 2 genes against self...")
+if PHATE_PROGRESS:
+    print ("cgp_compareGeneProfiles_main says, Genome 2 genes against self...")
 blastArgs["query"]   = files["geneFile2"]
 blastArgs["subject"] = files["geneFile2"]
 blastArgs["maxTargetSeqs"] = PARALOG_MAX 
@@ -901,44 +958,52 @@ blastArgs["outfile"] = outfile
 files["g2_g2_blastn"] = outfile
 if BLAST_ON:
     result = myBlast.performBlast(blastArgs)
-    print ("Result of blasting genes genome2-genome1:", result)
+    if PHATE_PROGRESS:
+        print ("cgp_compareGeneProfiles_main says, Result of blasting genes genome2-genome1:", result)
 
-print ("Blasting of gene sets complete.")
+if PHATE_PROGRESS:
+    print ("cgp_compareGeneProfiles_main says, Blasting of gene sets complete.")
 
 ### Proteome 1 - Proteome 2
 if PROTEIN:
-    print ("Blasting protein sets...")
+    if PHATE_PROGRESS:
+        print ("cgp_compareGeneProfiles_main says, Blasting protein sets...")
     blastArgs["mtype"]   = "prot"
 
-    print ("Genome 1 proteins against genome 2 proteins...")
+    if PHATE_PROGRESS:
+        print ("cgp_compareGeneProfiles_main says, Genome 1 proteins against genome 2 proteins...")
     blastArgs["query"]   = files["proteinFile1"]
     blastArgs["subject"] = files["proteinFile2"]
-    blastArgs["maxTargetSeqs"] = 1 
+    blastArgs["maxTargetSeqs"] = MAX_TARGET_SEQS 
     outfile = OUT_DIR + files["protFile1_root"] + "_" + files["protFile2_root"] + "_" + "blastn_" +\
         str(blastArgs["evalue"]) + "_" + str(blastArgs["identity"]) + ".out"
     blastArgs["outfile"] = outfile
     files["g1_g2_blastp"] = outfile
     if BLAST_ON:
         result = myBlast.performBlast(blastArgs)
-        print ("Result of blasting proteins genome1-genome2:", result)
+        if PHATE_PROGRESS:
+            print ("cgp_compareGeneProfiles_main says, Result of blasting proteins genome1-genome2:", result)
 
     ### Proteome 2 - Proteome 1
 
-    print ("Genome 2 proteins against genome 1 proteins...")
+    if PHATE_PROGRESS:
+        print ("cgp_compareGeneProfiles says, Genome 2 proteins against genome 1 proteins...")
     blastArgs["query"]   = files["proteinFile2"]
     blastArgs["subject"] = files["proteinFile1"]
-    blastArgs["maxTargetSeqs"] = 1 
+    blastArgs["maxTargetSeqs"] = MAX_TARGET_SEQS 
     outfile = OUT_DIR + files["protFile2_root"] + "_" + files["protFile1_root"] + "_" + "blastn_" +\
         str(blastArgs["evalue"]) + "_" + str(blastArgs["identity"]) + ".out"
     blastArgs["outfile"] = outfile
     files["g2_g1_blastp"] = outfile
     if BLAST_ON:
         result = myBlast.performBlast(blastArgs)
-        print ("Result of blasting proteins genome2-genome1:", result)
+        if PHATE_PROGRESS:
+            print ("cgp_compareGeneProfiles says, Result of blasting proteins genome2-genome1:", result)
 
     ### Proteome 1 - Proteome 1
  
-    print ("Genome 1 proteins against self...")
+    if PHATE_PROGRESS:
+        print ("cgp_compareGeneProfiles_main says, Genome 1 proteins against self...")
     blastArgs["query"]   = files["proteinFile1"]
     blastArgs["subject"] = files["proteinFile1"]
     blastArgs["maxTargetSeqs"] = PARALOG_MAX 
@@ -948,11 +1013,13 @@ if PROTEIN:
     files["g1_g1_blastp"] = outfile
     if BLAST_ON:
         result = myBlast.performBlast(blastArgs)
-        print ("Result of blasting proteins genome1-genome1:", result)
+        if PHATE_PROGRESS:
+            print ("cgp_compareGeneProfiles_main says, Result of blasting proteins genome1-genome1:", result)
  
     ### Proteome 2 - Proteome 2
 
-    print ("Genome 2 proteins against self...")
+    if PHATE_PROGRESS:
+        print ("cgp_compareGeneProfiles_main says, Genome 2 proteins against self...")
     blastArgs["query"]   = files["proteinFile2"]
     blastArgs["subject"] = files["proteinFile2"]
     blastArgs["maxTargetSeqs"] = PARALOG_MAX 
@@ -962,33 +1029,39 @@ if PROTEIN:
     files["g2_g2_blastp"] = outfile
     if BLAST_ON:
         result = myBlast.performBlast(blastArgs)
-        print ("Result of blasting proteins genome2-genome2:", result)
+        if PHATE_PROGRESS:
+            print ("cgp_compareGeneProfiles_main says, Result of blasting proteins genome2-genome2:", result)
 
-    print ("Blasting of protein sets complete.")
+    if PHATE_PROGRESS:
+        print ("cgp_compareGeneProfiles_main says, Blasting of protein sets complete.")
 
 #########################################################################################################
 # Parse blast output files; write hits to data structures 
 #########################################################################################################
 
-print ("Recording gene hits...",)
+if PHATE_PROGRESS:
+    print ("cgp_compareGeneProfiles_main says, Recording gene hits...",)
 
 gene12hitList = myBlast.recordHits(files["g1_g2_blastn"])
 gene21hitList = myBlast.recordHits(files["g2_g1_blastn"])
 gene11hitList = myBlast.recordHits(files["g1_g1_blastn"])
 gene22hitList = myBlast.recordHits(files["g2_g2_blastn"])
 
-print ("Done!")
+if PHATE_PROGRESS:
+    print ("cgp_compareGeneProfiles_main says, Recording of gene hits complete.")
 
 if PROTEIN:
 
-    print ("Recording protein hits...",)
+    if PHATE_PROGRESS:
+        print ("cgp_compareGeneProfiles_main says, Recording protein hits...",)
 
     prot12hitList = myBlast.recordHits(files["g1_g2_blastp"])
     prot21hitList = myBlast.recordHits(files["g2_g1_blastp"])
     prot11hitList = myBlast.recordHits(files["g1_g1_blastp"])
     prot22hitList = myBlast.recordHits(files["g2_g2_blastp"])
 
-    print ("Done!")
+    if PHATE_PROGRESS:
+        print ("cgp_compareGeneProfiles_main says, Recording of protein hits complete.")
 
 #########################################################################################################
 # Identify mutual best hits, singluar best hits, loners, homologs, and paralogs
@@ -1000,61 +1073,82 @@ lonerArgs = {
     "comparedHits" : None  # homology object returned by blast.compareHits method
 }
 #**************************************************************
-print ("Identifying gene mutual best hits and singular hits...",)
+
+if PHATE_PROGRESS:
+    print ("cgp_compareGeneProfiles_main says, Identifying gene mutual best hits and singular hits...",)
 parameters["type"] = "gene"
 geneComparison = myBlast.compareHits(gene12hitList,gene21hitList,parameters)
-print ("Done!")
+if PHATE_PROGRESS:
+    print ("cgp_compareGeneProfiles_main says, Identificaton of mutual-best and singular hits compelte.")
 
-print ("Identifying gene loners...",)
+if PHATE_PROGRESS:
+    print ("cgp_compareGeneProfiles_main says, Identifying gene loners...",)
 lonerArgs["seqList1"] = genome1.geneSet
 lonerArgs["seqList2"] = genome2.geneSet
 lonerArgs["comparedHits"] = geneComparison
 geneComparison = myBlast.identifyLoners(lonerArgs)
-print ("Done!")
+if PHATE_PROGRESS:
+    print ("cgp_compareGeneProfiles_main says, Identification of loners complete.")
 
-print ("Identifying gene paralogs...",)
+if PHATE_PROGRESS:
+    print ("cgp_compareGeneProfiles_main says, Identifying gene paralogs...",)
 myBlast.identifyParalogs(genome1.geneSet,gene11hitList,parameters)
 myBlast.identifyParalogs(genome2.geneSet,gene22hitList,parameters)
-print ("Done!")
+if PHATE_PROGRESS:
+    print ("cgp_compareGeneProfiles_main says, Identification of paralogs complete.")
 
 #**************************************************************
 
 if PROTEIN:
-    print ("Identifying protein mutual best hits and singular hits...",)
+    if PHATE_PROGRESS:
+        print ("cgp_compareGeneProfiles_main says, Identifying protein mutual best hits and singular hits...",)
     parameters["type"] = "protein"
     proteinComparison = myBlast.compareHits(prot12hitList,prot21hitList,parameters)
-    print ("Done!")
+    if PHATE_PROGRESS:
+        print ("cgp_compareGeneProfiles_main says, Identificaton of mutual-best and singular hits complete.")
 
-    print ("Identifying protein loners...",)
+    if PHATE_PROGRESS:
+        print ("cgp_compareGeneProfiles_main says, Identifying protein loners...",)
     lonerArgs["seqList1"] = genome1.proteinSet
     lonerArgs["seqList2"] = genome2.proteinSet
     lonerArgs["comparedHits"] = proteinComparison
     proteinComparison = myBlast.identifyLoners(lonerArgs)
-    print ("Done!")
+    if PHATE_PROGRESS:
+        print ("cgp_compareGeneProfiles_main says, Identification of loners complete.")
 
-    print ("Identifying protein paralogs...",)
+    if PHATE_PROGRESS:
+        print ("cgp_compareGeneProfiles_main says, Identifying protein paralogs...",)
     myBlast.identifyParalogs(genome1.proteinSet,prot11hitList,parameters)
     myBlast.identifyParalogs(genome2.proteinSet,prot22hitList,parameters)
-    print ("Done!")
+    if PHATE_PROGRESS:
+        print ("cgp_compareGeneProfiles_main says, Identification of paralogs complete.")
 
 #######################################################################################################
 # Tally and report genome1/2 gene/protein comparison statistics  
 #######################################################################################################
 #*** Testing:  are summary statistics correct?
 
+if PHATE_MESSAGES:
+    print("cgp_compareGeneProfiles_main says, Tallying genome1/2 gene comparison statistics.")
 geneComp_stats = geneComparison.reportStats()  # reminder: a homology object
 genome1_gene_stats = genome1.geneSet.reportStats() # reminder: a multi-fasta object
 genome2_gene_stats = genome2.geneSet.reportStats()
 
 if PROTEIN:
+    if PHATE_MESSAGES:
+        print("cgp_compareGeneProfiles_main says, Tallying genome1/2 protein comparison statistics.")
     protComp_stats = proteinComparison.reportStats()
     genome1_prot_stats = genome1.proteinSet.reportStats()
     genome2_prot_stats = genome2.proteinSet.reportStats()
+
+if PHATE_MESSAGES:
+    print("cgp_compareGeneProfiles_main says, Reporting genome1/2 gene and protein statistics.")
 
 SUMMARY = open(summaryFile,"w")
 SUMMARY.write("\n%s\n" % ("************Next Report************"))
 SUMMARY.write("%s%s\n" % ("Genome: ",files["genomeFile1"]))
 SUMMARY.write("%s%s\n" % ("Genome: ",files["genomeFile2"]))
+
 for stat in geneComp_stats:
     SUMMARY.write("%s\n" % (stat))
 if PROTEIN:
@@ -1072,25 +1166,34 @@ if PROTEIN:
         SUMMARY.write("%s\n" % (stat))
 
 SUMMARY.close()
-"""
-geneComparison.reportStats()
-proteinComparison.reportStats()
-genome1.geneSet.reportStats()
-genome1.proteinSet.reportStats()
-genome2.geneSet.reportStats()
-genome2.proteinSet.reportStats()
-"""
+
+if REPORT_STATS:
+    geneComparison.reportStats()
+    genome1.geneSet.reportStats()
+    genome2.geneSet.reportStats()
+    if PROTEIN:
+        proteinComparison.reportStats()
+        genome1.proteinSet.reportStats()
+        genome2.proteinSet.reportStats()
+
+if PHATE_PROGRESS:
+    print("cgp_compareGeneProfiles_main says, genome1/2 gene and protein statistics complete.")
 
 #######################################################################################################
 # Combine mutual and singular best hits and unique genes/proteins in order wrt genome1
 #######################################################################################################
 
 # Perform data line merging
+if PHATE_PROGRESS:
+    print("cgp_compareGeneProfiles_main says, Performing data line merging.")
+
 geneMergeList = geneComparison.mergeAll(genome1.geneSet,genome2.geneSet)
 if PROTEIN:
     proteinMergeList = proteinComparison.mergeAll(genome1.proteinSet,genome2.proteinSet)
 
 # Write merged data lines for gene analysis to out file
+if PHATE_PROGRESS:
+    print("cgp_compareGeneProfiles_main says, Recording comparison results to file", outFile)
 OUT = open(outFile,"w")
 OUT.write("%s" % ("GENE COMPARISON RESULTS:\n"))
 for hitItem in geneMergeList:
@@ -1102,6 +1205,8 @@ if PROTEIN:
     for hitItem in proteinMergeList:
         OUT.write("%s%s" % (hitItem,"\n"))
 
+if PHATE_PROGRESS:
+    print("cgp_compareGeneProfiles_main says, Ordering of mutual, singular-best, and unique genes complete.")
 OUT.close()
 
 #######################################################################################################
@@ -1109,6 +1214,9 @@ OUT.close()
 #######################################################################################################
 
 # Create gene report
+
+if PHATE_MESSAGES:
+    print("cgp_compareGeneProfiles_main says, Creating report.")
 REPORT = open(reportFile,"w")
 REPORT.write("%s" % ("#GENE HITS\n"))
 for line in geneMergeList:
@@ -1124,6 +1232,8 @@ if PROTEIN:
             REPORT.write("%s%s" % (item,"\t"))
         REPORT.write("%s" % ("\n"))
 REPORT.close()
+if PHATE_PROGRESS:
+    print("cgp_compareGeneProfiles_main says, Report(s) created.")
 
 #########################################################################################################
 # Clean Up
@@ -1145,6 +1255,7 @@ call(["cp", outFile,     outCopy])
 call(["cp", reportFile,  reportCopy])
 call(["cp", summaryFile, summaryCopy])
 
-print ("cpg_compareGeneProfiles_main says, done!")
+if PHATE_PROGRESS:
+    print ("cpg_compareGeneProfiles_main says, CompareGeneProfiles completed.")
 
 #######################################################################################################

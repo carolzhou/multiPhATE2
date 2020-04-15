@@ -2,6 +2,8 @@
 # Module: phate_fastaSequence.py
 #
 # Programmer: Carol L. Ecale Zhou
+#
+# Most recent update: 10 April 2020
 # 
 # Module containing classes and methods for representing a multi-fasta sequence and associated methods
 # Classes and methods: 
@@ -159,8 +161,9 @@ class fasta(object):
         if gi != "" and int(gi) > 0: 
             giString = "gi\|" + gi + "\|"
         else:
-            print("problem with gi")
-            return(0)
+            if PHATE_WARNINGS == 'True':
+                print("phate_fastaSequence says, WARNING: problem with gi",str(gi))
+                return(0)
         for record in SeqIO.parse(nrLocation,"fasta"):
             match = re.findall(giString,record.id)
             if match:
@@ -183,7 +186,8 @@ class fasta(object):
                     self.parentSequenceLength = len(self.parentSequence)
                 else:
                     self.parentSequenceLength = -99   #***
-                    print("WARNING: in phate_fastaSequence, sequence not entered for parent")
+                    if PHATE_WARNINGS == 'True':
+                        print("phate_fastaSequence says, WARNING: sequence not entered for parent")
             if "parentName" in list(geneData.keys()):
                 self.parentName = geneData["parentName"]
             if "parentStart" in list(geneData.keys()):
@@ -298,7 +302,7 @@ class fasta(object):
             return ('>' + self.customHeader)
         else:
             if PHATE_WARNINGS == 'True':
-                print("WARNING in fastaSequence module: Invalid header type:", hdrType, "--Choose full, clean, trunc, short, compound, blast")
+                print("phate_fastaSequence says, WARNING: Invalid header type:", hdrType, "--Choose full, clean, trunc, short, compound, blast")
 
     def getStartCodon(self):
         if self.sequence != "":
@@ -606,10 +610,10 @@ class multiFasta(object):
             match_string2header = re.search(searchString,fasta.header)
             if match_string2header:
                 if DEBUG:
-                    print("Found the header:", fasta.header, "for string:", searchString)
+                    print("phate_fastaSequence says, DEBUG: Found the header:", fasta.header, "for string:", searchString)
                 return(fasta)
         if PHATE_WARNINGS == 'True':
-            print("WARNING in fastaSequence module: Fasta not found for", searchString)
+            print("phate_fastaSequence says, WARNING: Fasta not found for", searchString)
         return(0)
 
     def reportStats(self):
@@ -690,7 +694,7 @@ class multiFasta(object):
     def addFastasFromFile(self,mtype):
         if self.filename == "unknown" or self.filename == '':
             if PHATE_WARNINGS == 'True':
-                print("ERROR in fastaSequence module: First you must set the filename in addFastasFromFile()")
+                print("phate_fastaSequence says, WARNING: First you must set the filename in addFastasFromFile()")
         else:
             fastaFile = open(self.filename,"r")
             fLines = fastaFile.read().splitlines()

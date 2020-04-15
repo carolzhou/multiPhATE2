@@ -5,7 +5,7 @@
 # CGC_parser.py
 #
 # Programmer:  Carol Zhou
-# Last update:  15 January 2020
+# Last update:  12 April 2020
 #
 # Description:  This code inputs the name of a gene caller plus
 #    the gene-caller's output file, and outputs a properly formatted
@@ -42,13 +42,20 @@ from subprocess import call
 
 ##### Verbosity
 
-CGC_WARNINGS  = 'True'
-CGC_MESSAGES  = 'True'
-CGC_PROGRESS  = 'True'
+PHATE_PROGRESS = False
+PHATE_MESSAGES = False
+PHATE_WARNINGS = False
 
-#os.environ["PHATE_CGC_WARNINGS"] = CGC_WARNINGS
-#os.environ["PHATE_CGC_MESSAGES"] = CGC_MESSAGES
-#os.environ["PHATE_CGC_PROGRESS"] = CGC_PROGRESS
+PHATE_PROGRESS_STRING = os.environ["PHATE_PHATE_PROGRESS"]
+PHATE_MESSAGES_STRING = os.environ["PHATE_PHATE_MESSAGES"]
+PHATE_WARNINGS_STRING = os.environ["PHATE_PHATE_WARNINGS"]
+
+if PHATE_PROGRESS_STRING.lower() == 'true':
+    PHATE_PROGRESS = True
+if PHATE_MESSAGES_STRING.lower() == 'true':
+    PHATE_MESSAGES = True
+if PHATE_WARNINGS_STRING.lower() == 'true':
+    PHATE_WARNINGS = True
 
 
 ##### CONFIGURABLE
@@ -120,6 +127,9 @@ userOutfile   = ""
 userOutdir    = ""
 RUNLOGOPEN    = False
 
+if PHATE_PROGRESS:
+    print("CGC_parser says, Begin processing; gathering input parameters.")
+
 argCount = len(sys.argv)
 if argCount in ACCEPTABLE_ARG_COUNT:
     match = re.search("help", sys.argv[1].lower())
@@ -159,6 +169,9 @@ else:
 
 # Open file
 
+if PHATE_PROGRESS:
+    print("CGC_parser says, Checking files.")
+
 fileError = False
 
 if userOutdir != "":
@@ -196,6 +209,7 @@ except IOError as e:
     print(e)
 
 if fileError:
+    print("CGC_parser says, ERROR: Check files.")
     LOGFILE.write("%s%s%s\n" % ("ERROR: problem with input file:",geneCallerOut,e))
     LOGFILE.close(); exit(0)
     if RUNLOGOPEN:
@@ -245,8 +259,8 @@ def ProcessGenemark(fLines,OUT):
                     USER_OUT.write("%s\n" % ("ERROR encountered: unknown strand designator\n"))
                 else:
                     OUT.write("%s\n" % ("ERROR encountered: unknown strand designator\n"))
-                if CGC_WARNINGS == 'True':
-                    print("ERROR in CGC_parser module: unexpected strand designator,", strand)
+                if PHATE_WARNINGS:
+                    print("CGC_parser says, WARNING: unexpected strand designator,", strand)
                 return
             if contig == '':
                 contig = 'unknown'  # Contig name may be absent in input file
@@ -305,8 +319,8 @@ def ProcessGlimmer(fLines,OUT):
                     USER_OUT.write("%s\n" % ("ERROR encountered: unknown strand designator\n"))
                 else:
                     OUT.write("%s\n" % ("ERROR encountered: unknown strand designator\n"))
-                if CGC_WARNINGS == 'True':
-                    print("ERROR in CGC_parser module: unexpected strand designator,", strand)
+                if PHATE_WARNINGS:
+                    print("CGC_parser says, WARNING: unexpected strand designator,", strand)
                 return
 
             length = rightEnd - leftEnd + 1
@@ -347,14 +361,19 @@ def ProcessCustom(fLines,OUT):
                         else:
                             OUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,str(leftEnd),str(rightEnd),str(length),contig,protein))
                     else:
-                        pass
+                        if PHATE_WARNINGS:
+                            print("CGC_parser says, WARNING: Unexpected data line in ProcessCustom(): ", fLine)
                         if RUNLOGOPEN:
                             RUNLOGFILE.write("%s%s\n" % ("WARNING: unexpected data line in CGC_parser.py, ProcessCustom(): ",fLine))
                 except:
+                    if PHATE_WARNINGS:
+                        print("CGC_parser says, WARNING: Cannot process cgc data line in ProcessCustom(): ",fLine)
                     if RUNLOGOPEN:
                         RUNLOGFILE.write("%s%s\n" % ("WARNING: cannot process cgc data line in CGC_parser.py, ProcessCustom(): ",fLine))
     else:
-        pass # Not using other format (for now)
+        # Not using other format (for now)
+        if PHATE_WARNINGS:
+            print("CGC_parser says, Unexpected format type found in ProcessCustom().")
         if RUNLOGOPEN:
             RUNLOGFILE.write("%s\n" % ("WARNING: unexpected format type found in CGC_parser.py, ProcessCustom()."))
     return
@@ -510,8 +529,8 @@ def ProcessPHANOTATE(fLines,OUT):      # SDSU code
 
 ##### BEGIN MAIN 
 
-if CGC_PROGRESS == 'True':
-    print("CGC_parser: Parsing gene call outputs.")
+if PHATE_PROGRESS:
+    print("CGC_parser says, Parsing gene call outputs.")
 
 # First, determine which gene caller was used
 
@@ -553,6 +572,8 @@ if USER_OUT_PROVIDED:
     elif match_custom:
         ProcessCustom(fileLines,USER_OUT) # Incoming format is pre-defined; may be same as GFFx, but not necessarily
     else:
+        if PHATE_WARNINGS:
+            print ("CGC_parser says, WARNING: Cannot process unknown gene caller output file:", geneCaller)
         if RUNLOGOPEN:
             RUNLOGFILE.write("%s%s\n" % ("ERROR: Cannot process unknown gene caller output file:",geneCaller))
     USER_OUT.write("%s\n" % ("# END"))
@@ -582,6 +603,8 @@ else:
     elif match_custom:
         ProcessCustom(fileLines,OUTFILE) # Incoming format is pre-defined; may be same as GFFx, but not necessarily
     else:
+        if PHATE_WARNINGS:
+            print("CGC_parser says, WARNING: Cannot process unknown gene caller output file:", geneCaller)
         if RUNLOGOPEN:
             RUNLOGFILE.write("%s%s\n" % ("ERROR: Cannot process unknown gene caller output file:",geneCaller))
     OUTFILE.write("%s\n" % ("# END"))
@@ -597,3 +620,5 @@ if RUNLOGOPEN:
     RUNLOGFILE.close()
 LOGFILE.write("%s%s\n" % ("Processing complete at ", datetime.datetime.now()))
 LOGFILE.close()
+if PHATE_PROGRESS:
+    print("CGC_parser says, Processing complete.")

@@ -8,7 +8,7 @@
 #    callers.
 #
 # Updates:
-#    03 December 2019
+#    12 April 2020
 #
 # Programmer's Notes:
 #
@@ -45,18 +45,21 @@ PHATE_PIPELINE = True  # Running this code within the PhATE pipeline. Set this t
 
 ##### Verbosity
 
-#if PHATE_PIPELINE:
-#    CGC_WARNINGS = os.environ["PHATE_CGC_WARNINGS"]
-#    CGC_MESSAGES = os.environ["PHATE_CGC_MESSAGES"]
-#    CGC_PROGRESS = os.environ["PHATE_CGC_PROGRESS"]
-#else:
-#    CGC_WARNINGS = 'True'
-#    CGC_MESSAGES = 'True'
-#    CGC_PROGRESS = 'True'
+PHATE_PROGRESS = False
+PHATE_MESSAGES = False
+PHATE_WARNINGS = False
 
-CGC_WARNINGS = 'True'
-CGC_MESSAGES = 'False'
-CGC_PROGRESS = 'True'
+PHATE_PROGRESS_STRING = os.environ["PHATE_PHATE_PROGRESS"]
+PHATE_MESSAGES_STRING = os.environ["PHATE_PHATE_MESSAGES"]
+PHATE_WARNINGS_STRING = os.environ["PHATE_PHATE_WARNINGS"]
+
+if PHATE_PROGRESS_STRING.lower() == 'true':
+    PHATE_PROGRESS = True
+if PHATE_MESSAGES_STRING.lower() == 'true':
+    PHATE_MESSAGES = True
+if PHATE_WARNINGS_STRING.lower() == 'true':
+    PHATE_WARNINGS = True
+
 
 #DEBUG = True  # Controls verbosity in this code only
 DEBUG = False
@@ -86,7 +89,7 @@ class Comparison(object):
                 print("DEBUG: CGC_compare/IdentifyCallers(): self.callerList is", self.callerList)
             return len(self.callerList)
         else:
-            if CGC_WARNINGS == 'True':
+            if PHATE_WARNINGS:
                 print("WARNING in CGC_compare module: IdentifyCallers(): No callers to extract: call method Merge() to establish mergeList before calling this method") 
             return 0
 
@@ -113,13 +116,13 @@ class Comparison(object):
                             self.commonCore.append(newCommonCoreCall)
                             count += 1
                 else:
-                    if CGC_WARNINGS == 'True':
+                    if PHATE_WARNINGS:
                         print("WARNING in CGC_compare: IdentifyCommonCore(): callerCount is zero! cannot process")
             else:
-                if CGC_WARNINGS == 'True':
+                if PHATE_WARNINGS:
                     print("WARNING in CGC_compare module: IdentifyCommonCore(): MergeList is empty:  need to run self.Merge()")
         else:
-            if CGC_WARNINGS == 'True':
+            if PHATE_WARNINGS:
                 print("WARNING in CGC_compare module: IdentifyCommonCore(): No data available to identify common core")
         return 
 
@@ -213,7 +216,7 @@ class Comparison(object):
             if identityList:
                 self.uniqueList.append(identityList)
         else:
-            if CGC_MESSAGES == 'True':
+            if PHATE_MESSAGES:
                 print("CGC_compare says: Compare(): Nothing to Compare")
         return
 
@@ -255,7 +258,7 @@ class Comparison(object):
                         start = geneCall.rightEnd
                         stop  = geneCall.leftEnd
                     else:
-                        if CGC_WARNINGS == 'True':
+                        if PHATE_WARNINGS:
                             print("WARNING: CGC_compare says, Unrecognized strand:", geneCall.strand) 
                     contig_strand_start_stop = geneCall.contig + '|' + geneCall.strand + '|' + str(start) + '|' + str(stop) 
                     contig_strand_stop       = geneCall.contig + '|' + geneCall.strand + '|'                    + str(stop)
@@ -437,7 +440,7 @@ class Comparison(object):
                     start  = str(callList[0].leftEnd)
                     end    = str(callList[0].rightEnd)
                 else:
-                    if CGC_WARNINGS == 'True':
+                    if PHATE_WARNINGS:
                         print("WARNING: CGC_compare says, Unexpected value for strand:", callList[0].strand)
                 if len(callList) == len(self.callerList):      # all callers agreed
                     attributes = 'unanimous call'
@@ -508,7 +511,7 @@ class Comparison(object):
                 source   = geneCall.geneCaller
                 FILE_H.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,str(leftEnd),str(rightEnd),str(length),contig,source))
         else:
-            if CGC_WARNINGS == 'True':
+            if PHATE_WARNINGS:
                 print("WARNING: CGC_compare says, dataSet not recognized:", dataSet) 
         return
 
@@ -531,7 +534,7 @@ class Comparison(object):
                     start  = str(callList[0].rightEnd)
                     end    = str(callList[0].leftEnd)
                 else:
-                    if CGC_WARNINGS == 'True':
+                    if PHATE_WARNINGS:
                         print("WARNING: CGC_compare says, Unexpected value for strand:", callList[0].strand)
                 if len(callList) == len(self.callerList):      # all callers agreed
                     attributes = 'unanimous call'
@@ -560,11 +563,11 @@ class Comparison(object):
                     start  = str(callList[0].rightEnd)
                     end    = str(callList[0].leftEnd)
                 else:
-                    if CGC_WARNINGS == 'True':
+                    if PHATE_WARNINGS:
                         print("WARNING: CGC_compare says, Unexpected value for strand:", callList[0].strand)
                 FILE_H.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (seqid,source,type,start,end,strand,phase,attributes))
         else:
-            if CGC_WARNINGS == 'True':
+            if PHATE_WARNINGS:
                 print("WARNING: CGC_compare says, dataSet not recognized:", dataSet) 
         return
 

@@ -10,7 +10,7 @@
 #
 # Programmer: CEZhou
 #
-# Latest Update: 30 December 2019
+# Latest Update: 11 April 2020
 # Version 1.5
 #
 ################################################################
@@ -503,7 +503,8 @@ for i in range(0,argCount):
 
     if match_profileDatabaseStringParam: # hmm profile databases to be searched
         if i < argCount:
-            print("CHECK: argList[i]: ", argList[i])
+            if DEBUG:
+                print("phate_sequenceAnnotation_main says, DEBUG: argList[i]: ", argList[i])
             value = argList[i+1]
             match_ncbiVirusGenomeHmm  = re.search(p_ncbiVirusGenomeHmm,value)
             match_ncbiVirusProteinHmm = re.search(p_ncbiVirusProteinHmm,value)
@@ -611,7 +612,7 @@ except IOError as e:
     fileError = True
     if PHATE_WARNINGS == 'True':
         print(e, "logfile,", logfile) 
-        print("Cannot write log file; Exit computation at phate_sequenceAnnotation_main.py, attpempting to open log file")
+        print("phate_sequenceAnnotation_main says, ERROR: Cannot write log file; Exit computation at phate_sequenceAnnotation_main.py, attpempting to open log file")
     exit(0)
 LOGFILE_H.write("%s%s\n" % ("Processing begun ",datetime.datetime.now()))
 LOGFILE_H.write("%s%s\n" % ("sys.argv is ",sys.argv))
@@ -650,11 +651,11 @@ except IOError as e:
     LOGFILE_H.write("%s%s%s%s\n" % ("fileError ",e," gfffile, ", gfffile))
 
 if fileError:
-    print("Check the formats of your input file(s):")
-    print("    genome file is", infile_genome)
-    print("    primary gene call file is", infile_primaryCalls)
-    print("    outfile is", outfile)
-    print("    gfffile is", gfffile)
+    print("phate_sequenceAnnotation_main says, ERROR: Check the formats of your input file(s):")
+    print("  genome file is", infile_genome)
+    print("  primary gene call file is", infile_primaryCalls)
+    print("  outfile is", outfile)
+    print("  gfffile is", gfffile)
     LOGFILE_H.write("%s%s\n" % ("Terminating due to file error at ",datetime.datetime.now()))
     LOGFILE_H.close(); exit(0)
 
@@ -724,65 +725,66 @@ LOGFILE_H.write("%s%s\n" % ("NR_HMM is ",NR_HMM))
 
 # Communicate to user
 if PHATE_MESSAGES == 'True':
-    print("outputDir is", outputDir)
-    print("outfile is", outfile)
-    print("gfffile is", gfffile)
-    print("genome file is", infile_genome)
-    print("genetic code is", geneticCode)
-    print("primary calls is", primaryCalls)
-    print("primary gene call file is", infile_primaryCalls)
-    print("gene file is", infile_gene)
-    print("protein file is", infile_protein)
-    print("genome type is", genomeType)
-    print("genome name is", genomeName)
-    print("contigName is", contigName)
-    print("species is", species)
-    print("blastp identity is", blastpIdentity)
-    print("blastn identity is", blastnIdentity)
-    print("blastp hit count is", blastpHitCount)
-    print("blastn hit count is", blastnHitCount)
+    print("phate_sequenceAnnotation_main says, Parameters are: ")
+    print("  outputDir is", outputDir)
+    print("  outfile is", outfile)
+    print("  gfffile is", gfffile)
+    print("  genome file is", infile_genome)
+    print("  genetic code is", geneticCode)
+    print("  primary calls is", primaryCalls)
+    print("  primary gene call file is", infile_primaryCalls)
+    print("  gene file is", infile_gene)
+    print("  protein file is", infile_protein)
+    print("  genome type is", genomeType)
+    print("  genome name is", genomeName)
+    print("  contigName is", contigName)
+    print("  species is", species)
+    print("  blastp identity is", blastpIdentity)
+    print("  blastn identity is", blastnIdentity)
+    print("  blastp hit count is", blastpHitCount)
+    print("  blastn hit count is", blastnHitCount)
     if TRANSLATE_ONLY:
-        print("Translating only; no annotation.")
+        print("  Translating only; no annotation.")
     else:
-        print("Annotating")
-    print("RUN_BLAST is", RUN_BLAST)
-    print("RUN_GENOME_BLAST is", RUN_GENOME_BLAST)
-    print("RUN_PROTEIN_BLAST is", RUN_PROTEIN_BLAST)
-    print("BLASTP_SEARCH is", BLASTP_SEARCH)
-    print("RUN_HMM_SEARCH is", RUN_HMM_SEARCH)
-    print("PHMMER_SEARCH is", PHMMER_SEARCH)
-    print("JACKHMMER_SEARCH is", JACKHMMER_SEARCH)
-    print("NCBI_VIRUS_GENOME_BLAST is", NCBI_VIRUS_GENOME_BLAST)
-    print("NCBI_VIRUS_PROTEIN_BLAST is", NCBI_VIRUS_PROTEIN_BLAST)
-    print("REFSEQ_PROTEIN_BLAST is", REFSEQ_PROTEIN_BLAST)
-    print("REFSEQ_GENE_BLAST is", REFSEQ_GENE_BLAST)
-    print("PVOGS_BLAST is", PVOGS_BLAST)
-    print("PHANTOME_BLAST is", PHANTOME_BLAST)
-    print("PHAGE_ENZYME_BLAST is", PHAGE_ENZYME_BLAST)
-    print("KEGG_VIRUS_BLAST is", KEGG_VIRUS_BLAST)
-    print("PFAM_BLAST is", PFAM_BLAST)
-    print("SMART_BLAST is", SMART_BLAST)
-    print("SWISSRPOT_BLAST is", SWISSPROT_BLAST)
-    print("UNIRPOT_BLAST is", UNIPROT_BLAST)
-    print("NR_BLAST is", NR_BLAST)
-    print("RUN_PROFILE_SEARCH is", RUN_PROFILE_SEARCH)
-    print("HMMSCAN is", HMMSCAN)
-    print("NCBI_VIRUS_GENOME_HMM is", NCBI_VIRUS_GENOME_HMM)
-    print("NCBI_VIRUS_PROTEIN_HMM is", NCBI_VIRUS_PROTEIN_HMM)
-    print("REFSEQ_PROTEIN_HMM is", REFSEQ_PROTEIN_HMM)
-    print("REFSEQ_GENE_HMM is", REFSEQ_GENE_HMM)
-    print("PVOGS_HMM is", PVOGS_HMM)
-    print("PHANTOME_HMM is", PHANTOME_HMM)
-    print("PHAGE_ENZYME_HMM is", PHAGE_ENZYME_HMM)
-    print("KEGG_VIRUS_HMM is", KEGG_VIRUS_HMM)
-    print("PFAM_HMM is", PFAM_HMM)
-    print("SMART_HMM is", SMART_HMM)
-    print("SWISSPROT_HMM is", SWISSPROT_HMM)
-    print("UNIPROT_HMM is", UNIPROT_HMM)
-    print("NR_HMM is", NR_HMM)
+        print("  Annotating")
+    print("  RUN_BLAST is", RUN_BLAST)
+    print("  RUN_GENOME_BLAST is", RUN_GENOME_BLAST)
+    print("  RUN_PROTEIN_BLAST is", RUN_PROTEIN_BLAST)
+    print("  BLASTP_SEARCH is", BLASTP_SEARCH)
+    print("  RUN_HMM_SEARCH is", RUN_HMM_SEARCH)
+    print("  PHMMER_SEARCH is", PHMMER_SEARCH)
+    print("  JACKHMMER_SEARCH is", JACKHMMER_SEARCH)
+    print("  NCBI_VIRUS_GENOME_BLAST is", NCBI_VIRUS_GENOME_BLAST)
+    print("  NCBI_VIRUS_PROTEIN_BLAST is", NCBI_VIRUS_PROTEIN_BLAST)
+    print("  REFSEQ_PROTEIN_BLAST is", REFSEQ_PROTEIN_BLAST)
+    print("  REFSEQ_GENE_BLAST is", REFSEQ_GENE_BLAST)
+    print("  PVOGS_BLAST is", PVOGS_BLAST)
+    print("  PHANTOME_BLAST is", PHANTOME_BLAST)
+    print("  PHAGE_ENZYME_BLAST is", PHAGE_ENZYME_BLAST)
+    print("  KEGG_VIRUS_BLAST is", KEGG_VIRUS_BLAST)
+    print("  PFAM_BLAST is", PFAM_BLAST)
+    print("  SMART_BLAST is", SMART_BLAST)
+    print("  SWISSRPOT_BLAST is", SWISSPROT_BLAST)
+    print("  UNIRPOT_BLAST is", UNIPROT_BLAST)
+    print("  NR_BLAST is", NR_BLAST)
+    print("  RUN_PROFILE_SEARCH is", RUN_PROFILE_SEARCH)
+    print("  HMMSCAN is", HMMSCAN)
+    print("  NCBI_VIRUS_GENOME_HMM is", NCBI_VIRUS_GENOME_HMM)
+    print("  NCBI_VIRUS_PROTEIN_HMM is", NCBI_VIRUS_PROTEIN_HMM)
+    print("  REFSEQ_PROTEIN_HMM is", REFSEQ_PROTEIN_HMM)
+    print("  REFSEQ_GENE_HMM is", REFSEQ_GENE_HMM)
+    print("  PVOGS_HMM is", PVOGS_HMM)
+    print("  PHANTOME_HMM is", PHANTOME_HMM)
+    print("  PHAGE_ENZYME_HMM is", PHAGE_ENZYME_HMM)
+    print("  KEGG_VIRUS_HMM is", KEGG_VIRUS_HMM)
+    print("  PFAM_HMM is", PFAM_HMM)
+    print("  SMART_HMM is", SMART_HMM)
+    print("  SWISSPROT_HMM is", SWISSPROT_HMM)
+    print("  UNIPROT_HMM is", UNIPROT_HMM)
+    print("  NR_HMM is", NR_HMM)
 
 if PHATE_PROGRESS == 'True':
-    print("Sequence annotation main says: Configuration complete for sequence annotation module.")
+    print("phate_sequenceAnnotation_main says, Configuration complete for sequence annotation module.")
 
 ##### BEGIN MAIN ################################################################################3
 
@@ -795,7 +797,7 @@ geneCallInfo = {      # For passing info to genomeSequence module  #*** ???
 # Create a genome object and set parameters 
 
 if PHATE_PROGRESS == 'True':
-    print("Preparing for sequence annotation: setting parameters...")
+    print("phate_sequenceAnnotation_main says, Preparing for sequence annotation: setting parameters...")
 LOGFILE_H.write("%s%s\n" % ("Setting parameters for genome at ",datetime.datetime.now()))
 myGenome = phate_genomeSequence.genome()
 myGenome.genomeType    = genomeType
@@ -807,7 +809,7 @@ LOGFILE_H.write("%s\n" % ("Reading sequence into genome object"))
 gLines = GENOME_FILE.read().splitlines()
 myGenome.contigSet.addFastas(gLines,'nt')
 if PHATE_MESSAGES == 'True':
-    print("Sequence annotation main says: contigName is", myGenome.contigSet.contig)
+    print("phate_sequenceAnnotation_main says, contigName is", myGenome.contigSet.contig)
 
 # Create a hash to record contig names and their sequence lengths, for GFF output
 contigSeqLen_hash = {}
@@ -818,11 +820,12 @@ for i in range(0,len(myGenome.contigSet.fastaList)):
 
 # Extract gene calls
 if PHATE_PROGRESS == 'True':
-    print("Sequence annotation main says: Processing gene calls...")
+    print("phate_sequenceAnnotation_main says, Processing gene calls...")
 LOGFILE_H.write("%s%s\n" % ("Processing gene calls at ",datetime.datetime.now()))
 # Record the gene calls, and pass the hash so contig lengths can also be recorded...
 # ...for access when ultimately writing the GFF output file. (oh what we do for want of a pointer.)
-print("geneCallInfo",geneCallInfo,"infile_primaryCalls",infile_primaryCalls,"contigSeqLen_hash",contigSeqLen_hash)
+if PHATE_PROGRESS == 'True':
+    print("phate_sequenceAnnotation_main says, geneCallInfo",geneCallInfo,"infile_primaryCalls",infile_primaryCalls,"contigSeqLen_hash",contigSeqLen_hash)
 myGenome.processGeneCalls(geneCallInfo,PRIMARY_CALLS_FILE)
 myGenome.cleanUpAfterEMBOSS()
 PRIMARY_CALLS_FILE.close()
@@ -836,7 +839,7 @@ fastaOut = {
 }
 
 if PHATE_PROGRESS == 'True':
-    print("Writing genes file")
+    print("phate_sequenceAnnotation_main says, Writing genes file")
 LOGFILE_H.write("%s\n" % ("Writing genes file"))
 # Print out newly created gene list
 fastaOut["mtype"] = "gene"
@@ -845,7 +848,7 @@ fastaOut["filename"] = infile_gene
 myGenome.printFastas2file(fastaOut)
 
 if PHATE_PROGRESS == 'True':
-    print("Writing peptides file")
+    print("phate_sequenceAnnotation_main says, Writing peptides file")
 LOGFILE_H.write("%s\n" % ("Writing peptides file"))
 # Print out newly created protein list 
 fastaOut["mtype"] = "protein"   #*** Should this be "compound" ???
@@ -854,27 +857,27 @@ fastaOut["filename"] = infile_protein
 myGenome.printFastas2file(fastaOut)
 
 if PHATE_PROGRESS == 'True':
-    print("Gene and protein files created.")
+    print("phate_sequenceAnnotation_main says, Gene and protein files created.")
 LOGFILE_H.write("%s%s\n" % ("Gene and protein files created at ",datetime.datetime.now()))
 
 # If user specified to translate only, then skip this segment of the pipeline.
 if TRANSLATE_ONLY:
     if PHATE_PROGRESS == 'True':
-        print("Translate only: computations completed.")
+        print("phate_sequenceAnnotation_main says, Translate only: computations completed.")
     LOGFILE_H.write("%s%s\n" % ("Translating only: computations completed at ",datetime.datetime.now()))
 else:
     ######################################################## ANNOTATE ####################################################
     # Create a blast object and set parameters
     if RUN_BLAST:
         if PHATE_PROGRESS == 'True':
-            print("Preparing for blast...")
+            print("phate_sequenceAnnotation_main says, Preparing for blast...")
         LOGFILE_H.write("%s\n" % ("Creating a blast object"))
         blast = phate_blast.multiBlast()
 
         if PHATE_PROGRESS == 'True':
-            print("Sequence annotation module says: Preparing to run", blast.blastFlavor)
+            print("phate_sequenceAnnotation_main says, Preparing to run", blast.blastFlavor)
         if PHATE_MESSAGES == 'True':
-            print("Sequence annotation module says: Running at the following settings:")
+            print("phate_sequenceAnnotation_main says, Running at the following settings:")
             blast.printParameters()
         LOGFILE_H.write("%s%s%s%s\n" % (datetime.datetime.now(), " Preparing to run ", blast.blastFlavor, " at the following settings:"))
         blast.printParameters2file(LOGFILE_H)
@@ -890,7 +893,7 @@ else:
 
         ### Create an hmm object and set parameters
         if PHATE_PROGRESS == 'True':
-            print("Preparing for hmm...")
+            print("phate_sequenceAnnotation_main says, Preparing for hmm...")
         LOGFILE_H.write("%s\n" % ("Creating an hmm object"))
         hmm = phate_hmm.multiHMM()
 
@@ -905,10 +908,10 @@ else:
 
         ### Create profile search object
         if PHATE_PROGRESS == 'True':
-            print("Preparing for profile search...")
+            print("phate_sequenceAnnotation_main says, Preparing for profile search...")
         LOGFILE_H.write("%s\n" % ("Creating a profile object"))
         profile = phate_profile.multiProfile()
-        print("HMM search of profile databases not yet in service")
+        print("phate_sequenceAnnotation_main says, HMM search of profile databases not yet in service")
 
         # Create directories for hmm/profile search output
         profileOutputDir = outputDir + 'PROFILE/'
@@ -954,12 +957,12 @@ else:
         blast.setBlastFlavor('blastn') 
 
         if PHATE_PROGRESS == 'True':
-            print("Sequence annotation main says: Preparing to run", blast.blastFlavor)
+            print("phate_sequenceAnnotation_main says, Preparing to run", blast.blastFlavor)
         if PHATE_MESSAGES == 'True':
-            print("Sequence annotation main says: Running", blast.blastFlavor, "at the following settings:")
+            print("phate_sequenceAnnotation_main says, Running", blast.blastFlavor, "at the following settings:")
             blast.printParameters()
         if PHATE_PROGRESS == 'True':
-            print("Sequence annotation main says: Running Blast against phage genome database(s)...")
+            print("phate_sequenceAnnotation_main says, Running Blast against phage genome database(s)...")
 
         LOGFILE_H.write("%s%s%s%s\n" % (datetime.datetime.now(), " Preparing to run genome ", blast.blastFlavor, " at the following settings:"))
         blast.printParameters2file(LOGFILE_H)
@@ -967,8 +970,12 @@ else:
         # Run Genome blast 
         blast.runBlast(myGenome.contigSet,'genome')
         if PHATE_PROGRESS == 'True':
-            print("Sequence annotation main says: Genome blast complete")
+            print("phate_sequenceAnnotation_main says, Genome blast complete")
         LOGFILE_H.write("%s%s\n" % ("Genome blast complete at ", datetime.datetime.now()))
+
+    else:
+        if PHATE_PROGRESS == 'True':
+            print("phate_sequenceAnnotation_main says, Skipping genome blast")
 
     ##### GENE BLAST
 
@@ -976,7 +983,7 @@ else:
 
         LOGFILE_H.write("%s\n" % ("Preparing to run gene blast"))
         if PHATE_PROGRESS == 'True':
-            print("Sequence annotation main says: Preparing to run gene blast...")
+            print("phate_sequenceAnnotation_main says, Preparing to run gene blast...")
 
         # Create blast output directory for gene blast
         geneBlastOutputDir = blastOutputDir + 'Gene/'
@@ -1003,7 +1010,7 @@ else:
         blast.setBlastFlavor('blastn') 
 
         if PHATE_PROGRESS == 'True':
-            print("Sequence annotation main says: Running Blast against gene database(s)...")
+            print("phate_sequenceAnnotation_main says, Running Blast against gene database(s)...")
         LOGFILE_H.write("%s\n" % ("Running Blast against gene databases at the following settings:"))
         blast.printParameters2file(LOGFILE_H)
 
@@ -1011,8 +1018,12 @@ else:
         blast.runBlast(myGenome.geneSet,'gene')
 
         if PHATE_PROGRESS == 'True':
-            print("Sequence annotation main says: Gene blast complete.")
+            print("phate_sequenceAnnotation_main says, Gene blast complete.")
         LOGFILE_H.write("%s%s\n" % ("Gene blast complete at ",datetime.datetime.now()))
+
+    else:
+        if PHATE_PROGRESS == 'True':
+            print("phate_sequenceAnnotation_main says, Skipping gene blast.")
 
     ##### PROTEIN BLAST
 
@@ -1026,7 +1037,7 @@ else:
             os.mkdir(proteinBlastOutputDir)
 
         if PHATE_PROGRESS == 'True':
-            print("Sequence annotation main says: Preparing for protein blast...")
+            print("phate_sequenceAnnotation_main says, Preparing for protein blast...")
         LOGFILE_H.write("%s%s\n" % ("Preparing for protein blast at ",datetime.datetime.now()))
 
         # Prepare for protein blast
@@ -1059,7 +1070,7 @@ else:
         blast.setBlastFlavor('blastp')
 
         if PHATE_PROGRESS == 'True': 
-            print("Sequence annotation main says: Running blastp against protein database(s)...")
+            print("phate_sequenceAnnotation_main says, Running blastp against protein database(s)...")
         LOGFILE_H.write("%s\n" % ("Running Blast against protein database(s) at the following settings:"))
         blast.printParameters2file(LOGFILE_H)
 
@@ -1067,11 +1078,15 @@ else:
         blast.runBlast(myGenome.proteinSet,'protein')
 
         if PHATE_PROGRESS == 'True':
-            print("Sequence annotation main says: Protein blast complete.")
+            print("phate_sequenceAnnotation_main says, Protein blast complete.")
         LOGFILE_H.write("%s%s\n" % ("Protein blast complete at ", datetime.datetime.now()))
 
         # Write out pVOGs sequences to enable alignments
         ###*** YIKES-- SOMETHING MISSING HERE ???
+
+    else:
+        if PHATE_PROGRESS == 'True':
+            print("phate_sequenceAnnotation_main says, Skipping protein blast")
 
     #######################################################################################
     # HMM SEARCH:  Use hmm program to search fasta blast-formatted database(s)
@@ -1079,7 +1094,7 @@ else:
     if RUN_HMM_SEARCH:
 
         if PHATE_PROGRESS == 'True':
-            print("Sequence annotation main says: Preparing for hmm search...")
+            print("phate_sequenceAnnotation_main says, Preparing for hmm search...")
         LOGFILE_H.write("%s\n" % ("Preparing for hmm search"))
 
         # Create hmm output directory for genome hmm search
@@ -1131,17 +1146,17 @@ else:
             'nrBlast'               : NR_BLAST,
         }
         if DEBUG:
-            print("DEBUGGING Hmm parameters:", myParamSet)
+            print("phate_sequenceAnnotation_main says, DEBUG: Hmm parameters:", myParamSet)
 
         hmm.setHmmParameters(myParamSet)
 
         if PHATE_PROGRESS == 'True':
-            print("Sequence annotation main says: Checking whether to run Hmm searches against protein database(s)...")
+            print("phate_sequenceAnnotation_main says, Checking whether to run Hmm searches against protein database(s)...")
 
         # Run jackhmmer 
         if JACKHMMER_SEARCH:
             if PHATE_PROGRESS == 'True':
-                print("Sequence annotation main says: Running jackhmmer against protein database(s)")
+                print("phate_sequenceAnnotation_main says, Running jackhmmer against protein database(s)")
             LOGFILE_H.write("%s%s\n" % ("Running jackhmmer search against protein database(s) at ", datetime.datetime.now()))
             hmm.setHmmProgram('jackhmmer')
             hmm.runHmm(myGenome.proteinSet,'protein')
@@ -1149,12 +1164,16 @@ else:
 
         # Run phmmer
         if PHMMER_SEARCH:
-            if PHATE_PROGRESS:
-                print("phate_sequenceAnnotation says: Running hmm search with phmmer...")
+            if PHATE_PROGRESS == 'True':
+                print("phate_sequenceAnnotation_main says, Running hmm search with phmmer...")
             LOGFILE_H.write("%s%s\n" % ("Running phmmer search against protein database(s) at ", datetime.datetime.now()))
             hmm.setHmmProgram('phmmer')
             hmm.runHmm(myGenome.proteinSet,'protein')
             LOGFILE_H.write("%s%s\n" % ("HMM phmmer search complete at ",datetime.datetime.now()))
+
+    else:
+        if PHATE_PROGRESS == 'True':
+            print("phate_sequenceAnnotation_main says, Skipping HMM search")
 
     #################################################################################
     ##### HMM PROFILE SEARCH
@@ -1162,7 +1181,7 @@ else:
     if RUN_PROFILE_SEARCH:
 
         if PHATE_PROGRESS == 'True':
-            print("Sequence annotation main says: Preparing for profile search...")
+            print("phate_sequenceAnnotation_main says, Preparing for profile search...")
         LOGFILE_H.write("%s\n" % ("Preparing for profile search"))
 
         # Create profile output directory for genome profile search
@@ -1217,21 +1236,25 @@ else:
             'nrHmm'                : NR_HMM,
         }
         if DEBUG:
-            print("DEBUGGING profile search parameters:", myParamSet)
+            print("phate_sequenceAnnotation_main says, DEBUG: profile search parameters:", myParamSet)
 
         profile.setProfileParameters(myParamSet)
 
         # Run protein hmm search
         if PHATE_PROGRESS == 'True':
-            print("Sequence annotation main says: Running hmmscan search against profile database(s)...")
+            print("phate_sequenceAnnotation_main says, Running hmmscan search against profile database(s)...")
         LOGFILE_H.write("%s%s\n" % ("Running hmmscan search against profile database(s) at ", datetime.datetime.now()))
         profile.runProfile(myGenome.proteinSet,'protein')
         LOGFILE_H.write("%s%s\n" % ("Hmmscan  search complete at ",datetime.datetime.now()))
 
+    else:
+        if PHATE_PROGRESS == 'True':
+            print("phate_sequenceAnnotation_main says, Skipping HMM profile search.")
+
     ##### REPORT OUT 
 
     if PHATE_PROGRESS == 'True':
-        print("Reporting final annotations")
+        print("phate_sequenceAnnotation_main says, Reporting final annotations")
     LOGFILE_H.write("%s%s\n" % ("Reporting final annotations at ",datetime.datetime.now()))
     myGenome.printGenomeData2file_tab(OUTFILE)
     myGenome.printGenomeData2file_GFF(GFFFILE)
@@ -1239,7 +1262,7 @@ else:
 ##### CLEAN UP
 
 if PHATE_PROGRESS == 'True':
-    print("Sequence annotation main says: Done!")
+    print("phate_sequenceAnnotation_main says, Sequence annotation complete.")
 GENOME_FILE.close()
 OUTFILE.close()
 GFFFILE.close()

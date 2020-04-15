@@ -5,7 +5,7 @@
 # Program Title:  multiPhate2.py (/multiPhate2/)
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last Update:  06 April 2020
+# Last Update:  11 April 2020
 #
 # Description: Script multiPhate.py runs an annotation pipeline (phate_runPipeline.py) over any
 #    number of genomes specified in the user's input configuration file (multPhate.config). It then
@@ -26,7 +26,6 @@
 #         Lastly, it identifies a core proteome common among the users input genomes.
 #   
 # Programmer's notes:
-#   1. The phate_profile.py module remains to be fully tested.
 #
 # Usage:  python multiPhate.py myMultiPhate.config
 #    (see sample_multiPhate.config for how to create your configuration file)
@@ -55,17 +54,24 @@ PHATE_ERR = 'True'
 #
 # Default Verbosity; These are normally set as environment variables based on parameters in the config file,
 # but defaults take effect if not specified in config.
+# Note: defaults are needed to set environmental parameters in case user config file does not specify.
 CLEAN_RAW_DATA_DEFAULT   = 'True'   # if 'False', the raw Blast and Hmm outputs will be saved in the PipelineOutput folder
 PHATE_WARNINGS_DEFAULT   = 'False'  # multiPhate and phate codes
 PHATE_MESSAGES_DEFAULT   = 'False'
 PHATE_PROGRESS_DEFAULT   = 'True'
+#*** REVISIT THESE CONTROLS: eliminate module-specific controls; subordinate modules should follow PHATE settings
 CGC_WARNINGS_DEFAULT     = 'False'  # compareGeneCalls codes
 CGC_MESSAGES_DEFAULT     = 'False'
 CGC_PROGRESS_DEFAULT     = 'False'
 CGP_WARNINGS_DEFAULT     = 'False'  # compareGeneProfiles codes
 CGP_MESSAGES_DEFAULT     = 'False'
 CGP_PROGRESS_DEFAULT     = 'True'
-CGP_PROGRESS             = CGP_PROGRESS_DEFAULT
+
+CLEAN_RAW_DATA = CLEAN_RAW_DATA_DEFAULT 
+PHATE_PROGRESS = PHATE_PROGRESS_DEFAULT 
+PHATE_MESSAGES = PHATE_MESSAGES_DEFAULT 
+PHATE_WARNINGS = PHATE_WARNINGS_DEFAULT
+CGP_PROGRESS   = CGP_PROGRESS_DEFAULT
 
 #DEBUG = True     # Controls debug settings in this (local) code only
 DEBUG = False    # Leave False, unless debugging
@@ -827,7 +833,8 @@ for cLine in cLines:
     elif match_genomeSpecies:
         genomeSpecies = match_genomeSpecies.group(1)
         nextGenomeData["genomeSpecies"] = genomeSpecies
-        print("TESTING - at match_genomeSpecies: nextGenomeData['genomeSpecies'] is ",nextGenomeData['genomeSpecies'])
+        if DEBUG:
+            print("multiPhate says, DEBUG: at match_genomeSpecies: nextGenomeData['genomeSpecies'] is ",nextGenomeData['genomeSpecies'])
         if not HPC: 
             LOG.write("%s%s\n" % ("genomeSpecies is ",genomeSpecies))
         genomeDataItems += 1
@@ -866,7 +873,7 @@ for cLine in cLines:
     elif match_end:  # List of genomes complete; record last genome's data
         if genomeDataItems != DATA_ITEMS_NUM:
             if not HPC:
-                LOG.write("%s%s%s%s%s%s\n" % ("multiPhate says, WARNING: check config file for possible incorrect data items: ", genomeDataItems, " for genome ",nextGenomeData["genomeName"],' ',nextGenomeData["genomeNumber"]))
+                LOG.write("%s%s%s%s%s%s\n" % ("WARNING: check config file for possible incorrect data items: ", genomeDataItems, " for genome ",nextGenomeData["genomeName"],' ',nextGenomeData["genomeNumber"]))
         genomeList.append(nextGenomeData)
         if not HPC:
             LOG.write("%s%s\n" % ("END: Length of genomeList is ",len(genomeList)))
@@ -886,7 +893,7 @@ for cLine in cLines:
             translateOnly = False
         else:
             if PHATE_WARNINGS == 'True':
-                print("WARNING:  Invalid string following translate_only parameter in config file:", value)
+                print("multiPhate says, WARNING: Invalid string following translate_only parameter in config file:", value)
             if not HPC:
                 LOGFILE.write("%s%s\n" % ("Invalid string following translate_only parameter in config file: ", value))
 
@@ -918,7 +925,7 @@ for cLine in cLines:
             primaryCalls = 'custom'
         else:
             if PHATE_WARNINGS == 'True':
-                print("WARNING:  Invalid string for primary calls in config file:", value)
+                print("multiPhate says, WARNING: Invalid string for primary calls in config file:", value)
         if primaryCalls == 'glimmer2' or primaryCalls == 'glimmer3':
             primaryCallsFile = 'glimmer' + '.cgc'
         else:
@@ -1413,22 +1420,28 @@ for cLine in cLines:
         value = match_phateWarnings.group(1)
         if value.lower() == 'true' or value.lower() == 'yes' or value.lower() == 'on':
             os.environ["PHATE_PHATE_WARNINGS"] = 'True' 
+            PHATE_WARNINGS = True 
         else:
             os.environ["PHATE_PHATE_WARNINGS"] = 'False'
+            PHATE_WARNINGS = False
 
     elif match_phateMessages:
         value = match_phateMessages.group(1)
         if value.lower() == 'true' or value.lower() == 'yes' or value.lower() == 'on':
             os.environ["PHATE_PHATE_MESSAGES"] = 'True' 
+            PHATE_MESSAGES = True 
         else:
             os.environ["PHATE_PHATE_MESSAGES"] = 'False' 
+            PHATE_MESSAGES = False 
 
     elif match_phateProgress:
         value = match_phateProgress.group(1)
         if value.lower() == 'true' or value.lower() == 'yes' or value.lower() == 'on':
             os.environ["PHATE_PhATE_PROGRESS"] = 'True' 
+            PHATE_PROGRESS = True 
         else:
             os.environ["PHATE_PhATE_PROGRESS"] = 'False' 
+            PHATE_PROGRESS = False 
 
     elif match_cgcWarnings:
         value = match_cgcWarnings.group(1)
@@ -1482,7 +1495,7 @@ for cLine in cLines:
     else:
         if not HPC:
             LOG.write("%s%s\n" % ("ERROR: Unrecognized line in config file: ", cLine))
-        print("ERROR: unrecognized line in config file:", cLine)
+        print("multiPhate says, ERROR: unrecognized line in config file:", cLine)
 
 if not HPC: # Skip logging if running in high-throughput, else multiPhate.log files will clash
     LOG.write("%s\n" % ("Input parameters and configurables:"))
@@ -1632,7 +1645,7 @@ for genome in genomeList:
     else:
         if PHATE_WARNINGS:
             print("multiPhate says, WARNING: Fasta filename not recognized for genome", genome["genomeName"])
-            print("   Expected fasta filename extension: .fasta")
+            print("  Expected fasta filename extension: .fasta")
         if not HPC:
             LOG.write("%s%s%s\n" % ("WARNING: problem with fasta file: ",genome["genomeFile"]," This genome not processed!"))
         continue
@@ -1734,13 +1747,14 @@ GFF_OUTFILE = "phate_sequenceAnnotation_main.gff"
 if runCGP and not translateOnly and len(genomeList) > 1:
     if not HPC:
         LOG.write("%s%s\n" % ("Starting CompareGeneProfiles at ",datetime.datetime.now()))
-    if CGP_PROGRESS:
-        print("Starting CompareGeneProfiles...")
+    if PHATE_PROGRESS:
+        print("multiPhATE says, Starting CompareGeneProfiles...")
 
     # Prepare the configuration file for input to CGP driver code
     cgpOutputDir = PIPELINE_OUTPUT_DIR 
     try:
-        print("Opening CGP_CONFIG_FILE:", CGP_CONFIG_FILE)
+        if PHATE_PROGRESS:
+            print("multiPhate says, Opening CGP_CONFIG_FILE:", CGP_CONFIG_FILE)
         CGP_CONFIG_H = open(CGP_CONFIG_FILE,"w")
         # Print output directory to config file
         CGP_CONFIG_H.write("%s\n" % (cgpOutputDir))
@@ -1754,20 +1768,20 @@ if runCGP and not translateOnly and len(genomeList) > 1:
     except:
         if not HPC:
             LOG.write("%s%s\n" % ("Error preparing CompareGeneProfiles configuration file,", CGP_CONFIG_FILE))
-        print ("multiPhATE says, ERROR preparing CompareGeneProfiles configuration file")
+        print ("multiPhate says, ERROR preparing CompareGeneProfiles configuration file")
 
     # Run CompareGeneProfiles
     try:
         command = "python " + CGP_CODE + ' ' + CGP_CONFIG_FILE
-        print("multiPhate.py says, command is:", command)
+        print("multiPhate says, command is:", command)
         result = os.system(command)
     except:
         if not HPC:
             LOG.write("%s\n" % ("ERROR: Problem running CompareGeneProfiles"))
-        print ("multiPhATE says, ERROR running CompareGeneProfiles")
+        print ("multiPhate says, ERROR running CompareGeneProfiles")
 
-    if CGP_PROGRESS:
-        print("Competed CompareGeneProfiles. Moving results to CGP_RESULTS/ directory")
+    if PHATE_PROGRESS:
+        print("multiPhate says, Completed CompareGeneProfiles. Moving results to CGP_RESULTS/ directory")
 
     if runCGP:
 
@@ -1787,10 +1801,20 @@ if runCGP and not translateOnly and len(genomeList) > 1:
             command = "mv " + PIPELINE_OUTPUT_DIR + "cgp_wrapper.config "        + CGP_RESULTS_DIR + '.'
             result = os.system(command)
             # remove excess copies of CGP out files for final comparison
-            command = "rm " + PIPELINE_OUTPUT_DIR + "compareGeneProfiles_main*"
+            command = "rm " + PIPELINE_OUTPUT_DIR + "compareGeneProfiles_main.log.copy"
+            result = os.system(command)
+            command = "rm " + PIPELINE_OUTPUT_DIR + "compareGeneProfiles_main.out"
+            result = os.system(command)
+            command = "rm " + PIPELINE_OUTPUT_DIR + "compareGeneProfiles_main.report"
+            result = os.system(command)
+            command = "rm " + PIPELINE_OUTPUT_DIR + "compareGeneProfiles_main.summary"
             result = os.system(command)
         except:
             print("multiPhate says, ERROR: cannot move CGP results to output directory")
+
+else:
+    if PHATE_PROGRESS:
+        print("multiPhate says, Skipping CompareGeneProfiles.")
 
 ##### CLEAN UP
 

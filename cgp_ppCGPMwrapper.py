@@ -5,7 +5,7 @@
 # cgp_ppCGPMwrapper.py
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last update:  04 March 2020
+# Last update:  12 April 2020
 #
 # This script has no required input files, but should be run in the
 # directory contining a set of "Results_" directories containing output
@@ -33,6 +33,23 @@
 import sys, os, re, string, copy
 from subprocess import call
 import subprocess
+
+# Set messaging booleans
+PHATE_PROGRESS = False
+PHATE_MESSAGES = False
+PHATE_WARNINGS = False
+PHATE_PROGRESS_STRING = os.environ["PHATE_PHATE_PROGRESS"]
+PHATE_MESSAGES_STRING = os.environ["PHATE_PHATE_MESSAGES"]
+PHATE_WARNINGS_STRING = os.environ["PHATE_PHATE_WARNINGS"]
+if PHATE_PROGRESS_STRING.lower() == 'true':
+    PHATE_PROGRESS = True
+if PHATE_MESSAGES_STRING.lower() == 'true':
+    PHATE_MESSAGES = True
+if PHATE_WARNINGS_STRING.lower() == 'true':
+    PHATE_WARNINGS = True
+
+if PHATE_PROGRESS:
+    print("cgp_ppCGPMwrapper says, Begin post-process CGPM wrapper code.")
 
 #### CONFIGURABLE
 
@@ -118,6 +135,8 @@ dirsList = out.split('\n')
 # ...then re-construct the gene and protein filenames, and finally, execute postProcessCGPM.py over
 # the binary-comparison report file.
 
+if PHATE_PROGRESS:
+    print("cgp_ppCGPMwrapper says, Capturing input filenames and computing outfile names.")
 count = 0; fragments = []; lineFragments = []
 for resultDir in dirsList:
     match = re.search('Results_',resultDir)  # Make sure it's a correct directory name
@@ -164,9 +183,12 @@ for resultDir in dirsList:
         os.chdir(currentDir)      # return
         count += 1 
         LOGFILE.write("%s%s\n" % ("Completed post-processing in directory ",resultDir))
+        if PHATE_PROGRESS:
+            print("cgp_ppCGPMwrapper says, Completed post-processing in directory ",resultDir)
 
 ##### Clean up
 
 LOGFILE.write("%s%s%s\n" % ("Execution complete. ",count," jobs completed." ))
-print ("Execution complete.", count, "jobs completed.")
+if PHATE_PROGRESS:
+    print ("cgp_ppCGPMwrapper says, Execution complete.", count, "jobs completed.")
 LOGFILE.close()

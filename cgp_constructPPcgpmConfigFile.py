@@ -26,6 +26,20 @@ import subprocess
 
 dateTime = "0:0:0::0:0:0"
 
+# Boobleans
+PHATE_PROGRESS = False
+PHATE_MESSAGES = False
+PHATE_WARNINGS = False
+PHATE_PROGRESS_STRING = os.environ["PHATE_PHATE_PROGRESS"]
+PHATE_MESSAGES_STRING = os.environ["PHATE_PHATE_MESSAGES"]
+PHATE_WARNINGS_STRING = os.environ["PHATE_PHATE_WARNINGS"]
+if PHATE_PROGRESS_STRING == 'True':
+    PHATE_PROGRESS = True
+if PHATE_MESSAGES_STRING == 'True':
+    PHATE_MESSAGES = True
+if PHATE_WARNINGS_STRING == 'True':
+    PHATE_WARNINGS = True
+
 ##### FILES
 CODE_BASE_DIR = os.environ["CGP_CODE_BASE_DIR"]
 inConfig  = os.path.join(CODE_BASE_DIR, "constructConfigFile.config")    # default: same file as input to constructConfigFile.py
@@ -94,9 +108,10 @@ match = re.search(p_config, inConfig)
 if not match:
     fileError = True
 if fileError:
-    print ("Check the formats of your input file(s):")
-    print ("    config file is", inConfig)
-    print (USAGE_STRING)
+    if PHATE_WARNINGS:
+        print ("cgp_constructPPcgpmConfigFile says, ERROR: Check the formats of your input file(s):")
+        print ("    config file is", inConfig)
+        print (USAGE_STRING)
     LOGFILE.close(); exit(0)
 
 # Open files
@@ -121,6 +136,9 @@ if fileError:
 
 ##### BEGIN MAIN 
 
+if PHATE_PROGRESS:
+    print("cgp_constructPPcgpmConfigFile says, Begin construction of PPcgpm config file.")
+
 # Get base directory from config file
 fLines = INFILE.read().splitlines()
 baseDir = fLines[0]
@@ -130,11 +148,13 @@ command = "ls . | grep \'Results_\'"  # Get list of Results directories in curre
 proc = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
 (out, err) = proc.communicate()
 if err:
-    print ("ERROR:", err)
+    print ("cgp_constructPPcgpmConfigFile says, ERROR:", err)
 myResult = []
 myResult = out.split('\n')
 
 # Walk through each directory name, append the name of the report file, and write to output contig file
+if PHATE_PROGRESS:
+    print("cgp_constructPPcgpmConfigFile says, walking through Results directory, writing config file.")
 for resultDir in myResult:
     match = re.search('\w',resultDir)
     if match:  # Process .report file in this directory
@@ -149,3 +169,5 @@ OUTFILE.close()
 dateTime = "0:0:0::0:0:9"
 LOGFILE.write("%s%s\n" % ("Processing complete ",dateTime))
 LOGFILE.close()
+if PHATE_PROGRESS:
+    print("cgp_constructPPcgpmConfigFile says, Construction of PPcgpm config file complete.")

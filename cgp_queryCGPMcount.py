@@ -6,7 +6,7 @@
 #
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last update:  04 March 2020
+# Last update:  12 April 2020
 # 
 #
 #################################################################
@@ -15,6 +15,20 @@
 
 import sys, os, re, string, copy
 from subprocess import call
+
+# Set messaging booleans
+PHATE_PROGRESS = False
+PHATE_MESSAGES = False
+PHATE_WARNINGS = False
+PHATE_PROGRESS_STRING = os.environ["PHATE_PHATE_PROGRESS"]
+PHATE_MESSAGES_STRING = os.environ["PHATE_PHATE_MESSAGES"]
+PHATE_WARNINGS_STRING = os.environ["PHATE_PHATE_WARNINGS"]
+if PHATE_PROGRESS_STRING.lower() == 'true':
+    PHATE_PROGRESS = True
+if PHATE_MESSAGES_STRING.lower() == 'true':
+    PHATE_MESSAGES = True
+if PHATE_WARNINGS_STRING.lower() == 'true':
+    PHATE_WARNINGS = True
 
 #### FILES
 CODE_BASE_DIR = os.environ["CGP_CODE_BASE_DIR"]

@@ -35,18 +35,21 @@ PHATE_PIPELINE = True  # Running this code within the PhATE pipeline. Set this t
 
 ##### Verbosity
 
-#if PHATE_PIPELINE:
-#    CGC_WARNINGS = os.environ["PHATE_CGC_WARNINGS"]
-#    CGC_MESSAGES = os.environ["PHATE_CGC_MESSAGES"]
-#    CGC_PROGRESS = os.environ["PHATE_CGC_PROGRESS"]
-#else:
-#    CGC_WARNINGS = 'True'
-#    CGC_MESSAGES = 'True'
-#    CGC_PROGRESS = 'True'
+PHATE_PROGRESS = False
+PHATE_MESSAGES = False
+PHATE_WARNINGS = False
 
-CGC_WARNINGS = 'True'
-CGC_MESSAGES = 'True'
-CGC_PROGRESS = 'True'
+PHATE_PROGRESS_STRING = os.environ["PHATE_PHATE_PROGRESS"]
+PHATE_MESSAGES_STRING = os.environ["PHATE_PHATE_MESSAGES"]
+PHATE_WARNINGS_STRING = os.environ["PHATE_PHATE_WARNINGS"]
+
+if PHATE_PROGRESS_STRING.lower() == 'true':
+    PHATE_PROGRESS = True
+if PHATE_MESSAGES_STRING.lower() == 'true':
+    PHATE_MESSAGES = True
+if PHATE_WARNINGS_STRING.lower() == 'true':
+    PHATE_WARNINGS = True
+
 #DEBUG = True
 DEBUG = False
 
@@ -166,8 +169,8 @@ class GeneCallSet(object):
                     self.geneCaller = caller 
                     self.GetGeneCalls(fLines,caller)
                 else:
-                    if CGC_WARNINGS == 'True':
-                        print("ERROR in CGC_geneCall: gene caller not recognized in geneCall.GeneCallSet,", caller, line)
+                    if PHATE_WARNINGS:
+                        print("CGC_geneCall says, WARNING/ERROR: gene caller not recognized in geneCall.GeneCallSet,", caller, line)
         return
 
     # Determine which of 2 gene calls occurs first along the sequence (left to right, regardless of orientation) 

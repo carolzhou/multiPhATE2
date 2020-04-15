@@ -1,7 +1,7 @@
 ##############################################
 # Module: blastAnalysis.py
 # Programmer:  Carol L. Ecale Zhou
-# Date of last update:  16 July 2013
+# Date of last update:  11 April 2020
 #
 # Module comprising data structures and methods for blasting the genes and proteins
 #    of two genome objects and comparing the gene profiles and the nt and aa levels.
@@ -42,6 +42,26 @@ import cgp_annotation as annotation
 import re, os, copy
 import operator
 from itertools import groupby   # used in mergeAll method # changed sort method 16july2013
+
+# Boolean control: verbosity
+
+PHATE_PROGRESS = False
+PHATE_MESSAGES = False
+PHATE_WARNINGS = False
+
+PHATE_PROGRESS_STRING = os.environ["PHATE_PHATE_PROGRESS"] 
+PHATE_MESSAGES_STRING = os.environ["PHATE_PHATE_MESSAGES"] 
+PHATE_WARNINGS_STRING = os.environ["PHATE_PHATE_WARNINGS"] 
+
+if PHATE_PROGRESS_STRING.lower() == 'true':
+    PHATE_PROGRESS = True 
+if PHATE_MESSAGES_STRING.lower() == 'true':
+    PHATE_MESSAGES = True 
+if PHATE_WARNINGS_STRING.lower() == 'true':
+    PHATE_WARNINGS = True 
+
+#DEBUG = True
+DEBUG = False
 
 # Default values used if user- or program-defined defaults not provided
 GENE_MATCH_IDENTITY_DEFAULT = 95
@@ -323,9 +343,9 @@ class homology(object):  # holds comparative information between 2 gene/protein 
                 qAnnotations = seqAnnot1[hit.queryHeader]
                 sAnnotations = seqAnnot2[hit.subjectHeader]
             except:
-                print("blastAnalysis says, error retrieving qAnnotations or sAnnotations")
-                print("hit.queryHeader is",hit.queryHeader)
-                print("hit.subjectHeader is",hit.subjectHeader)
+                print("cgp_blastAnalysis says, WARNING: error in retrieving qAnnotations or sAnnotations")
+                print("  hit.queryHeader is",hit.queryHeader)
+                print("  hit.subjectHeader is",hit.subjectHeader)
                 continue 
             g1segment    = int(hit.queryEnd)   - int(hit.queryStart) + 1
             g2segment    = int(hit.subjectEnd) - int(hit.subjectStart) + 1
@@ -346,9 +366,10 @@ class homology(object):  # holds comparative information between 2 gene/protein 
                 qAnnotations = seqAnnot1[hit.queryHeader]
                 sAnnotations = seqAnnot2[hit.subjectHeader]
             except:
-                print("blastAnalysis says, error retrieving qAnnotations or sAnnotations")
-                print("hit.queryHeader is",hit.queryHeader)
-                print("hit.subjectHeader is",hit.subjectHeader)
+                if PHATE_WARNINGS:
+                    print("cgp_blastAnalysis says, WARNING: error in retrieving qAnnotations or sAnnotations")
+                    print("  hit.queryHeader is",hit.queryHeader)
+                    print("  hit.subjectHeader is",hit.subjectHeader)
                 continue 
             g1segment    = int(hit.queryEnd) - int(hit.queryStart) + 1
             g2segment    = int(hit.subjectEnd) - int(hit.subjectStart) + 1
@@ -387,9 +408,10 @@ class homology(object):  # holds comparative information between 2 gene/protein 
                 qAnnotations = seqAnnot1[hit.queryHeader]
                 sAnnotations = seqAnnot2[hit.subjectHeader]
             except:
-                print("blastAnalysis says, error retrieving qAnnotations or sAnnotations")
-                print("hit.queryHeader is",hit.queryHeader)
-                print("hit.subjectHeader is",hit.subjectHeader)
+                if PHATE_WARNINGS:
+                    print("cgp_blastAnalysis says, WARNING: error in retrieving qAnnotations or sAnnotations")
+                    print("  hit.queryHeader is",hit.queryHeader)
+                    print("  hit.subjectHeader is",hit.subjectHeader)
                 continue 
             g1segment    = int(hit.subjectEnd) - int(hit.subjectStart) + 1
             g2segment    = int(hit.queryEnd)   - int(hit.queryStart) + 1
@@ -456,12 +478,13 @@ class homology(object):  # holds comparative information between 2 gene/protein 
         set1loners = len(self.loners["set1"])
         set2loners = len(self.loners["set2"])
 
-        print ("Set 1 mutual best hits:", set1mutuals)
-        print ("Set 2 mutual best hits:", set2mutuals)
-        print ("Set 1 singular hits:", set1singulars)
-        print ("Set 2 singular hits:", set2singulars)
-        print ("Set 1 loners:", set1loners)
-        print ("Set 2 loners:", set2loners) 
+        if PHATE_MESSAGES:
+            print ("Set 1 mutual best hits:", set1mutuals)
+            print ("Set 2 mutual best hits:", set2mutuals)
+            print ("Set 1 singular hits:", set1singulars)
+            print ("Set 2 singular hits:", set2singulars)
+            print ("Set 1 loners:", set1loners)
+            print ("Set 2 loners:", set2loners) 
 
         statsList.append("Set 1 mutual best hits: " + str(set1mutuals))
         statsList.append("Set 2 mutual best hits: " + str(set2mutuals))
@@ -676,7 +699,7 @@ class blast(object):
                     newComparison.singularHits["set2"].append(hit2)
                     hit2.hitType = "singlular best"
         if errorCode:
-            print ("Method compareHits errorCode:", errorCode)
+            print ("cgp_blastAnalysis says, ERROR: compareHits() errorCode:", errorCode)
         return newComparison
 
     def recordHits(self,filename):
@@ -787,8 +810,9 @@ class blast(object):
                 " -max_hsps 1" 
         else:
             errorList.append(10)
-        print("performBlast says, maxTargetSeqs is",maxTargetSeqs)
-        print("performBlast says, command is",command)
+        if DEBUG:
+            #print("cgp_blastAnalysis says, in performBlast(), maxTargetSeqs is",maxTargetSeqs)
+            print("cgp_blastAnalysis says, in performBlast(), command is",command)
         result = os.system(command)
         errorList.append(result)
  

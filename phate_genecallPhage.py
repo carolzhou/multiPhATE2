@@ -4,7 +4,7 @@
 #
 # Programmers: Jeff Kimbrel, Carol Zhou
 #
-# Last update: 2 December 2019
+# Last update: 11 April 2020
 #
 # Description: Single command to run PHANOTATE, Prodigal, Glimmer and GeneMarkS on a fasta file
 #
@@ -18,7 +18,7 @@ import sys
 import re
 
 DEBUG = False 
-DEBUG = True
+#DEBUG = True
 
 # booleans control which gene finder(s) to call
 GENEMARKS_CALLS = False   
@@ -62,11 +62,11 @@ files = {
 # Input Parameters
 
 if PHATE_MESSAGES == 'True':
-    print("There are", len(sys.argv), "input parameters:", sys.argv)
+    print("phate_genecallPhage says, There are", len(sys.argv), "input parameters:", sys.argv)
 
 if len(sys.argv) == 1:
     if PHATE_WARNINGS == 'True':
-        print("Usage: /usr/local/bin/python3.4 annotatePhage.py fastaFile.fa outFolder", "Exiting now.")
+        print("phate_genecallPhage says, Usage: /usr/local/bin/python3.4 annotatePhage.py fastaFile.fa outFolder", "Exiting now.")
     exit(0)
 
 fastaFileName       = sys.argv[1]
@@ -188,7 +188,7 @@ def processProdigal(line):
         ID = getProdigalId(lineSplit[8])
 
         if PHATE_MESSAGES == 'True':
-            print("    ID=",ID,"method=",method,"contig=",contig,"start/stop=",start,'/',stop,"strand=",strand,"score=",score)
+            print("phate_genecallPhage says,  ID=",ID,"method=",method,"contig=",contig,"start/stop=",start,'/',stop,"strand=",strand,"score=",score)
         geneCall(ID, method, contig, start, stop, strand, score)
         callCounts['prodigal'] += 1
 
@@ -334,7 +334,7 @@ def Convert_cgc2gff(cgcFile,gffFile):
                 end   = str(leftEnd) 
             else:
                 if PHATE_WARNINGS == 'True':
-                    print("WARNING: phate_geneCall says, Unexpected strand:", strand)
+                    print("phate_genecallPhage says, WARNING: Unexpected strand:", strand)
             GFF_H.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (seqid,source,seqType,start,end,strand,phase,attributes))
         elif match_caller:
             caller = match_caller.group(1)
@@ -351,7 +351,7 @@ def Convert_cgc2gff(cgcFile,gffFile):
 
 if PRODIGAL_CALLS:
     if PHATE_PROGRESS == 'True':
-        print("Genecall module says: running Prodigal.")
+        print("phate_genecallPhage says, running Prodigal.")
     if PHATE_MESSAGES == 'True':
         print("\n########## Prodigal ##########")
     logfile.write("%s\n" % ("Processing Prodigal"))
@@ -384,7 +384,7 @@ if DEBUG:
     logfile.write("%s%s\n" % ("GLIMMER_CALLS is ",GLIMMER_CALLS))
 if GLIMMER_CALLS:
     if PHATE_PROGRESS == 'True':
-        print("Genecall module says: running Glimmer.")
+        print("phate_genecallPhage says, running Glimmer.")
     if PHATE_MESSAGES == 'True':
         print("\n########## Glimmer ##########")
     logfile.write("%s\n" % ("Processing Glimmer"))
@@ -430,7 +430,7 @@ if DEBUG:
     logfile.write("%s%s\n" % ("GENEMARKS_CALLS is ",GENEMARKS_CALLS))
 if GENEMARKS_CALLS:
     if PHATE_PROGRESS == 'True':
-        print("Genecall module says: running GeneMarkS.")
+        print("phate_genecallPhage says, running GeneMarkS.")
     if PHATE_MESSAGES == 'True':
         print("\n########## GeneMarkS ##########")
     logfile.write("%s\n" % ("Processing GeneMarkS"))
@@ -454,9 +454,9 @@ if DEBUG:
 
 if PHANOTATE_CALLS:
     if PHATE_PROGRESS == 'True':
-        print("Genecall module says: running Phanotate.")
+        print("phate_genecallPhage says, running Phanotate.")
     if PHATE_MESSAGES == 'True':
-        print("\n########## PHANOTATE ##########")
+        print("########## PHANOTATE ##########")
     logfile.write("%s\n" % ("Processing PHANOTATE"))
 
     os.chdir(phanotatePath)
@@ -481,7 +481,7 @@ if DEBUG:
 
 if CUSTOM_CALLS:
     if PHATE_PROGRESS == 'True':
-        print("Genecall module says: custom calls need to be converted to cgc format.")
+        print("phate_genecallPhage says, custom calls need to be converted to cgc format.")
     if PHATE_MESSAGES == 'True':
         print("\n######## CUSTOM CALLS #########")
     try:
@@ -494,14 +494,15 @@ if CUSTOM_CALLS:
 
 ########## RESULTS ##########
 
-print("\n########## RESULTS ##########")
+if PHATE_MESSAGES == 'True':
+    print("\n########## RESULTS ##########")
 logfile.write("%s\n" % ("Preparing results"))
 results.write("ID\tSTART\tSTOP\tSTRAND\tSCORE\tMETHOD\tCONTIG\n")
 
 if DEBUG:
     logfile.write("%s\n" % ("GENE_CALL_TESTING"))
-    print("Printing all gene calls:")
-    #geneCall.printall()
+    print("phate_genecallPhage says, DEBUG: Printing all gene calls:")
+    geneCall.printall()
 
 logfile.write("%s\n" % ("Writing genecall data to results file..."))
 for gene in geneCall.geneCallList:
@@ -509,8 +510,9 @@ for gene in geneCall.geneCallList:
 results.close
 
 logfile.write("%s\n" % ("Printing tallied genecall method call counts..."))
-for method in callCounts:
-    print((method + ": " + str(callCounts[method])))
+if PHATE_MESSAGES == 'True':
+    for method in callCounts:
+        print((method + ": " + str(callCounts[method])))
 
 print()
 
@@ -538,7 +540,7 @@ if PHANOTATE_CALLS:
 if CUSTOM_CALLS:
     callerCount += 1
     if DEBUG:
-        print("Calling CGC_parser.py")
+        print("phate_genecallPhage says, DEBUG: Calling CGC_parser.py")
         logfile.write("%s\n" % ("Calling CGC_parser.py"))
     systemCall('python ' + cgcPath + '/CGC_parser.py Custom ' + outputFolder + 'custom.gff ' + outputFolder + 'custom.cgc')
 
@@ -547,7 +549,7 @@ if callerCount >= 2:
     runCGC = True
 
 if DEBUG:
-    print("DEBUG: next, running CGC_main.py")
+    print("phate_genecallPhage says, DEBUG: next, running CGC_main.py")
 
 if runCGC:
     commandString1 = 'python ' + cgcPath + 'CGC_main.py log=' + cgcLog 
@@ -555,8 +557,8 @@ if runCGC:
     commandString3 = ' ' + outputFolder + '*.cgc > ' + outputFolder + 'CGC_results.txt'
     command = commandString1 + commandString2 + commandString3
     if DEBUG:
-        print("DEBUG: calling CGC, cgcLog is", cgcLog)
-        print("command is ",command)
+        print("phate_genecallPhage says, DEBUG: calling CGC, cgcLog is", cgcLog)
+        print("phate_genecallPhage says, command is ",command)
     systemCall(command)
     
 else:

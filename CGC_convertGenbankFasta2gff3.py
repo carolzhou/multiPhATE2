@@ -27,9 +27,21 @@ from subprocess import call
 
 ##### Verbosity
 
-CGC_WARNINGS = os.environ["PHATE_CGC_WARNINGS"]
-CGC_MESSAGES = os.environ["PHATE_CGC_MESSAGES"]
-CGC_PROGRESS = os.environ["PHATE_CGC_PROGRESS"]
+PHATE_PROGRESS = False
+PHATE_MESSAGES = False
+PHATE_WARNINGS = False
+
+PHATE_PROGRESS_STRING = os.environ["PHATE_PHATE_PROGRESS"] 
+PHATE_MESSAGES_STRING = os.environ["PHATE_PHATE_MESSAGES"] 
+PHATE_WARNINGS_STRING = os.environ["PHATE_PHATE_WARNINGS"]
+
+if PHATE_PROGRESS_STRING.lower() == 'true':
+    PHATE_PROGRESS = True
+if PHATE_MESSAGES_STRING.lower() == 'true':
+    PHATE_MESSAGES = True
+if PHATE_WARNINGS_STRING.lower() == 'true':
+    PHATE_WARNINGS = True
+
 
 ##### FILES
 
@@ -106,8 +118,8 @@ count = 0
 
 # For each user-provided gene call file, create a call set and add to list of call sets
 
-if CGC_MESSAGES == 'True':
-    print("CGC convertGenbank module says: Input parameters are: genbank protein fasta file is", infile, "and contig name is", contig)
+if PHATE_MESSAGES:
+    print("CGC_convertGenbankFasta2gff says: Input parameters are: genbank protein fasta file is", infile, "and contig name is", contig)
 
 iLines = IN.read().splitlines()
 OUT.write("%s\n" % ("#gff-version3"))

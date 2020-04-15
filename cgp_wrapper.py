@@ -5,7 +5,7 @@
 # CGPMwrapper.py (/multiPhATE2/)
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last Update: 04 March 2020
+# Last Update: 12 April 2020
 #
 # This script uses a config file to run compareGeneProfiles.py
 # using the designated input files.  Specifically, the config file
@@ -60,7 +60,21 @@ CODE_BASE_DIR = os.environ["CGP_CODE_BASE_DIR"]
 PHATE_PIPELINE_OUTPUT_DIR = os.environ["PHATE_PIPELINE_OUTPUT_DIR"]
 COMPARE_GENE_PROFILES_CODE = os.path.join(CODE_BASE_DIR, "cgp_compareGeneProfiles_main.py")  # use current stable version or modify constant
 
-#### FILES
+# Set messaging booleans
+PHATE_PROGRESS = False
+PHATE_MESSAGES = False
+PHATE_WARNINGS = False
+PHATE_PROGRESS_STRING = os.environ["PHATE_PHATE_PROGRESS"]
+PHATE_MESSAGES_STRING = os.environ["PHATE_PHATE_MESSAGES"]
+PHATE_WARNINGS_STRING = os.environ["PHATE_PHATE_WARNINGS"]
+if PHATE_PROGRESS_STRING.lower() == 'true':
+    PHATE_PROGRESS = True
+if PHATE_MESSAGES_STRING.lower() == 'true':
+    PHATE_MESSAGES = True
+if PHATE_WARNINGS_STRING.lower() == 'true':
+    PHATE_WARNINGS = True
+
+#### FILE
 
 logFile = os.path.join(CODE_BASE_DIR,"CGPMwrapper.log")
 LOGFILE = open(logFile,"a")
@@ -84,6 +98,9 @@ configFile = "cgp_wrapper.config"  # needs to be prepended with user's project d
 
 ##### Get command-line arguments
 
+if PHATE_PROGRESS:
+    print("cgp_wrapper says, Being processing.")
+    print("cgp_wrapper says, Gathering command-line arguments.")
 argCount = len(sys.argv)
 if argCount in ACCEPTABLE_ARG_COUNT:
     match = re.search("help", sys.argv[1].lower())
@@ -124,12 +141,13 @@ inFileList = [] # list of inFile dicts
 
 ##### Walk through the config file, extracting the directory plus the genome/annotation pairs
 ##### Add each pair to the list to be processed by compareGeneProfiles_main.py
-     
+    
+if PHATE_PROGRESS:
+    print("cgp_wrapper says, Parsing config file.")
 fLines = CONFIG_FILE.read().splitlines()
 numLines = len(fLines)
 LOGFILE.write("%s%s\n" % ("Number of lines in config file is ",numLines))
 nextFiles = copy.deepcopy(inFiles)
-#for i in xrange(0, numLines):
 for i in list(range(0, numLines)):
     if i%7 == 0:
         nextFiles["dir"] = fLines[i]
@@ -153,7 +171,8 @@ LOGFILE.write("%s%s\n" % ("inFileList is:",inFileList))
 
 currentTime = int(time.time())
 LOGFILE.write("%s%s\n" % ("Executing compareGeneProfiles_main.py at ",currentTime))
-print ("Executing compareGeneProfiles_main.py....\n")
+if PHATE_PROGRESS:
+    print ("cgp_wrapper says, Executing compareGeneProfiles_main.py....")
 count = 0
 for fileSet in inFileList:
     count += 1
@@ -172,7 +191,8 @@ for fileSet in inFileList:
 
 currentTime = int(time.time())
 LOGFILE.write("%s%s%s%s\n" % ("Execution complete. ",count," jobs completed at ",currentTime))
-print ("Execution complete.", count, "jobs completed.")
+if PHATE_PROGRESS:
+    print ("cgp_wrapper says, Execution complete.", count, "jobs completed.")
 
 ##### Clean up
 
