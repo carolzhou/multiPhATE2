@@ -73,10 +73,14 @@ Set to 'true' each blast or hmm process that you want to be run. Note that you m
 
 6) Databases:
 For each database that you have in-house, specify the full path/filename. Note that you may need to prepare in advance all blast databases by running the "makeblastdb" utility (see instructions with blast+ code for how to do that). MultiPhate will only run with blast+; it does not support legacy blast. For instructions where to download the databases, see the SUPPORTING DATABASES section below. Note that KEGG is available by license. Note also that in some cases additional files are required. In this case, place the additional file(s) in the same directory as the associated blast database. For example, place the NCBI accession2taxid file in the same directory as your NCBI virus genome file (see below). If you are downloading datasets that you anticipate using specifically with multiPhATE, then it is suggested, for convenience, that you save them in the Databases/ folder in the multiPhATE distribution, but any database can be located anywhere on your local system; you need only indicate in the multiPhate.config file the full path/filename for each database. Remember, the pVOGs and Phantome data sets are included in the multiPhATE distribution in the Databases/ folder, but you will need to run makeblastdb to render the datasets blast-able ($ makeblastdb -help). If you will be running hmmscan, then you will need to format the pVOG database accordingly: 
-   $ cat VOG\*.hmm > pVOGsHmmProfilesDB.hmm
-   $ mv pVOGsHMMprofilesDB.hmm ../.
-   $ cd ..
-   $ hmmpress pVOGsHmmProfilesDB.hmm
+
+$ cat VOG\*.hmm > pVOGsHmmProfilesDB.hmm
+
+$ mv pVOGsHMMprofilesDB.hmm ../.
+
+$ cd ..
+
+$ hmmpress pVOGsHmmProfilesDB.hmm
 
 7) Verbosity:
 You may up- or down-regulate verbosity in the multiPhate.config file, under "# VERBOSITY". This includes an option to clean the (voluminous) raw blast and hmm search data from the output directories. It is suggested that clean_raw_data, and phate_progress be set to 'true'. The phate_warnings and phate_messages, when set to 'true', will generate voluminous output; set these to 'true' only when trouble-shooting the pipeline. 
