@@ -9,8 +9,9 @@
 # Last update:  12 April 2020
 #
 #################################################################
-'''
-'''
+# This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
+# THIS CODE IS COVERED BY THE BSD LICENSE. SEE INCLUDED FILE BSD.PDF FOR DETAILS.
+
 
 import sys, os, re, string, copy
 #from subprocess import call
