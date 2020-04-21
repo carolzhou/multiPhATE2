@@ -701,10 +701,7 @@ class multiBlast(object):
                                 outfilePVOG_h.write("%c%s\n%s\n" % ('>',fasta.header,fasta.sequence)) # write the current peptide fasta,
                                 self.writePVOGsequences2file(outfilePVOG_h,pVOGlines,pVOG)                  # followed by the pVOG group
                                 outfilePVOG_h.close()
-
         if CLEAN_RAW_DATA == 'True':
-            if PHATE_PROGRESS == 'True':
-                print("phate_blast says, Removing raw data files.")
             self.cleanBlastOutDir()
 
     def writePVOGsequences2file(self,FILE_H,lines,pVOG):
@@ -730,13 +727,14 @@ class multiBlast(object):
                 pVOGsequence = pVOGsequence + nextLine
 
     def cleanBlastOutDir(self):  # Remove temporary files from BLAST_OUT_DIR
-        #command = "ls " + BLAST_OUT_DIR  #*** FIX: list only files, not directories too
-        command = "ls " + self.blastOutDir  #*** FIX: list only files, not directories too
+        if PHATE_PROGRESS:
+            print("phate_blast says, cleanBlastOutDir(): Removing raw blast output files")
+        command = "ls " + self.blastOutDir
         proc = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
         (rawresult, err) = proc.communicate()
         result = rawresult.decode('utf-8')
         if DEBUG:
-            print("phate_blast says, DEBUG: Result of listing blast out dir,", self.blastOutDir) 
+            print("phate_blast says, DEBUG: Result of listing blast out dir,", self.blastOutDir," is ",result) 
         fileList = str(result).split('\n')   # Python3
         for filename in fileList:
             file2delete = self.blastOutDir + filename

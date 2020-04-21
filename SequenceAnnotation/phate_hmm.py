@@ -8,7 +8,7 @@
 # Programmer's Notes: This code now runs jackhmmer and phmmer; lightly tested; needs further testing.
 #
 # Programmer:  C Zhou
-# Most recent update:  15 April 2020
+# Most recent update:  16 April 2020
 # 
 # Classes and Methods:
 #
@@ -89,7 +89,7 @@ class multiHMM(object):
         self.blastAnnotations         = []        # List of phate_annotation objects; blast output get temporarily stored here
         # move to hit class:  self.topHitList     = []        # 
         self.geneCallDir              = ""        # needs to be set
-        self.hmmOutDir                = ""        # needs to be set
+        #self.hmmOutDir                = ""        # needs to be set  #*** note inconsistency wrt Blast module: here uses genome/gene/proteinHmmOutDir separately
         self.genomeHmmOutDir          = ""        # needs to be set
         self.geneHmmOutDir            = ""        # needs to be set
         self.proteinHmmOutDir         = ""        # needs to be set
@@ -123,8 +123,8 @@ class multiHMM(object):
                 self.jackhmmerSearch = paramset['jackhmmerSearch']
             if 'geneCallDir' in list(paramset.keys()):
                 self.geneCallDir = paramset['geneCallDir']
-            if 'hmmOutDir' in list(paramset.keys()):
-                self.hmmOutDir = paramset['hmmOutDir']
+            #if 'hmmOutDir' in list(paramset.keys()):
+            #    self.hmmOutDir = paramset['hmmOutDir']
             if 'genomeHmmOutDir' in list(paramset.keys()):
                 self.genomeHmmOutDir = paramset['genomeHmmOutDir']
             if 'geneHmmOutDir' in list(paramset.keys()):
@@ -226,7 +226,6 @@ class multiHMM(object):
             stdOutfile = outfile + '.jackhmmer.stdout' # captures data written to standard out, other than seq or dom output
  
             command = HMMER_HOME + "jackhmmer --tblout " + seqOutfile + ' --domtblout ' + domOutfile + ' ' + fastaFile + ' ' + database + ' > ' + stdOutfile
-            #command = HMMER_HOME + "jackhmmer --tblout " + seqOutfile + ' --domtblout ' + domOutfile + ' ' + fastaFile + ' ' + database
 
         elif self.hmmProgram == 'phmmer': 
             # Construct out file names
@@ -235,7 +234,6 @@ class multiHMM(object):
             stdOutfile = outfile + '.phmmer.stdout' # captures data written to standard out, other than seq or dom output
  
             command = HMMER_HOME + "phmmer --tblout " + seqOutfile + ' --domtblout ' + domOutfile + ' ' + fastaFile + ' ' + database + ' > ' + stdOutfile
-            #command = HMMER_HOME + "phmmer --tblout " + seqOutfile + ' --domtblout ' + domOutfile + ' ' + fastaFile + ' ' + database
 
         if command == '':  # set to 'jackhmmer' (only hmm code currently supported)
             command = HMMER_HOME + "jackhmmer --tblout " + seqOutfile + ' --domtblout ' + domOutfile + ' ' + fastaFile + ' ' + database + ' > ' + stdOutfile
@@ -476,7 +474,7 @@ class multiHMM(object):
             if hitList:
                 for hit in hitList:
                     # Extract hmm info from hitLine and stash into new annotation object
-                    newAnnotation = copy.deepcopy(annotation) 
+                    newAnnotation = copy.deepcopy(phate_annotation) 
                     newAnnotation.source         = database 
                     newAnnotation.method         = self.hmmProgram
                     newAnnotation.annotationType = "hmm search"
@@ -522,15 +520,15 @@ class multiHMM(object):
 
         if DEBUG:
             print("phate_hmm says, DEBUG: Running runHmm...")
-        if PHATE_PROGRESS == 'True':
-            self.hmmRawOutfile = os.path.join(self.hmmOutDir,HMM_RAW_OUT_FILENAME)
-            print("phate_hmm says, Opening output file for raw hmm search results,",self.hmmRawOutfile)
-        try:
-            HMM_RAW_OUTFILE_H = open(self.hmmRawOutfile,"w")
-            HMM_RAW_OUTFILE_H.write("%s\n" % ("Begin recording of raw hmm search output."))
-            HMM_RAW_OUTFILE_H.close()
-        except:
-            print("phate_hmm says, ERROR: Cannot open raw hmm output file,",self.hmmRawOutfile)
+        #if PHATE_PROGRESS == 'True':
+        #    self.hmmRawOutfile = os.path.join(self.hmmOutDir,HMM_RAW_OUT_FILENAME)
+        #    print("phate_hmm says, Opening output file for raw hmm search results,",self.hmmRawOutfile)
+        #try:
+        #    HMM_RAW_OUTFILE_H = open(self.hmmRawOutfile,"w")
+        #    HMM_RAW_OUTFILE_H.write("%s\n" % ("Begin recording of raw hmm search output."))
+        #    HMM_RAW_OUTFILE_H.close()
+        #except:
+        #    print("phate_hmm says, ERROR: Cannot open raw hmm output file,",self.hmmRawOutfile)
 
         # Set sequence type 
         GENOME = False; GENE = False; PROTEIN = False
@@ -697,11 +695,8 @@ class multiHMM(object):
                                 else:
                                     if PHATE_WARNINGS == 'True':
                                         print("phate_hmm says, WARNING: unexpected pVOG identifier:", pVOG)        
-
         if CLEAN_RAW_DATA == 'True':
-            if PHATE_PROGRESS == 'True':
-                print("phate_hmm says: Removing raw data files.")
-            self.cleanHmmOutDir()
+            self.cleanHmmOutDir('protein')
 
     def writePVOGsequences2file(self,FILE_H,lines,pVOG):
         pVOGheader = ""; pVOGsequence = ""; GET_SEQ = False
@@ -725,19 +720,28 @@ class multiHMM(object):
             elif GET_SEQ:
                 pVOGsequence = pVOGsequence + nextLine
 
-    def cleanHmmOutDir(self):  # Remove temporary files from HMM_OUT_DIR
-        #command = "ls " + HMM_OUT_DIR  #*** FIX: list only files, not directories too
-        #command = "ls " + self.hmmOutDir  #*** FIX: list only files, not directories too
-        command = "ls -p " + self.hmmOutDir + " grep -v /"  #*** should list only files, not directories too
+    def cleanHmmOutDir(self,seqType):  # Remove temporary files from HMM_OUT_DIR
+        if PHATE_PROGRESS:
+            print("phate_hmm says, cleanHmmOutDir(): Removing raw HMM search output files")
+        if seqType.lower() == 'protein' or seqType.lower() == 'peptide' or seqType.lower() == 'aa':
+            dir2clean = self.proteinHmmOutDir
+        elif seqType.lower() == 'gene':
+            dir2clean = self.geneHmmOutDir
+        elif seqType.lower() == 'genome':
+            dir2clean = self.genomeHmmOutDir
+        if DEBUG:
+            print("phate_hmm says, DEBUG: self.proteinHmmOutDir is ",self.proteinHmmOutDir," and dir2clean is ",dir2clean)
+        command = "ls " + dir2clean   # List all files in HMM output directory
         proc = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
         (rawresult, err) = proc.communicate()
         result = rawresult.decode('utf-8')    # Python3
         if DEBUG:
-            print("phate_hmm says, DEBUG: Result of listing hmm out dir,", self.hmmOutDir) 
+            print("phate_hmm says, DEBUG: Result of listing hmm out dir,", dir2clean," is ",result) 
         fileList = result.split('\n')
+        if DEBUG:
+            print("phate_hmm says, DEBUG: fileList is",fileList)
         for filename in fileList:
-            file2delete = self.hmmOutDir + filename
-            #if re.search('hmm',file2delete):
+            file2delete = os.path.join(self.proteinHmmOutDir,filename)
             match_seqout = re.search('seqout',file2delete)
             match_domout = re.search('domout',file2delete)
             match_stdout = re.search('stdout',file2delete)

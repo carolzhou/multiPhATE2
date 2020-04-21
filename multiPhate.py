@@ -51,6 +51,8 @@ HPC = False # write to log
 # guarantee this will work under other operating systems.
 PHATE_OUT = 'False'
 PHATE_ERR = 'True'
+# The following boolean will remove accumulated Results_.. directories from previous multiPhATE processing.
+CLEAN_PREVIOUS_CGP_RESULTS = True
 #
 # Default Verbosity; These are normally set as environment variables based on parameters in the config file,
 # but defaults take effect if not specified in config.
@@ -1792,6 +1794,15 @@ if runCGP and not translateOnly and len(genomeList) > 1:
             os.mkdir(CGP_RESULTS_DIR)
 
         # Move CompareGeneProfiles results directories and files to the CGP_RESULTS_DIR directory
+        if CLEAN_PREVIOUS_CGP_RESULTS:
+            print ("multiPhate says, Removing previous CGP Results_ directories")
+            try:
+                command = "rm -r " + CGP_RESULTS_DIR + "Results_* "
+                result = os.system(command)
+            except:
+                print("multiPhate says, Failure in removing previous CGP Results directories")
+        else:
+            print("multiPhate says, CAUTION: Not removing previous CGP Results_ directories--data files will accumulate!")
         try:  
             # move directories and files
             command = "mv " + PIPELINE_OUTPUT_DIR + "Results_* "                 + CGP_RESULTS_DIR + '.'

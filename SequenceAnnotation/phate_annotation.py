@@ -2,7 +2,7 @@
 # Module: phate_annotation.py
 # Programmer: Carol L. Ecale Zhou
 #
-# Latest update: 10 April 2020
+# Latest update: 16 April 2020
 #
 # Description: Module containing classes and methods for representing annotation results from various sources 
 #

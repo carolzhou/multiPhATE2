@@ -911,7 +911,6 @@ else:
             print("phate_sequenceAnnotation_main says, Preparing for profile search...")
         LOGFILE_H.write("%s\n" % ("Creating a profile object"))
         profile = phate_profile.multiProfile()
-        print("phate_sequenceAnnotation_main says, HMM search of profile databases not yet in service")
 
         # Create directories for hmm/profile search output
         profileOutputDir = outputDir + 'PROFILE/'
