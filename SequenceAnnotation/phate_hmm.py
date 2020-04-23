@@ -342,14 +342,14 @@ class multiHMM(object):
                     targetDescription = ' '.join(fields[18:]);  targetDescription = targetDescription.rstrip()
 
                     if DEBUG:
-                        print("DEBUG in phate_hmm.py / sequence parsing")
-                        print("targetAccession:", targetAccession)
-                        print("hitCount:", hitCount, "targetName:", targetName, "queryName:", queryName)
-                        print("queryAccession:", queryAccession, "seqEvalue:", seqEvalue, "seqScore:", seqScore, "seqBias:", seqBias)
-                        print("dom1evalue:", dom1evalue, "dom1score:", dom1score, "dom1bias:", dom1bias)
-                        print("dom1exp:", dom1exp, "dom1reg:", dom1reg, "dom1clu:", dom1clu, "dom1ov:", dom1ov, "dom1env:", dom1env)
-                        print("dom1dom:", dom1dom, "dom1rep:", dom1rep, "dom1inc:", dom1inc)
-                        print("targetDescription:", targetDescription)
+                        print("phate_hmm says, DEBUG: sequence parsing")
+                        print("  targetAccession:", targetAccession)
+                        print("  hitCount:", hitCount, "targetName:", targetName, "queryName:", queryName)
+                        print("  queryAccession:", queryAccession, "seqEvalue:", seqEvalue, "seqScore:", seqScore, "seqBias:", seqBias)
+                        print("  dom1evalue:", dom1evalue, "dom1score:", dom1score, "dom1bias:", dom1bias)
+                        print("  dom1exp:", dom1exp, "dom1reg:", dom1reg, "dom1clu:", dom1clu, "dom1ov:", dom1ov, "dom1env:", dom1env)
+                        print("  dom1dom:", dom1dom, "dom1rep:", dom1rep, "dom1inc:", dom1inc)
+                        print("  targetDescription:", targetDescription)
                         
                     # Collect pVOG identifiers for this hmm search hit; fasta header of target may have >= 1 pVOG identifier
                     vogIDs = ''; pVOGlist = []
@@ -406,7 +406,6 @@ class multiHMM(object):
                 match_comment = re.search('^#',dLine)
                 if match_comment:
                     continue
-
                 else:  # extract data fields and remove preceding or trailing whitespace
                     fields = dLine.split()
                     targetName        = fields[0];  targetName = targetName.rstrip()
@@ -472,9 +471,13 @@ class multiHMM(object):
 
             # Assuming there were hits...create an annotation object, and fill with sequence- and domain- hit data 
             if hitList:
+                if DEBUG:
+                    print("phate_hmm says, DEBUG: hitList is not empty")
                 for hit in hitList:
+                    if DEBUG:
+                        print("phate_hmm says, DEBUG: hit is",hit)
                     # Extract hmm info from hitLine and stash into new annotation object
-                    newAnnotation = copy.deepcopy(phate_annotation) 
+                    newAnnotation = copy.deepcopy(annotation) 
                     newAnnotation.source         = database 
                     newAnnotation.method         = self.hmmProgram
                     newAnnotation.annotationType = "hmm search"
@@ -490,7 +493,7 @@ class multiHMM(object):
                     for pVOG in pVOGlist: 
                         newAnnotation.pVOGlist.append(pVOG)
 
-                    # Collapse all domain hits as into an annotation list for this sequence/global hit
+                    # Collapse all domain hits into an annotation list for this sequence/global hit
                     for domain in hit["hitDomainList"]:
                         resultString  = "domainNo:"    + domain["number"]    + '|'
                         resultString += "score:"       + domain["score"]     + '|'
@@ -504,9 +507,14 @@ class multiHMM(object):
                         resultString += "envTo:"       + domain["envTo"]     + '|'
                         resultString += "acc:"         + domain["acc"]       + '|'
                         newAnnotation.annotationList.append(resultString)
+                        if DEBUG:
+                            print("phate_hmm says, DEBUG: resultString is",resultString)
 
                     # Add this completed annotation to growing list for this fasta
                     fasta.annotationList.append(newAnnotation)
+                    if DEBUG:
+                        print("phate_hmm says, DEBUG: newAnnotation is",newAnnotation)
+                        newAnnotation.printAnnotationRecord_tab()
             else:
                 if PHATE_MESSAGES == 'True':
                     print("phate_hmm says, No HMM hit found for query", fasta.blastHeader, "against", database)    

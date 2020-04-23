@@ -192,7 +192,7 @@ class multiProfile(object):
         command = ''
 
         # Write fasta sequence to temporary file
-        fastaFile = self.proteinProfileOutDir + "temp.fasta"
+        fastaFile  = self.proteinProfileOutDir + "temp.fasta"
         fastaFileH = open(fastaFile,"w")
         if fasta.sequentialHeader == "unknown":  # unchanged from default
             fasta.printFasta2file(fastaFileH,"blastHeader")

@@ -538,6 +538,7 @@ class annotationRecord(object):
     def returnGFFannotationRecord(self,FILE_HANDLE):
         if DEBUG:
             print("phate_annotation says, DEBUG: In returnGFFannotationRecord()")
+            print("  annotation type is", self.annotationType.lower())
         self.annotationString = ''; annot = ''; annotationList = []
         if self.annotationType.lower() == 'gene':
             annot = '(gene) ' + self.start + '/' + self.end + '/' + self.strand + ' ' + self.method 
@@ -552,6 +553,9 @@ class annotationRecord(object):
             annotationList.append(annot)
         elif self.annotationType.lower() == 'hmm search':
             annot = '(hmm search) ' + self.method + ' ' + self.description
+            annotationList.append(annot)
+            #if DEBUG:
+            #    print("phate_annotation says, DEBUG: annot is",annot)
         elif self.annotationType.lower() == 'profile search':
             annot = '(profile search) ' + self.method + ' ' + self.description
             annotationList.append(annot)
