@@ -127,8 +127,6 @@ if PHATE_PROGRESS:
 jobNumber = 0  # i.e., comparison number
 FIRST = True
 for i in list(range(1, len(fLines))):
-    if DEBUG:
-        print ("cgp_constructConfigFile says, DEBUG: i is", i)
     (genome1,annotation1) = fLines[i].split(' ')
     if PHATE_MESSAGES:
         print ("cgp_constructConfigFile says, genome1 is", genome1)

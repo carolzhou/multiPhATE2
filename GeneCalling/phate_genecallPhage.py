@@ -379,9 +379,8 @@ else:
 
 ## This runs the standard version of glimmer3.02b ("from scratch")
 
-if DEBUG:
-    logfile.write("%s\n" % ("Preparing to process Glimmer calls"))
-    logfile.write("%s%s\n" % ("GLIMMER_CALLS is ",GLIMMER_CALLS))
+logfile.write("%s\n" % ("Preparing to process Glimmer calls"))
+logfile.write("%s%s\n" % ("GLIMMER_CALLS is ",GLIMMER_CALLS))
 if GLIMMER_CALLS:
     if PHATE_PROGRESS == 'True':
         print("phate_genecallPhage says, running Glimmer.")
@@ -425,9 +424,8 @@ else:
 
 ########## GENEMARKS ##########
 
-if DEBUG:
-    logfile.write("%s\n" % ("Preparing to process Genemarks calls"))
-    logfile.write("%s%s\n" % ("GENEMARKS_CALLS is ",GENEMARKS_CALLS))
+logfile.write("%s\n" % ("Preparing to process Genemarks calls"))
+logfile.write("%s%s\n" % ("GENEMARKS_CALLS is ",GENEMARKS_CALLS))
 if GENEMARKS_CALLS:
     if PHATE_PROGRESS == 'True':
         print("phate_genecallPhage says, running GeneMarkS.")
@@ -448,9 +446,8 @@ else:
 
 ########## PHANOTATE ##########
 
-if DEBUG:
-    logfile.write("%s\n" % ("Preparing to process PHANOTATE calls"))
-    logfile.write("%s%s\n" % ("PHANOTATE_CALLS is ",PHANOTATE_CALLS))
+logfile.write("%s\n" % ("Preparing to process PHANOTATE calls"))
+logfile.write("%s%s\n" % ("PHANOTATE_CALLS is ",PHANOTATE_CALLS))
 
 if PHANOTATE_CALLS:
     if PHATE_PROGRESS == 'True':
@@ -473,11 +470,10 @@ else:
 ########## CUSTOM ###########
 
 # Custom calls are provided by the user in modified gff format, and converted to cgc format by PhATE
-if DEBUG:
-    logfile.write("%s\n" % ("Preparing to process CUSTOM calls"))
-    logfile.write("%s%s\n" % ("CUSTOM_CALLS is ",CUSTOM_CALLS))
-    logfile.write("%s%s\n" % ("customCalls is ",customCalls))
-    logfile.write("%s%s\n" % ("customCallsCgc is ",customCallsCgc))
+logfile.write("%s\n" % ("Preparing to process CUSTOM calls"))
+logfile.write("%s%s\n" % ("CUSTOM_CALLS is ",CUSTOM_CALLS))
+logfile.write("%s%s\n" % ("customCalls is ",customCalls))
+logfile.write("%s%s\n" % ("customCallsCgc is ",customCallsCgc))
 
 if CUSTOM_CALLS:
     if PHATE_PROGRESS == 'True':
@@ -498,11 +494,6 @@ if PHATE_MESSAGES == 'True':
     print("\n########## RESULTS ##########")
 logfile.write("%s\n" % ("Preparing results"))
 results.write("ID\tSTART\tSTOP\tSTRAND\tSCORE\tMETHOD\tCONTIG\n")
-
-if DEBUG:
-    logfile.write("%s\n" % ("GENE_CALL_TESTING"))
-    print("phate_genecallPhage says, DEBUG: Printing all gene calls:")
-    geneCall.printall()
 
 logfile.write("%s\n" % ("Writing genecall data to results file..."))
 for gene in geneCall.geneCallList:
@@ -539,28 +530,21 @@ if PHANOTATE_CALLS:
     systemCall('python ' + cgcPath + '/CGC_parser.py PHANOTATE ' + outputFolder + 'phanotateOutput.txt ' + outputFolder + 'phanotate.cgc')
 if CUSTOM_CALLS:
     callerCount += 1
-    if DEBUG:
-        print("phate_genecallPhage says, DEBUG: Calling CGC_parser.py")
-        logfile.write("%s\n" % ("Calling CGC_parser.py"))
+    logfile.write("%s\n" % ("Calling CGC_parser.py with custom calls"))
     systemCall('python ' + cgcPath + '/CGC_parser.py Custom ' + outputFolder + 'custom.gff ' + outputFolder + 'custom.cgc')
 
 logfile.write("%s%s\n" % ("callerCount is ",callerCount))
 if callerCount >= 2:
     runCGC = True
 
-if DEBUG:
-    print("phate_genecallPhage says, DEBUG: next, running CGC_main.py")
-
 if runCGC:
     commandString1 = 'python ' + cgcPath + 'CGC_main.py log=' + cgcLog 
     commandString2 = ' cgc=' + cgcGff + ' superset=' + supersetCgc + ' consensus=' + consensusCgc + ' commoncore=' + commoncoreCgc
     commandString3 = ' ' + outputFolder + '*.cgc > ' + outputFolder + 'CGC_results.txt'
     command = commandString1 + commandString2 + commandString3
-    if DEBUG:
-        print("phate_genecallPhage says, DEBUG: calling CGC, cgcLog is", cgcLog)
-        print("phate_genecallPhage says, command is ",command)
+    logfile.write("%s%s\n" % ("phate_genecallPhage says, DEBUG: calling CGC, cgcLog is", cgcLog))
+    logfile.write("%s%s\n" % ("phate_genecallPhage says, command is ",command))
     systemCall(command)
-    
 else:
     logfile.write("%s\n" % ("Not running CGC code: too few gene callers to meaningfully compare"))
 

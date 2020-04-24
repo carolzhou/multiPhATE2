@@ -267,8 +267,6 @@ def ConstructNewFilename(inFile,infix,extension):
     (fileRoot,exten) = myFile.split('.')
     filename = fileRoot + '_' + infix + '.' + extension
     newFile = os.path.join(PIPELINE_OUTPUT_DIR, filename)  
-    if DEBUG:
-        print("cgp_compareGeneProfiles_main says, DEBUG: ConstructNewFilename(): Just constructed a new filename,",newFile)
     return newFile
 
 # FUNCTION GetRootFile - Captures file name from directory-path/filename string
@@ -409,8 +407,6 @@ argCount = len(sys.argv)
 print ("cgp_compareGeneProfiles_main says, Reading input arguments")
 print ("  Number of command-line arguments:", argCount)
 if argCount in ACCEPTABLE_ARG_COUNT:
-    if DEBUG:
-        print("cgp_compareGeneProfiles_main says, DEBUG: sys.argv is:", sys.argv)
     match = re.search("help", sys.argv[1].lower())
     if match:
         print (HELP_STRING)
@@ -526,9 +522,6 @@ files["genomeFile2"] = os.path.join(files["baseDir"], files["genomeFile2"])
 files["annotationFile1"] = os.path.join(files["baseDir"], files["annotationFile1"])
 files["annotationFile2"] = os.path.join(files["baseDir"], files["annotationFile2"])
 
-if DEBUG:
-    print("cgp_compareGeneProfiles_main says, DEBUG: annotationFile1 is",files["annotationFile1"])
-    print("cgp_compareGeneProfiles_main says, DEBUG: annotationFile2 is",files["annotationFile2"])
 ##### Open files
 
 try:
@@ -684,14 +677,8 @@ def extractGeneCalls(genomeX,lines):
         match_comment = re.search('^#',line)
         if match_comment:
             continue 
-        if DEBUG:
-            print("Processing line:",line)
         geneCount += 1  # Don't need this, but diagnostic
         fields = line.split('\t')
-        if DEBUG:
-            pass
-            #for item in fields:
-            #    print ("item:",item)
         geneCallType = fields[2]
         if geneCallType.lower() == "cds":  # ie, skip '*RNA', 'gene', and other entries (for now)
             geneCountCDS += 1
@@ -728,9 +715,6 @@ def extractGeneCalls(genomeX,lines):
 # Write gene fastas to file.
 #########################################################################################
 
-if DEBUG:
-    print("cgp_compareGeneProfiles_main says, DEBUG: Begin CompareGeneProfiles Processing")
-
 printFastas2fileArgs = {  # for passing parameters to class genome/
     "mtype"      : "gene",   # "gene" (default), "protein", or "contig"
     "headerType" : "short",  # "full", "short" (default), "truncated", "compound" # compound header is header + contig
@@ -741,8 +725,6 @@ import subprocess
 
 ##### Genome #1 genes
 fLines = ANNOTATION_FILE1.read().splitlines()
-if DEBUG:
-    print("cgp_compareGeneProfiles_main says, DEBUG: from ANNOTATION_FILE1, fLines has this many lines:",len(fLines))
 extractGeneCalls(genome1,fLines)
 ANNOTATION_FILE1.close()
 #p = subprocess.Popen(['pwd'],stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
@@ -803,16 +785,11 @@ genome1.translateGenes(translationArgs)            # EMBOSS writes protein trans
 PROT_FILE = open(files["proteinFile1"],"r")
 fLines = PROT_FILE.read().splitlines()             # read lines into list, removing newlines
 genome1.write2proteinSet(fLines)                   # Store translations in genome object
-if DEBUG:
-    print("cgp_compareGeneProfiles_main says, DEBUG: Calling cleanUpAfterEMBOSS, with arg:",translationArgs)
 #genome1.cleanUpAfterEMBOSS(translationArgs)        # EMBOSS messes with headers...so fix them
 genome1.cleanUpAfterEMBOSS()                        # EMBOSS messes with headers...so fix them
 printFastas2fileArgs["filename"] = files["proteinFile1"]
 printFastas2fileArgs["mtype"] = "protein"
 genome1.printFastas2file(printFastas2fileArgs)     # Replace EMBOSS's file of translated proteins w/fixed fastas
-if DEBUG:
-    print("cgp_compareGeneProfiles_main says, DEBUG: Printing genome 1 data...")
-    genome1.printGenomeData()
 PROT_FILE.close()
 
 translationArgs["geneFile"] = files["geneFile2"]
@@ -825,9 +802,6 @@ genome2.write2proteinSet(fLines)                   # Store translations in genom
 genome2.cleanUpAfterEMBOSS()                       # EMBOSS messes with headers...so fix them
 printFastas2fileArgs["filename"] = files["proteinFile2"]
 genome2.printFastas2file(printFastas2fileArgs)     # Replace EMBOSS's file of translated proteins w/fixed fastas
-if DEBUG:
-    print("cgp_compareGeneProfiles_main says, DEBUG: Printing genome 2 data...")
-    genome2.printGenomeData()
 PROT_FILE.close()
 
 if PHATE_PROGRESS:

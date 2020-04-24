@@ -242,11 +242,7 @@ if PHATE_PROGRESS:
     print("cgp_summarizeCGPMresults says, First pass: Collecting compared genomes and gene calls for reference genome into lists.")
 
 fLines = INFILE.read().splitlines()
-if DEBUG:
-    print("cgp_summarizeCGPMresults says, DEBUG: Number of lines in INFILE: ",len(fLines))
 for line in fLines:
-    if DEBUG:
-        print("cgp_summarizeCGPMresults says, DEBUG: Processing line ",line)
     match = re.search('Gene Set 1', line)        # Process each binary comparison
     words = []
     if match:                                    # Capture the 1st genome in the pair                      
@@ -287,10 +283,6 @@ for line in fLines:
                 if genome == 'genome2':
                     if fields[HEADER] not in referenceGeneList:
                         referenceGeneList.append(fields[HEADER])
-if DEBUG:
-    print("cgp_summarizeCGPMresults says, here is the referenceGeneList:")
-    for gene in referenceGeneList:
-        print(gene)
 INFILE.close()
 
 ### The following section is needed only for mutual and singular hits
@@ -500,16 +492,12 @@ if not LONER:  # For mutual and singular hit data, record for each reference gen
     OUTFILE.write("%s\n" % ("Genome\tHeader\tAnnotation\tLength\tInterpretation"))
     for i in xrange(0,listSize-1):
         OUTFILE.write("%s%s\n" % ("Gene No. ", i+1))
-        if DEBUG:
-            print("cgp_summarizeCGPMresults says, DEBUG: Gene No. is ",i+1)
         if "header" in referenceHomologList[i][reference]:   #
             header = referenceHomologList[i][reference]["header"]
             annotation = referenceHomologList[i][reference]["annotation"]
             length = referenceHomologList[i][reference]["length"]
             interpretation = referenceHomologList[i][reference]["interpretation"]
             OUTFILE.write("%s\t%s\t%s\t%s\t%s\n" % (reference,header,annotation,length,interpretation))
-            if DEBUG:
-                print("cgp_summarizeCGPMresults says, DEBUG: ",reference, "\t", header, '\t', annotation, '\t', length, '\t', interpretation)
             if "header" in referenceHomologList[i][reference]:
                 for otherGenome in comparedGenomesList:
                     if otherGenome in referenceHomologList[i]:
@@ -518,16 +506,10 @@ if not LONER:  # For mutual and singular hit data, record for each reference gen
                         length = referenceHomologList[i][otherGenome]["length"]
                         interpretation = referenceHomologList[i][otherGenome]["interpretation"]
                         OUTFILE.write("%s\t%s\t%s\t%s\t%s\n" % (otherGenome,header,annotation,length,interpretation))
-                        if DEBUG:
-                            print("cgp_summarizeCGPMresults says, DEBUG:", otherGenome, "\t", header, '\t', annotation, '\t', length, '\t', interpretation 
                     else:
                         OUTFILE.write("%s%s\n" % (otherGenome,": no record found"))
-                        if DEBUG:
-                            print("cgp_summarizeCGPMresults says, DEBUG:", otherGenome, ": no record found")
         else:
             OUTFILE.write("%s%s\n" % (reference,": no record found"))
-            if DEBUG:
-            print("cgp_summarizeCGPMresults says, DEBUG:", reference, ": no record found")
 
         OUTFILE.write("%s\n" % ("################################################"))
 

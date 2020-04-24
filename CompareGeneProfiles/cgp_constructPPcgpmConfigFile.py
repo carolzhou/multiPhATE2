@@ -65,7 +65,7 @@ INPUT_STRING = "Input:  None required, but you may provide a config filename if 
 ACCEPTABLE_ARG_COUNT = (1,2)
 
 #DEBUG = True
-#DEBUG = False
+DEBUG = False
 
 REPORT_FILE = "compareGeneProfiles_main.report"
 

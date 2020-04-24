@@ -313,8 +313,6 @@ class multiBlast(object):
             if PHATE_WARNINGS == 'True':
                 print("phate_blast says, ERROR: blast flavor not currently supported: ", self.blastFlavor)
             return
-        if DEBUG:
-            print("phate_blast says, DEBUG: command is",command)
         result = os.system(command)
 
         # Capture result(s) and store as an annotation object for this fasta; Coded for -outfmt 7
@@ -365,11 +363,7 @@ class multiBlast(object):
 
             # Load XML tree
             tree = ET()
-            if DEBUG:
-                print("phate_blast says, DEBUG: Attempting to parse outfile into tree", outfile)
             tree.parse(outfile)
-            if DEBUG:
-                print("phate_blast says, DEBUG: Attempt successful?")
             root = tree.getroot()
             for child in root:
                 if child.tag == 'BlastOutput_program':
@@ -446,10 +440,6 @@ class multiBlast(object):
                             nextHitDataSet["hitHSPs"].append(nextHspDataSet)
                 hitList.append(nextHitDataSet)
 
-                if DEBUG:
-                    print("phate_blast says, DEBUG: Number of hits:", len(hitList))
-                    print("phate_blast says, DEBUG: Writing hit data to outfile", outfile)
-
                 # Store new blast annotation
                 newAnnotation = copy.deepcopy(annotation)
                 newAnnotation.source = blastDatabase
@@ -482,11 +472,6 @@ class multiBlast(object):
                 # Add this completed annotation to growing list for this fasta
                 if MEETS_IDENTITY_CUTOFF:
                     fasta.annotationList.append(newAnnotation)
-                    if DEBUG:
-                        print("phate_blast says, DEBUG: Adding annotation: meets identity cutoff of",self.identityMin," annot: ",newAnnotation.annotationList)
-                else:
-                    if DEBUG:
-                        print("phate_blast says, DEBUG: Deleting annotation: fails to meet identity cutoff:", newAnnotation.annotationList)
 
         # Parse from LIST-formatted blast output
         elif self.outputFormat == LIST:
@@ -679,8 +664,6 @@ class multiBlast(object):
                 # Capture pVOG.faa lines
                 pVOGs_h = open(database,"r")
                 pVOGlines = pVOGs_h.read().splitlines()
-                if DEBUG:
-                    print("phage_blast says, DEBUG: There are", len(pVOGlines), "pVOG database lines to search")
                 count = 0; countA = 0
                 for fasta in fastaSet.fastaList:
                     pvogPrintedList = []  # keeps track of pVOGs that have already been printed for current fasta
@@ -694,8 +677,6 @@ class multiBlast(object):
                                 # create dynamic file name
                                 countA += 1 
                                 outfilePVOG = self.pVOGsOutDir + "pvogGroup_" + str(count) + '_' + str(countA) + '.faa' 
-                                if DEBUG:
-                                    print("phate_blast says, DEBUG: Writing to outfile", outfilePVOG, "pVOG group", pVOG, "pvogPrintedList:", pvogPrintedList)
                                 # open file and write current fasta pluse each corresponding pVOG fasta
                                 outfilePVOG_h = open(outfilePVOG,'w')
                                 outfilePVOG_h.write("%c%s\n%s\n" % ('>',fasta.header,fasta.sequence)) # write the current peptide fasta,
@@ -713,8 +694,6 @@ class multiBlast(object):
 
             if match_header:   
                 if GET_SEQ:
-                    if DEBUG:
-                        print("phate_blast says, DEBUG: Writing sequence to file for header", pVOGheader)
                     FILE_H.write("%s\n%s\n" % (pVOGheader,pVOGsequence))
                     pVOGheader = ""; pVOGsequence = ""
                     GET_SEQ = False
@@ -733,8 +712,6 @@ class multiBlast(object):
         proc = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
         (rawresult, err) = proc.communicate()
         result = rawresult.decode('utf-8')
-        if DEBUG:
-            print("phate_blast says, DEBUG: Result of listing blast out dir,", self.blastOutDir," is ",result) 
         fileList = str(result).split('\n')   # Python3
         for filename in fileList:
             file2delete = self.blastOutDir + filename

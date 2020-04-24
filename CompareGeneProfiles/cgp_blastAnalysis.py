@@ -811,9 +811,7 @@ class blast(object):
                 " -max_hsps 1" 
         else:
             errorList.append(10)
-        if DEBUG:
-            #print("cgp_blastAnalysis says, in performBlast(), maxTargetSeqs is",maxTargetSeqs)
-            print("cgp_blastAnalysis says, in performBlast(), command is",command)
+
         result = os.system(command)
         errorList.append(result)
  

@@ -108,17 +108,14 @@ for vLine in vLines:
     fields = vLine.split(' ')
     match_bogus = re.search(p_bogus,fields[5])
     if match_bogus:
-        if DEBUG:
-            LOG_H.write("%s%s\n" % ("The following line contains bogus identifier: ",vLine))
+        LOG_H.write("%s%s\n" % ("The following line contains bogus identifier: ",vLine))
     else:
         match_ncbi = re.search(p_ncbi,fields[5])
         if match_ncbi:
-            if DEBUG:
-                LOG_H.write("%s%s\n" % ("Found an NCBI identifier: ",fields[5]))
+            LOG_H.write("%s%s\n" % ("Found an NCBI identifier: ",fields[5]))
             pVOGwantedList.append(fields[5])
         else:
-            if DEBUG:
-                LOG_H.write("%s%s\n" % ("This string is unaccounted for: ",vLine))
+            LOG_H.write("%s%s\n" % ("This string is unaccounted for: ",vLine))
 
 LOG_H.write("%s%s\n" % ("pVOG wanted list has this many members: ",len(pVOGwantedList)))
 

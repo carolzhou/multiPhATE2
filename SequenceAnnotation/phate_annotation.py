@@ -174,8 +174,6 @@ class annotationRecord(object):
 
         ### Capture lines corresponding to the gene
         pLines = PSAT_H.read().splitlines()
-        if DEBUG:
-            print("phate_annotation says, DEBUG: There are this many pLines:", len(pLines))
 
         # Capture all annotation lines for this gene
         for pLine in pLines:
@@ -184,14 +182,10 @@ class annotationRecord(object):
             match_comment = re.search(p_comment,pLine)
             if match_gene:
                 tempList.append(pLine)
-        if DEBUG:
-            print("phate_annotation says, DEBUG: Protein", proteinHeader, "Temp list:", tempList)
 
         ### Parse each annotation line, capture annotations and format for genbank
         for line in tempList:
 
-            if DEBUG:
-                print("phate_annotation says, DEBUG: Processing PSAT hit line:", line)
             annotationString = ""
             EC = ""
             ecDescription = ""
@@ -274,9 +268,6 @@ class annotationRecord(object):
                         signalp2 = match_signalp2.group(0)
                         start    = match_signalp2.group(1)
                         end      = match_signalp2.group(2)
-                    else:
-                        if DEBUG:
-                            print("phate_annotation says, DEBUG: Did not find a signalp2 match for YES", pLine)
                     
                 annotationString = "signal_peptide:" + signalp1 + ' ' + signalp2 
                 self.annotationList.append(annotationString)
@@ -335,14 +326,10 @@ class annotationRecord(object):
         infoLines = []
         DATABASE_H = open(database,"r")
         dLines = DATABASE_H.read().splitlines()
-        if DEBUG:
-            print("phate_annotation says, DEBUG: original searchTerm is", searchTerm)
         match_truncate = re.search(p_truncatedSearchTerm,searchTerm)
         if match_truncate:
             truncatedSearchTerm = match_truncate.group(1)
             searchTerm = truncatedSearchTerm
-            if DEBUG:
-                print("phate_annotation says, DEBUG: searchTerm was changed to", searchTerm) 
         for dLine in dLines:
             match_searchTerm = re.search(searchTerm,dLine)
             if match_searchTerm:
@@ -392,10 +379,7 @@ class annotationRecord(object):
         ncbiTaxonList = []
         p_version = re.compile('(\w+_\d+)\.\d+')
         p_taxID   = re.compile('[\d\w\_]\s+[\d\w\_\.]+\s+([\d]+)\s+[\d]+')
-        if self.name == '' and self.name == 'none':
-            if DEBUG:
-                print("phate_annotation says, DEBUG: name field blank in getNCBItaxonomy") 
-        else:
+        if self.name != '' and self.name != 'none':
             fields = self.name.split('|')  # Hit's fasta header has several fields, delimited w/'|'
             if len(fields) > 4:
                 giNumber    = fields[1]
@@ -409,12 +393,8 @@ class annotationRecord(object):
                 else:
                     searchTerm = searchTermString
                 command = 'grep \"' + searchTerm + '\" ' + database
-                if DEBUG:
-                    print("phate_annotation says, DEBUG: command is", command) 
                 proc = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
                 out, err = proc.communicate()
-                if DEBUG:
-                    print("phate_annotation says, DEBUG: Result of grep is", out)
                 if out != '':
                     match_taxID = re.search(p_taxID,out)
                     taxonomyID = match_taxID.group(1)
@@ -425,8 +405,6 @@ class annotationRecord(object):
             else:
                 if PHATE_WARNINGS == 'True':
                     print("phate_annotation says, WARNING: NCBI hit header has improper format or is missing:", self.name)
-        if DEBUG:
-            print("phate_annotation says, DEBUG: ncbiTaxonList is", ncbiTaxonList)
         return ncbiTaxonList
 
     def link2databaseIdentifiers(self,database,dbName):
@@ -487,9 +465,6 @@ class annotationRecord(object):
                 if PHATE_WARNINGS == 'True':
                     print("phate_annotation says, WARNING: Unrecognized database:", dbName) 
 
-        if DEBUG: 
-            print("phate_annotation says, DEBUG: dbxrefList:", dbxrefList)
-
         for annotation in dbxrefList:
             nextAnnot = ' | ' + annotation
             annotationString += nextAnnot
@@ -520,6 +495,22 @@ class annotationRecord(object):
         tabLine += self.name + '\t' + self.description + '\t' + annotationString
         print(tabLine)
 
+    def printAnnotationRecord_tagged(self):
+        annotationString = ""
+        for annot in self.annotationList:
+            annotationString += annot
+            annotationString += ' | '
+        #tabLine = self.source + '\t' + self.method + '\t' + self.annotationType + '\t' + self.category + '\t'
+        #tabLine += str(self.start) + '-' + str(self.end) + '/' + self.strand + '\t'
+        #tabLine += self.name + '\t' + self.description + '\t' + annotationString
+        #print(tabLine)
+        print("source:",self.source,"method:",self.method,"annotationType:",self.annotationType,"category:",self.category)
+        print("start:",self.start,"end:",self.end,"strand:",self.strand,"name:",self.name,"description:",self.description)
+        print("annotationString:",annotationString)
+
+    def printAnnotationDescription(self):
+        print("description:",self.description)
+
     def printAnnotationRecord2file_tabHeader(self,FILE_HANDLE):
         header = 'Source\tMethod\tType\tCategory\tStart-End/strand\tName\tDescription'
         FILE_HANDLE.write("%s\n" % (header))
@@ -536,9 +527,6 @@ class annotationRecord(object):
 
     # Return annotations as a semicolon-delimited string
     def returnGFFannotationRecord(self,FILE_HANDLE):
-        if DEBUG:
-            print("phate_annotation says, DEBUG: In returnGFFannotationRecord()")
-            print("  annotation type is", self.annotationType.lower())
         self.annotationString = ''; annot = ''; annotationList = []
         if self.annotationType.lower() == 'gene':
             annot = '(gene) ' + self.start + '/' + self.end + '/' + self.strand + ' ' + self.method 
@@ -554,10 +542,9 @@ class annotationRecord(object):
         elif self.annotationType.lower() == 'hmm search':
             annot = '(hmm search) ' + self.method + ' ' + self.description
             annotationList.append(annot)
-            #if DEBUG:
-            #    print("phate_annotation says, DEBUG: annot is",annot)
         elif self.annotationType.lower() == 'profile search':
-            annot = '(profile search) ' + self.method + ' ' + self.description
+            #annot = '(profile search) ' + self.method + ' ' + self.name
+            annot = '(profile search) ' + self.method + ' ' + self.name + ' ' + self.annotationString
             annotationList.append(annot)
         elif self.annotationType.lower() == 'cds':
             annot = '(cds)' + self.method + ' ' + self.description
@@ -577,8 +564,6 @@ class annotationRecord(object):
                     self.annotationString += '; ' + annotationList[i]
                 else:
                     self.annotationString += annotationList[i]
-        if DEBUG:
-            print("phate_annotation says, DEBUG: Writing self.annotationString:",self.annotationString)
         FILE_HANDLE.write("%s" % (self.annotationString))
 
     def printAnnotationRecord2file(self,FILE_HANDLE):  #*** Update this

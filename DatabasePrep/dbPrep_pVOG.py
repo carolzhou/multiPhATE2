@@ -99,14 +99,9 @@ class pVOGs(object):
             fileList = os.listdir(pVOGdir)
             os.chdir(cwd)
 
-        if DEBUG:
-            print("fileList is", fileList)
-
         # From each file, extract pVOG and associated data fields
         fileList.pop(0)  # remove system message, "Terminal Saved Output".
         for fileName in fileList:
-            if DEBUG:
-                print("Processing fileName", fileName)
             # initialize
             pVOGid = ''; peptideCount = ''; genomeCount = ''
             family = ''; species = ''; genomeAccn = ''; peptideAccn = ''; location = ''; number = 0; description = ''
@@ -114,8 +109,6 @@ class pVOGs(object):
 
             # prepend directory
             nextFile = pVOGdir + fileName
-            if DEBUG:
-                print("nextFile is", nextFile)
             if os.path.isfile(nextFile):
            
                 # open next pVOG library file
@@ -124,9 +117,6 @@ class pVOGs(object):
                 # extract pVOG identifier and associated accessions
                 lines = file_h.read().splitlines()
                 for line in lines:
-                    if DEBUG:
-                        print("Processing line", line)
-
                     # what information is on this line?
                     match_pVOG       = re.search(p_pVOG,line)
                     match_pVOGrecord = re.search(p_pVOGrecord,line)

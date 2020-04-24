@@ -125,8 +125,6 @@ class genome(object):
         subSeq = ""
         for fa in self.contigSet.fastaList:
             if fa.header == contig:
-                if DEBUG:
-                    print("phate_genomeSequence says, DEBUG: Getting subsequence from A to B:", int(start)-1, int(end))
                 subSeq = fa.getSubsequence(int(start)-1,int(end)) #*** ???
             else:
                 if PHATE_WARNINGS == 'True':
@@ -222,8 +220,6 @@ class genome(object):
         for fLine in fLines:
             match_geneCall = re.search('^\d+',fLine)
             if match_geneCall:
-                if DEBUG:
-                    print("phate_genomeSequence says, DEBUG: Translating:", fLine)
                 # Format output by CGCparser.py is 6 columns, tabbed; final column is protein, but ignore
                 columns  = fLine.split('\t')
                 geneNo   = columns[0]
@@ -271,12 +267,8 @@ class genome(object):
                     newGene.start = 1
 
                 # Extract gene from genome sequence
-                if DEBUG:
-                    print("phate_genomeSequence says, DEBUG: Invoking translation...start,end,strand,contig:",newGene.start,newGene.end,newGene.strand,contig)
                 sequence = self.getCGCsubsequence(newGene.start,newGene.end,newGene.strand,contig)
                 newGene.sequence = sequence
-                if DEBUG:
-                    print("phate_genomeSequence says, DEBUG: newGene.sequence is", newGene.sequence)
 
                 # Reverse complement the string if on reverse strand
                 if newGene.strand == '-':

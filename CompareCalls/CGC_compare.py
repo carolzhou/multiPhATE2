@@ -85,8 +85,6 @@ class Comparison(object):
                 if gene.geneCaller not in self.callerList:
                     self.callerList.append(gene.geneCaller)
             self.callerList.sort()
-            if DEBUG:
-                print("DEBUG: CGC_compare/IdentifyCallers(): self.callerList is", self.callerList)
             return len(self.callerList)
         else:
             if PHATE_WARNINGS:
@@ -241,9 +239,6 @@ class Comparison(object):
         callTally = defaultdict(dict)           # Hash for tallying identical and similar calls; defaultdict is like a Perl hash
         start = 0; stop = 0                     # start and stop coordinates
 
-        if DEBUG:
-            self.PrintUniqueList()
-
         # Compute gene-call scores
         if geneCallerCount > 0:  # No need to score if only one gene caller was invoked
         
@@ -272,9 +267,6 @@ class Comparison(object):
                         callTally[contig_strand_stop] += 1   
                     else:
                         callTally[contig_strand_stop] = 1  
-            if DEBUG:
-                print("gene caller count:", geneCallerCount)
-                print("callTally:", callTally)
 
             # Next, compute score for each gene call; this is done is two steps: identity, then similarity
             for identityList in self.uniqueList:
@@ -291,9 +283,7 @@ class Comparison(object):
                     elif geneCall.strand == '-':
                         start = geneCall.rightEnd
                         stop  = geneCall.leftEnd
-                    else:
-                        if DEBUG:
-                            print("DEBUG: CGC_compare says, Unrecognized strand:", geneCall.strand) 
+
                     contig_strand_start_stop = geneCall.contig + '|' + geneCall.strand + '|' + str(start) + '|' + str(stop) 
                     contig_strand_stop       = geneCall.contig + '|' + geneCall.strand + '|'                    + str(stop)
 
@@ -311,9 +301,6 @@ class Comparison(object):
                     if (geneScore_a < 1.0) or (similars - identicals) > 0:  # geneScore_a == 1.0 ==> unanimous among all callers
                         if callTally[contig_strand_stop] > 1:               # must be at least 2 similars 
                             geneScore_b = 0.5 / float(geneCallerCount)      # at a fractional score to "boost" due to similarity
-                    if DEBUG:
-                        print("geneScore_a is", geneScore_a, "for gene call", contig_strand_start_stop) 
-                        print("geneScore_b is", geneScore_b, "for gene call", contig_strand_stop)
 
                     # Compute and record final gene-call score
                     geneCall.score1 = geneScore_a + geneScore_b

@@ -17,6 +17,9 @@ import sys, os, re, string, copy
 #from subprocess import call
 import subprocess
 
+#DEBUG = True
+DEBUG = False
+
 CODE_BASE_DIR = os.environ["CGP_CODE_BASE_DIR"]
 
 # Set messaging booleans
@@ -296,8 +299,6 @@ if genomeOrdering == 3:
 if PHATE_PROGRESS:
     print ("cgp_queryCGPMresults says, Processing Results directories...")
 for dir in directoryList:
-    if DEBUG:
-        print ("cgp_queryCGPMresults says, DEBUG: Next dir is", dir)
     nextDir = baseDir + dir
     nextLog = nextDir + "/" + ppCGPM_logFile
     NEXT_LOG = open (nextLog,"r")
@@ -321,8 +322,6 @@ for dir in directoryList:
     sysCommand = "echo \'# Gene Set 2 is\' " + genome2 + " >> " + queryFile
     os.system(sysCommand)
 
-    if DEBUG:
-        print ("cgp_queryCGPMresults says, DEBUG: CDS is", CDS)
     if CDS and cdsList != []:
         for cds in cdsList:
             nextCDS = "cds" + cds + "/"

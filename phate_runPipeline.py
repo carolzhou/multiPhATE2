@@ -384,9 +384,6 @@ else:
 
 # Create objects for passing genecall, blast, and hmm parameters to subordinate codes 
 
-if DEBUG:
-    print("phate_runPipeline says, DEBUG: pvogsHmm is ", pvogsHmm)
-
 if genomeType.lower() == 'phage' and primaryCallsFile != 'phanotate.cgc':
     if PHATE_WARNINGS == 'True':
         print("phate_runPipeline says, WARNING: If genome type is phage, the primary gene-call file is usually phanotate.cgc! Yours is", primaryCallsFile)

@@ -503,8 +503,6 @@ for i in range(0,argCount):
 
     if match_profileDatabaseStringParam: # hmm profile databases to be searched
         if i < argCount:
-            if DEBUG:
-                print("phate_sequenceAnnotation_main says, DEBUG: argList[i]: ", argList[i])
             value = argList[i+1]
             match_ncbiVirusGenomeHmm  = re.search(p_ncbiVirusGenomeHmm,value)
             match_ncbiVirusProteinHmm = re.search(p_ncbiVirusProteinHmm,value)
@@ -1144,8 +1142,6 @@ else:
             'uniprotBlast'          : UNIPROT_BLAST,
             'nrBlast'               : NR_BLAST,
         }
-        if DEBUG:
-            print("phate_sequenceAnnotation_main says, DEBUG: Hmm parameters:", myParamSet)
 
         hmm.setHmmParameters(myParamSet)
 
@@ -1234,8 +1230,6 @@ else:
             'uniprotHmm'           : UNIPROT_HMM,
             'nrHmm'                : NR_HMM,
         }
-        if DEBUG:
-            print("phate_sequenceAnnotation_main says, DEBUG: profile search parameters:", myParamSet)
 
         profile.setProfileParameters(myParamSet)
 

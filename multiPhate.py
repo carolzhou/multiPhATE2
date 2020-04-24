@@ -75,8 +75,8 @@ PHATE_MESSAGES = PHATE_MESSAGES_DEFAULT
 PHATE_WARNINGS = PHATE_WARNINGS_DEFAULT
 CGP_PROGRESS   = CGP_PROGRESS_DEFAULT
 
-DEBUG = True     # Controls debug settings in this (local) code only
-#DEBUG = False    # Leave False, unless debugging
+#DEBUG = True     # Controls debug settings in this (local) code only
+DEBUG = False    # Leave False, unless debugging
 
 ##### SET DEFAULTS for USER-DEFINED PARAMETERS
 
@@ -835,8 +835,6 @@ for cLine in cLines:
     elif match_genomeSpecies:
         genomeSpecies = match_genomeSpecies.group(1)
         nextGenomeData["genomeSpecies"] = genomeSpecies
-        if DEBUG:
-            print("multiPhate says, DEBUG: at match_genomeSpecies: nextGenomeData['genomeSpecies'] is ",nextGenomeData['genomeSpecies'])
         if not HPC: 
             LOG.write("%s%s\n" % ("genomeSpecies is ",genomeSpecies))
         genomeDataItems += 1
@@ -1220,8 +1218,6 @@ for cLine in cLines:
         value = match_runCGP.group(1)
         if value.lower() == 'true' or value.lower() == 'yes' or value.lower() == 'on':
             runCGP = True
-        if DEBUG:
-            print("multiPhate says, DEBUG: runCGP is ",runCGP)
 
     elif match_hmmbuild:         # create hmm profiles
         value = match_hmmbuild.group(1)
@@ -1748,8 +1744,6 @@ for jsonFile in jsonList:
 
 # Run the comparative genomics module to compare proteoms among the user's specified genomes
 GFF_OUTFILE = "phate_sequenceAnnotation_main.gff"
-if DEBUG:
-    print("multiPhate says, DEBUG: runCGP is",runCGP)
 if runCGP and not translateOnly and (len(genomeList) > 1):
     if not HPC:
         LOG.write("%s%s\n" % ("Starting CompareGeneProfiles at ",datetime.datetime.now()))

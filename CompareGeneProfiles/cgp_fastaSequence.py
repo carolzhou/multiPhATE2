@@ -625,8 +625,6 @@ class multiFasta(object):
         for fasta in self.fastaList:
             match_string2header = re.search(searchString,fasta.header)
             if match_string2header:
-                if DEBUG:
-                    print("cgp_fastaSequence says, Found the header:", fasta.header, "for string:", searchString)
                 return(fasta)
         if PHATE_WARNINGS == 'True':
             print("cgp_fastaSequence says, WARNING: Fasta not found for", searchString)
