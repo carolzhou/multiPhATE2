@@ -6,7 +6,7 @@
 # compareGeneProfiles_main.py
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last update: 11 April 2020
+# Last update: 29 April 2020
 #
 # This program compares the gene calls from 2 genomes and identifies genes that 
 # match, are similar, or are unique in each genome. This code is a re-write of
@@ -51,17 +51,19 @@
 #SERVER = False  # True if this version of the code is running on the Django server
 SERVER = True
 
+BACTERIAL_CODE = 11
+
 import sys, os, re, string, copy
 from Bio.Seq import Seq
 from Bio.Alphabet import generic_dna, generic_protein
 from time import strftime
 from time import gmtime
 import datetime
+import subprocess
 from subprocess import call
 import cgp_fastaSequence as fastaSequence
 import cgp_annotation as annotation
 import cgp_genomeSequence as genomeSequence
-#import cgp_blastAnalysis as blastAnalysis
 import cgp_blastAnalysis as blastAnalysis
 
 # Set messaging booleans
@@ -79,14 +81,20 @@ if PHATE_MESSAGES_STRING.lower() == 'true':
 if PHATE_WARNINGS_STRING.lower() == 'true':
     PHATE_WARNINGS = True
 
+# More environmental variables
+
+PHATE_EMBOSS_HOME = os.environ["PHATE_EMBOSS_HOME"]
+
+# The following switches are for the benefit of code development, primarily.
+
 #DEBUG = True
 DEBUG = False
 
 BLAST_ON = True    # controls whether blast is performed (used during development to skip lengthy blast for testing)
 #BLAST_ON = False
 
-#PROTEIN = True     # controls whether protein sequences are blasted 
-PROTEIN = False
+PROTEIN = True     # controls whether protein sequences are blasted 
+#PROTEIN = False
 
 REPORT_STATS = True  # controls whether reports are written
 #REPORT_STATS = False
@@ -102,15 +110,6 @@ try:
     maketrans = ''.maketrans
 except:
     from string import maketrans
-
-##### ENVIRONMENT
-
-#EMBOSS_HOME = "/usr/local/emboss/bin/"  #*** should be in path!
-EMBOSS_HOME = ""  #*** should be in path!
-# Note:  EMBOSS messes with fasta headers; therefore, I am putting minimal info in the header and using only '/'
-#    as a separator. EMBOSS adds "_1" to the end of a simple fasta header--can't prevent this. Using other
-#    separators wreaks havoc in terms of the header EMBOSS produces, and including free text, such as the RAST
-#    annotation, is the kiss of death.
 
 ##### FILE names
 
@@ -282,7 +281,6 @@ def GetRootFile(inFile):   # strip the inFile of all directory prefixes
     return rootFile 
 
 # FUNCTION GetConfig - parses a configuration string and assigns file names
-
 def GetConfig(configString):
     stringList = []
     configString = configString.lstrip('\"')
@@ -301,8 +299,8 @@ def GetConfig(configString):
     joinName2 = pathTail2 + "_cgp_gene.fnt"
     files["geneFile1"]       = os.path.join(pathRoot1, joinName1)
     files["geneFile2"]       = os.path.join(pathRoot2, joinName2)
-    joinName1 = pathTail1 + "_cgp_protein.fnt"
-    joinName2 = pathTail2 + "_cgp_protein.fnt"
+    joinName1 = pathTail1 + "_cgp_protein.faa"
+    joinName2 = pathTail2 + "_cgp_protein.faa"
     files["proteinFile1"]    = os.path.join(pathRoot1, joinName1)
     files["proteinFile2"]    = os.path.join(pathRoot2, joinName2)
 
@@ -394,7 +392,36 @@ def GetArguments(parameters,files):
                 parameters["proteinSimilarityCoverage"] = new
 
         return(0) 
- 
+
+# FUNCTION Translate2protein inputs gene sequence and metadata and translates gene sequence to protein
+def Translate2protein(kvargs):
+    translation = ""
+    geneSequence = ""
+    geneticCode = BACTERIAL_CODE
+    tempGeneFile        = "./tempGeneSequence.txt"
+    tempTranslationFile = "./tempTranslation.txt"
+    if isinstance(kvargs,dict):
+        if "geneSequence" in list(kvargs.keys()):
+            geneSequence = kvargs["geneSequence"]
+        if "geneticCode" in list(kvargs.keys()):
+            geneticCode = kvargs["geneticCode"]
+    try:
+        GENE_H = open(tempGeneFile,"w")
+        GENE_H.write("%s\n" % (geneSequence))
+        GENE_H.close()
+    except:
+        print("cgp_compareGeneProfiles_main says, ERROR: Cannot open temporary gene file,",tempGeneFile)
+        return "ERROR" 
+    command = PHATE_EMBOSS_HOME + "transeq" + " -sequence " + tempGeneFile + " -outseq " + tempTranslationFile + " -table " + str(geneticCode) 
+    result = os.system(command)
+    PROT_H = open(tempTranslationFile,"r")
+    fLines = PROT_H.read().splitlines()
+    for i in range(1,(len(fLines))):
+        translation += fLines[i]
+    return translation
+
+########################################################################################################
+# BEGIN MAIN
 ########################################################################################################
 # Get command-line arguments; open user input/output files
 ########################################################################################################
@@ -613,13 +640,6 @@ GENOME_FILE2.close()
 # Save gene and protein fasta sequences to files.
 #########################################################################################################
 
-# First, create names for gene/protein fasta and blast database files; inform user
-
-#files["geneFile1"]    = ConstructNewFilename(files["genomeFile1"], "gene", "fnt")
-#files["proteinFile1"] = ConstructNewFilename(files["genomeFile1"], "prot", "faa")
-#files["geneFile2"]    = ConstructNewFilename(files["genomeFile2"], "gene", "fnt")
-#files["proteinFile2"] = ConstructNewFilename(files["genomeFile2"], "prot", "fna")
-
 if PROTEIN: 
     if PHATE_PROGRESS:
         print ("cgp_compareGeneProfiles_main says...")
@@ -637,18 +657,15 @@ else:
         print ("  Blast databases for genome 2 genes will be:")
         print ('  ',files["geneFile2"])
 
-# prepare to reverse complement
-#complements = string.maketrans('acgtrymkbdhvACGTRYMKBDHV', 'tgcayrkmvhdbTGCAYRKMVHDB')
-#complements = str.maketrans('acgtrymkbdhvACGTRYMKBDHV', 'tgcayrkmvhdbTGCAYRKMVHDB')
-#complements = string.conversion('acgtrymkbdhvACGTRYMKBDHV', 'tgcayrkmvhdbTGCAYRKMVHDB')
-#complements = string.substitute('acgtrymkbdhvACGTRYMKBDHV', 'tgcayrkmvhdbTGCAYRKMVHDB')
-
 ################################################################
 
-def extractGeneCalls(genomeX,lines): 
-    geneCount = 0
+#*** Move this function up to where it belongs with other functions.
+# Extract gene calls from GFF file (lines), then create and store new gene and protein objects.
+def ExtractGeneCalls(genomeX,lines): 
+    geneCount    = 0
     geneCountCDS = 0
-    geneTemplate = fastaSequence.fasta()  # generic gene object
+    geneTemplate       = fastaSequence.fasta()  # generic gene/protein object
+    proteinTemplate    = fastaSequence.fasta()  # generic gene/protein object
     annotationTemplate = annotation.annotationRecord()  # generic annotation object  
     gff = {  # for passing data to annotation class
         "contig"       : "unknown",
@@ -671,9 +688,27 @@ def extractGeneCalls(genomeX,lines):
         "order"          : 0,
         "annotationList" : [],
         }
-    print("extractGeneCalls says, removing this line:",lines[0])
+    protein = {  # for passing data to fasta class
+        "header"         : "",
+        "name"           : "",
+        "sequence"       : "",
+        "type"           : "nt",
+        "parentSequence" : "",
+        "order"          : 0,
+        "annotationList" : [],
+        }
+    translationArgs = {  # for passing to translate2protein function
+        "geneSequence"   : "",
+        "geneticCode"    : BACTERIAL_CODE,
+        }
+
+    if PHATE_MESSAGES:
+        print("cgp_compareGeneProfiles, extractGeneCalls() says, removing this line:",lines[0])
     lines.remove(lines[0]) # skip header line 
-    for line in lines:  # Extract gene fastas; create fasta object for gene; add to genome's geneSet
+
+    # Extract gene fastas; create fasta object for gene; add to genome's geneSet
+    # Then, create corresponding protein object, and add that to genome's proteinSet
+    for line in lines: 
         match_comment = re.search('^#',line)
         if match_comment:
             continue 
@@ -682,6 +717,8 @@ def extractGeneCalls(genomeX,lines):
         geneCallType = fields[2]
         if geneCallType.lower() == "cds":  # ie, skip '*RNA', 'gene', and other entries (for now)
             geneCountCDS += 1
+
+            # Extract data from input line
             gff["contig"]          = fields[0]
             gff["method"]          = fields[1]       # should be "PhATE"
             gff["type"]            = fields[2]       # "gene" or "CDS"
@@ -691,6 +728,8 @@ def extractGeneCalls(genomeX,lines):
             gff["strand"]          = fields[6]
             gff["readingFrame"]    = fields[7]
             gff["annotation"]      = fields[8]
+
+            # Transfer data to gene dict
             gene["order"]          = geneCountCDS
             gene["name"]           = "cds" + str(geneCountCDS)
             gene["parentSequence"] = fields[0]  # the contig this gene is on (a shortHeader if from RAST)
@@ -707,105 +746,85 @@ def extractGeneCalls(genomeX,lines):
             newAnnotation = copy.deepcopy(annotationTemplate)
             newAnnotation.enterGFFdata(gff)
             newGene.addAnnotation(newAnnotation)
+
+            # Transfer data to protein dict
+            protein["order"]                = gene["order"]
+            protein["name"]                 = gene["name"]
+            protein["parentSequence"]       = gene["parentSequence"]
+            protein["header"]               = gene["header"]
+            translationArgs["geneSequence"] = gene["sequence"]
+            protein["sequence"]             = Translate2protein(translationArgs)
+            newProtein = copy.deepcopy(proteinTemplate)
+            newProtein.enterProteinData(protein)
+            newAnnotation = copy.deepcopy(annotationTemplate)
+            newAnnotation.enterGFFdata(gff)
+            newProtein.addAnnotation(newAnnotation)
+
+            # Add new gene and new protein to genome
             genomeX.addGene(newGene)
+            genomeX.addProtein(newProtein)
+            genomeX.cleanUpAfterEMBOSS()
 
 #########################################################################################
 # Extract gene sequences from genomes based on annotation file gene calls...
 # ...construct gene fasta sequence objects and insert into multiFasta objects;
-# Write gene fastas to file.
+# ...translate gene sequences to protein, then create and insert protein multiFasta objects.
+# Write gene and protein fastas to files.
 #########################################################################################
 
-printFastas2fileArgs = {  # for passing parameters to class genome/
-    "mtype"      : "gene",   # "gene" (default), "protein", or "contig"
-    "headerType" : "short",  # "full", "short" (default), "truncated", "compound" # compound header is header + contig
-    "filename"   : ""
-    }
+##### Genome #1 genes and proteins
 
-import subprocess
-
-##### Genome #1 genes
+# Extract and process gene calls from GFF file (also creates protein fasta list object) 
 fLines = ANNOTATION_FILE1.read().splitlines()
-extractGeneCalls(genome1,fLines)
+ExtractGeneCalls(genome1,fLines)
 ANNOTATION_FILE1.close()
-#p = subprocess.Popen(['pwd'],stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
-#pwd = p.stdout.read()[:-1]
-#printFile1 = pwd + "/" + files["geneFile1"]
-printFile1 = files["geneFile1"]
-if PHATE_MESSAGES:
-    print ("cgp_compareGeneProfiles_main says, Printing to file", printFile1,"...")
-    print ("  based on annotationFile1:", files["annotationFile1"])
-printFastas2fileArgs["filename"] = printFile1
-if PHATE_MESSAGES:
-    print("cgp_compareGeneProfiles_main says, Calling printFastas2file, printFastas2fileArgs is",printFastas2fileArgs)
+
+# Print gene sequences to file
+printFastas2fileArgs = {  # for passing parameters to class genome/
+    "mtype"      : "gene",      # "gene" (default), "protein", or "contig"
+    "headerType" : "short",     # "full", "short" (default), "truncated", "compound" # compound header is header + contig
+    "filename"   : files["geneFile1"],
+    }
+if PHATE_PROGRESS:
+    print("cgp_compareGeneProfiles says, Printing genome1 gene sequences to file,",printFastas2fileArgs["filename"])
 success = genome1.printFastas2file(printFastas2fileArgs)
-if PHATE_MESSAGES: 
-    print ("cgp_compareGeneProfiles_main says, Success in printing gene fastas to file:", success)
-#genome1.printAll()
+
+# Print protein sequences to file
+printFastas2fileArgs = {  # for passing parameters to class genome/
+    "mtype"      : "protein",   
+    "headerType" : "short",    
+    "filename"   : files["proteinFile1"],
+    }
+if PHATE_PROGRESS:
+    print("cgp_compareGeneProfiles says, Printing genome1 protein sequences to file,",printFastas2fileArgs["filename"])
+success = genome1.printFastas2file(printFastas2fileArgs)
 
 ##### Genome #2 genes
+
+# Extract and process gene calls from GFF file
 fLines = ANNOTATION_FILE2.read().splitlines()
-extractGeneCalls(genome2,fLines)
+ExtractGeneCalls(genome2,fLines)
 ANNOTATION_FILE2.close()
-#p = subprocess.Popen(['pwd'],stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
-#pwd = p.stdout.read()[:-1]
-#printFile2 = pwd + "/" + files["geneFile2"]
-printFile2 = files["geneFile2"]
-if PHATE_MESSAGES:
-    print ("cgp_compareGeneProfiles_main says, Printing to file", printFile2,"...")
-    print ("  based on annotationFile2:", files["annotationFile2"])
-printFastas2fileArgs["filename"] = printFile2
-success = genome2.printFastas2file(printFastas2fileArgs)
-if PHATE_MESSAGES:
-    print ("cgp_compareGeneProfiles_main says, Success in printing gene fastas to file:", success)
 
-
-#########################################################################################
-# Translate protein sequences from gene sequences for genomes 1 & 2
-# EMBOSS will write translations to input filename
-# Capture translations in genomes' protein lists
-#########################################################################################
-
-#*** Note: Translate genes even if not doing blast for protein
-
-translationArgs = { # for passing parameters to class genomeSequence/genome.makeBlastDBs method
-    "embossHome"  : EMBOSS_HOME,
-    "geneticCode" : GENETIC_CODE,
-    "geneFile"    : "",
-    "proteinFile" : ""
+# Print gene sequences to file
+printFastas2fileArgs = {  # for passing parameters to class genome/
+    "mtype"      : "gene",   
+    "headerType" : "short",  
+    "filename"   : files["geneFile2"],
     }
-
 if PHATE_PROGRESS:
-    print ("cgp_compareGeneProfiles_main says, Translating genes for both genomes....")
+    print("cgp_compareGeneProfiles says, Printing genome2 gene sequences to file,",printFastas2fileArgs["filename"])
+success = genome2.printFastas2file(printFastas2fileArgs)
 
-translationArgs["geneFile"]    = files["geneFile1"]
-translationArgs["proteinFile"] = files["proteinFile1"]
-if PHATE_MESSAGES:
-    print ("cgp_compareGeneProfiles_main says, translationArgs is:",translationArgs)
-genome1.translateGenes(translationArgs)            # EMBOSS writes protein translations to file
-PROT_FILE = open(files["proteinFile1"],"r")
-fLines = PROT_FILE.read().splitlines()             # read lines into list, removing newlines
-genome1.write2proteinSet(fLines)                   # Store translations in genome object
-#genome1.cleanUpAfterEMBOSS(translationArgs)        # EMBOSS messes with headers...so fix them
-genome1.cleanUpAfterEMBOSS()                        # EMBOSS messes with headers...so fix them
-printFastas2fileArgs["filename"] = files["proteinFile1"]
-printFastas2fileArgs["mtype"] = "protein"
-genome1.printFastas2file(printFastas2fileArgs)     # Replace EMBOSS's file of translated proteins w/fixed fastas
-PROT_FILE.close()
-
-translationArgs["geneFile"] = files["geneFile2"]
-translationArgs["proteinFile"] = files["proteinFile2"]
-genome2.translateGenes(translationArgs)            # EMBOSS writes protein translations to file
-PROT_FILE = open(files["proteinFile2"],"r")   
-fLines = PROT_FILE.read().splitlines()             # read lines into list, removing newlines
-genome2.write2proteinSet(fLines)                   # Store translations in genome object
-#genome2.cleanUpAfterEMBOSS(translationArgs)        # EMBOSS messes with headers...so fix them
-genome2.cleanUpAfterEMBOSS()                       # EMBOSS messes with headers...so fix them
-printFastas2fileArgs["filename"] = files["proteinFile2"]
-genome2.printFastas2file(printFastas2fileArgs)     # Replace EMBOSS's file of translated proteins w/fixed fastas
-PROT_FILE.close()
-
+# Print protein sequences to file
+printFastas2fileArgs = {  # for passing parameters to class genome/
+    "mtype"      : "protein",   
+    "headerType" : "short",    
+    "filename"   : files["proteinFile2"],
+    }
 if PHATE_PROGRESS:
-    print ("cgp_compareGeneProfiles_main says, Translation complete.")
+    print("cgp_compareGeneProfiles says, Printing genome2 protein sequences to file,",printFastas2fileArgs["filename"])
+success = genome2.printFastas2file(printFastas2fileArgs)
 
 #########################################################################################################
 # Create blast databases for gene and protein multi-fasta files 
@@ -1125,16 +1144,18 @@ SUMMARY.write("%s%s\n" % ("Genome: ",files["genomeFile2"]))
 
 for stat in geneComp_stats:
     SUMMARY.write("%s\n" % (stat))
+
 if PROTEIN:
     for stat in protComp_stats:
         SUMMARY.write("%s\n" % (stat))
+
 for stat in genome1_gene_stats:
     SUMMARY.write("%s\n" % (stat))
+for stat in genome2_gene_stats:
+        SUMMARY.write("%s\n" % (stat))
 
 if PROTEIN:
     for stat in genome1_prot_stats:
-        SUMMARY.write("%s\n" % (stat))
-    for stat in genome2_gene_stats:
         SUMMARY.write("%s\n" % (stat))
     for stat in genome2_prot_stats:
         SUMMARY.write("%s\n" % (stat))
@@ -1231,5 +1252,9 @@ call(["cp", summaryFile, summaryCopy])
 
 if PHATE_PROGRESS:
     print ("cpg_compareGeneProfiles_main says, CompareGeneProfiles completed.")
+
+if DEBUG:
+    print("cgp_compareGeneProfiles_main says, DEBUG: Printing all of genome1")
+    genome1.printAll()
 
 #######################################################################################################

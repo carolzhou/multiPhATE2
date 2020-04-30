@@ -194,15 +194,17 @@ class genome(object):
             if 'primaryCalls' in geneCallInfo:
                 #gc = geneCallInfo['geneCaller'].lower()
                 gc = geneCallInfo['primaryCalls'].lower()
-                match_phanotate = re.search('phanotate',gc)
-                match_PHANOTATE = re.search('PHANOTATE',gc)
-                match_rast      = re.search('rast',gc)
-                match_glimmer2  = re.search('glimmer2',gc)
-                match_glimmer3  = re.search('glimmer3',gc)
-                match_prodigal  = re.search('prodigal',gc)
-                match_geneMarkS = re.search('genemarks',gc)
-                match_consensus = re.search('consensus',gc)
-                match_superset  = re.search('superset',gc)
+                match_phanotate  = re.search('phanotate',gc)
+                match_PHANOTATE  = re.search('PHANOTATE',gc)
+                match_rast       = re.search('rast',gc)
+                match_glimmer2   = re.search('glimmer2',gc)
+                match_glimmer3   = re.search('glimmer3',gc)
+                match_prodigal   = re.search('prodigal',gc)
+                match_geneMarkS  = re.search('genemarks',gc)
+                match_custom     = re.search('custom',gc)
+                match_consensus  = re.search('consensus',gc)
+                match_superset   = re.search('superset',gc)
+                match_commoncore = re.search('commoncore',gc)
                 if match_phanotate or match_PHANOTATE:
                     geneCaller = 'phanotate'
                 elif match_rast:
@@ -215,10 +217,14 @@ class genome(object):
                     geneCaller = 'prodigal'
                 elif match_geneMarkS:
                     geneCaller = 'genemark'
+                elif match_custom:
+                    geneCaller = 'custom'
                 elif match_consensus:
                     geneCaller = 'consensus'
                 elif match_superset:
                     geneCaller = 'superset'
+                elif match_commoncore:
+                    geneCaller = 'commoncore'
             #if 'geneCallFile' in geneCallInfo:
             if 'primaryCallsPathFile' in geneCallInfo:
                 #geneCallFile = geneCallInfo['geneCallFile']
@@ -276,8 +282,8 @@ class genome(object):
                         print("cgp_genomeSequence says, ERROR: anomalous strand setting in processGeneCalls, phate_genomeSequence module:", newGene.strand)
 
                 #*** BANDAID - to compensate for PHANOTATE sometimes starting gene at 0
-                if newGene.start == 0:
-                    newGene.start = 1
+                #if newGene.start == 0:
+                #    newGene.start = 1
 
                 # Extract gene from genome sequence
                 sequence = self.getCGCsubsequence(newGene.start,newGene.end,newGene.strand,contig)
@@ -294,7 +300,8 @@ class genome(object):
                 newProtein = copy.deepcopy(fastaObj)
                 newProtein.moleculeType = self.proteinSet.moleculeType   # "Inherits" moleculeType from its "parent"
                 newProtein.assignHeader(geneName)   # Note: using method assignHeader establishes all header variants
-                newProtein.parentSequence = newGene.sequence
+                #newProtein.parentSequence = newGene.sequence
+                newProtein.parentSequence = newGene.parentSequence # for reporting, need to capture contig name
                 newProtein.order = int(geneNo)
                 newProtein.sequenceType = 'aa'
                 newProtein.geneCallFile = geneCallFile
@@ -307,6 +314,7 @@ class genome(object):
                 newProtein.parentEnd   = newGene.end
                 newProtein.strand      = newGene.strand
                 newProtein.sequence = self.translateGene(newGene)
+                newProtein.annotationList = newGene.annotationList #*** Has annotation been assigned to new gene?
 
                 # Record new gene, protein
                 self.addGene(newGene)     # Add this new gene to the gene list

@@ -61,8 +61,8 @@ if PHATE_MESSAGES_STRING.lower() == 'true':
 if PHATE_WARNINGS_STRING.lower() == 'true':
     PHATE_WARNINGS = True 
 
-#DEBUG = True
-DEBUG = False
+DEBUG = True
+#DEBUG = False
 
 # Default values used if user- or program-defined defaults not provided
 GENE_MATCH_IDENTITY_DEFAULT = 95
@@ -443,24 +443,26 @@ class homology(object):  # holds comparative information between 2 gene/protein 
 
         # Find a suitable location for each genome2 loner (place according to cds number along genome 2) #*** Try, but maybe better to lump at top
         for loner in quickLoner2:
-            lonerIndex = 0  # will place loner at front of mergeList unless a better location is found (see below)
+            #lonerIndex = 0  # will place loner at front of mergeList unless a better location is found (see below)
+            lonerIndex = len(mergeList)  # will place loner at end of mergeList unless a better location is found (see below)
             lonerContig     = loner[G2_CONTIG]
             lonerHeader     = loner[G2_HEADER]
             lonerHeaderList = lonerHeader.split('/')
             lonerCDSlist    = lonerHeaderList[0].split('cds') 
             lonerCDSnumber  = lonerCDSlist[1] 
             # Identify location for genome2's loner after line containing that genome's previous cds number
-            for hitLine in mergeList: 
-                if lonerContig == hitLine[G2_CONTIG]: # look for location within same contig on genome 2
-                    g2Header     = hitLine[G2_HEADER]
-                    g2HeaderList = g2Header.split('/')
-                    g2CDSlist    = g2HeaderList[0].split('cds') 
-                    g2CDSnumber  = g2CDSlist[1] 
-                    # CDSs should be (pretty much) in order, based on having been sorted (above)
-                    if int(lonerCDSnumber) > int(g2CDSnumber):  
-                        # find index of this g2 data line in mergeList...
-                        lonerIndex = mergeList.index(hitLine) + 1   #  place loner just after 
-                        break  # found where to insert
+            #for hitLine in mergeList: 
+            #    if lonerContig == hitLine[G2_CONTIG]: # look for location within same contig on genome 2
+            #        if hitLine[G2_HEADER]:  #*** Check this
+            #            g2Header     = hitLine[G2_HEADER]
+            #            g2HeaderList = g2Header.split('/')
+            #            g2CDSlist    = g2HeaderList[0].split('cds') 
+            #            g2CDSnumber  = g2CDSlist[1] 
+            #            # CDSs should be (pretty much) in order, based on having been sorted (above)
+            #            if int(lonerCDSnumber) > int(g2CDSnumber):  
+            #                # find index of this g2 data line in mergeList...
+            #                lonerIndex = mergeList.index(hitLine) + 1   #  place loner just after 
+            #                break  # found where to insert
             # Lastly, add genome2's loner to mergeList at position lonerIndex
             mergeList.insert(lonerIndex,loner)
 

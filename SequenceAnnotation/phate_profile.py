@@ -34,8 +34,8 @@ import phate_annotation
 from subprocess import Popen, PIPE, STDOUT
 import string
 
-DEBUG = True
-#DEBUG = False
+#DEBUG = True
+DEBUG = False
 
 MAX_SEQ_HITS = 100 # Upper limit
 
@@ -266,7 +266,7 @@ class multiProfile(object):
             #***
             # Note:  Although data appear to be in explicitly defined fields (columns), they are not!
             #        Column locations for data values change in each file. Therefore, you cannot parse
-            #        the jackhmmer output using fixed columns. Nor are the columns tab-delimited. The
+            #        the hmmscan output using fixed columns. Nor are the columns tab-delimited. The
             #        following parser separates data fields by splitting on >= 1 white space. However,
             #        this will fail if the subject (target) fasta header contains white space!!! It will
             #        work for the pVOGs fasta file that is prepared for use with PhATE, but will not work
@@ -414,17 +414,16 @@ class multiProfile(object):
                     newAnnotation.method         = self.profileProgram
                     newAnnotation.annotationType = "profile search"
                     newAnnotation.name           = hit["hitSequenceName"] # subject
-                    newAnnotation.description    = hit["hitDescription"]
+                    newAnnotation.description    = hit["hitDescription"]  # Note: this field appears to be blank for hmmscan
                     newAnnotation.start          = '1' # query start
                     newAnnotation.end            = 'N' # query end
                     newAnnotation.category       = "sequence"
 
                     # Extract pVOG identifier(s) from hit's header (if pVOG database)
-                    pVOGlist = []; #pVOGstring = ""
+                    pVOGlist = []
                     pVOGlist = hit["hitVOG"].split(' ')
                     for pVOG in pVOGlist: 
                         newAnnotation.pVOGlist.append(pVOG)
-                        #pVOGstring += pVOG + '_'
 
                     # Collapse all domain hits as into an annotation list for this sequence/global hit
                     for domain in hit["hitDomainList"]:

@@ -543,8 +543,8 @@ class annotationRecord(object):
             annot = '(hmm search) ' + self.method + ' ' + self.description
             annotationList.append(annot)
         elif self.annotationType.lower() == 'profile search':
-            #annot = '(profile search) ' + self.method + ' ' + self.name
-            annot = '(profile search) ' + self.method + ' ' + self.name + ' ' + self.annotationString
+            # Note: descriptions for many pVOG group members can be voluminous; best to report name (pVOGid) only
+            annot = '(profile search) ' + self.method + ' ' + self.name  # self.name is the pVOG identifier
             annotationList.append(annot)
         elif self.annotationType.lower() == 'cds':
             annot = '(cds)' + self.method + ' ' + self.description
