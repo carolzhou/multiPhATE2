@@ -5,7 +5,7 @@
 # Program Title:  multiPhate2.py (/multiPhate2/)
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last Update:  11 April 2020
+# Last Update:  28 April 2020
 #
 # Description: Script multiPhate.py runs an annotation pipeline (phate_runPipeline.py) over any
 #    number of genomes specified in the user's input configuration file (multPhate.config). It then
@@ -1802,14 +1802,15 @@ if runCGP and not translateOnly and (len(genomeList) > 1):
         else:
             print("multiPhate says, CAUTION: Not removing previous CGP Results_ directories--data files will accumulate!")
         try:  
-            # move directories and files
+            # move directories and files from main working directory to CGP results directory
             command = "mv " + PIPELINE_OUTPUT_DIR + "Results_* "                 + CGP_RESULTS_DIR + '.'
             result = os.system(command)
             command = "mv " + PIPELINE_OUTPUT_DIR + "cgpNxN.config "             + CGP_RESULTS_DIR + '.'
             result = os.system(command)
             command = "mv " + PIPELINE_OUTPUT_DIR + "cgp_wrapper.config "        + CGP_RESULTS_DIR + '.'
             result = os.system(command)
-            # remove excess copies of CGP out files for final comparison
+
+            # remove excess copies of CGP out files from final comparison (these are duplicates)
             command = "rm " + PIPELINE_OUTPUT_DIR + "compareGeneProfiles_main.log.copy"
             result = os.system(command)
             command = "rm " + PIPELINE_OUTPUT_DIR + "compareGeneProfiles_main.out"

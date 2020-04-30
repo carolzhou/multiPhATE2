@@ -181,6 +181,7 @@ class fasta(object):
                 self.assignHeader(record.id)
                 self.assignSequence(str(record.seq))
 
+    #*** Should collapse enterGeneData and enterProteinData as single method
     def enterGeneData(self,geneData): #*** should create a gene class, which "inherits" fasta
         if isinstance(geneData,dict): #*** should pass **kvargs and check for keys
             if "header" in list(geneData.keys()):
@@ -201,6 +202,30 @@ class fasta(object):
                 self.parentEnd = geneData["parentEnd"]
             if "order" in list(geneData.keys()):
                 self.order = geneData["order"]
+            return True
+        else:
+            return False
+
+    def enterProteinData(self,proteinData): #*** should create a protein class, which "inherits" fasta
+        if isinstance(proteinData,dict): #*** should pass **kvargs and check for keys
+            if "header" in list(proteinData.keys()):
+                self.assignHeader(proteinData["header"])
+            if "name" in list(proteinData.keys()):
+                self.name = proteinData["name"]
+            if "sequence" in list(proteinData.keys()):
+                self.sequence = proteinData["sequence"]
+            if "type" in list(proteinData.keys()):
+                self.sequenceType = proteinData["type"]
+            if "parentSequence" in list(proteinData.keys()):
+                self.parentSequence = proteinData["parentSequence"]
+            if "parentName" in list(proteinData.keys()):
+                self.parentName = proteinData["parentName"]
+            if "parentStart" in list(proteinData.keys()):
+                self.parentStart = proteinData["parentStart"]
+            if "parentEnd" in list(proteinData.keys()):
+                self.parentEnd = proteinData["parentEnd"]
+            if "order" in list(proteinData.keys()):
+                self.order = proteinData["order"]
             return True
         else:
             return False
@@ -358,9 +383,6 @@ class fasta(object):
 
     def reverseComplement(self):
         if self.sequenceType.lower() == "nt":
-            #complements = string.maketrans('acgtrymkbdhvACGTRYMKBDHV','tgcayrkmvhdbTGCAYRKMVHDB')
-            #revCompl = self.sequence.translate(complements)[::-1]
-            #self.sequence = revCompl
             tempSeq = Seq(self.sequence)
             self.sequence = tempSeq.reverse_complement()
             return True
@@ -458,7 +480,7 @@ class fasta(object):
             print("There are no annotations")
         count = 0
         if self.paralogList:
-            for paralog in paralogList:
+            for paralog in self.paralogList:
                 count += 1
                 print("Paralog No.", count, ":", paralog)
         else:
@@ -673,6 +695,17 @@ class multiFasta(object):
         newFa.order = len(self.fastaList) + 1
         newFa.moleculeType = self.moleculeType
         self.fastaList.append(newFa)
+
+    def addFastaWithMetadata(self,newFa,metaData):
+        if isinstance(metaData,dict):
+            if "annotationList" in list(metaData.keys()):
+                newFa.annotationList = metaData["annotationList"]
+            if "contig" in list(metaData.keys()):
+                newFa.contig = metaData["contig"]
+        newFa.order = len(self.fastaList) + 1
+        newFa.moleculeType = self.moleculeType
+        self.fastaList.append(newFa)
+        return
 
     def addFastas(self,lines,mtype): # Given multi-fasta file read into line set, create multi-fasta object
         sequence = ""
