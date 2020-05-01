@@ -706,7 +706,7 @@ class multiBlast(object):
                 pVOGsequence = pVOGsequence + nextLine
 
     def cleanBlastOutDir(self):  # Remove temporary files from BLAST_OUT_DIR
-        if PHATE_PROGRESS:
+        if PHATE_PROGRESS == 'True':
             print("phate_blast says, cleanBlastOutDir(): Removing raw blast output files")
         command = "ls " + self.blastOutDir
         proc = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)

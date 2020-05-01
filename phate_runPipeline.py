@@ -748,7 +748,7 @@ if translateOnly:
 else:
     command = commandRoot 
 
-if PHATE_MESSAGES:
+if PHATE_MESSAGES == 'True':
     print("phate_runPipeline says, command is ",command)
 # Communicate and execute
 if PHATE_PROGRESS == 'True':
