@@ -5,7 +5,7 @@
 # Program Title:  multiPhate2.py (/multiPhate2/)
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last Update:  28 April 2020
+# Last Update:  30 April 2020
 #
 # Description: Script multiPhate.py runs an annotation pipeline (phate_runPipeline.py) over any
 #    number of genomes specified in the user's input configuration file (multPhate.config). It then
@@ -369,7 +369,6 @@ CODE               = CODE_BASE + ".py"
 CONFIG_FILE        = "multiPhate.config"     # by default, but user should name their own, ending in ".config"
 SAMPLE_CONFIG_FILE = "sample_" + CONFIG_FILE # Sample config file; user should copy, then modify.
 CGP_CONFIG_FILE    = PIPELINE_OUTPUT_DIR + "cgpNxN.config"
-print("Line 361 - CGP_CONFIG_FILE:", CGP_CONFIG_FILE)
 
 # HELP STRINGS
 
@@ -1438,10 +1437,10 @@ for cLine in cLines:
     elif match_phateProgress:
         value = match_phateProgress.group(1)
         if value.lower() == 'true' or value.lower() == 'yes' or value.lower() == 'on':
-            os.environ["PHATE_PhATE_PROGRESS"] = 'True'
+            os.environ["PHATE_PHATE_PROGRESS"] = 'True'
             PHATE_PROGRESS = True
         else:
-            os.environ["PHATE_PhATE_PROGRESS"] = 'False'
+            os.environ["PHATE_PHATE_PROGRESS"] = 'False'
             PHATE_PROGRESS = False
 
     elif match_cgcWarnings:
@@ -1734,7 +1733,7 @@ if not HPC:
 # Run the phate pipeline over each genome, as specified in the multiPhate.config file
 
 def phate_threaded(jsonFile):
-    print(f'Running {jsonFile} on PID {os.getpid()}')
+    print(f'multiPhate says, Running {jsonFile} on PID {os.getpid()}')
 
     if not HPC:
         LOG.write("%s%s\n" % ("Running PhATE using genome json file ",jsonFile))
@@ -1831,6 +1830,15 @@ if runCGP and not translateOnly and (len(genomeList) > 1):
         except:
             print("multiPhate says, ERROR: cannot move CGP results to output directory")
 
+        ##### Compute gene-gene correspondences between reference genome and all others
+        if PHATE_PROGRESS:
+            print("multiPhate says, Identifying corresponding genes among all genomes.")
+
+        # Create correspondence objects, one for each genome processed
+        for genome in genomeList:
+            # Create comparison object
+            print("multiPhate says, Next genome is",genome.genomeName)  
+
 else:
     if PHATE_PROGRESS:
         print("multiPhate says, Skipping CompareGeneProfiles.")
@@ -1849,3 +1857,6 @@ result = os.system(command)
 if not HPC:
     LOG.write("%s%s\n" % ("End log file ",datetime.datetime.now()))
     LOG.close()
+
+if PHATE_MESSAGES:
+    print("multiPhate says, Processing complete. Thank you for using multiPhATE2.")

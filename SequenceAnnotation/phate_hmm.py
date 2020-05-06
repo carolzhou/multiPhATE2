@@ -658,7 +658,7 @@ class multiHMM(object):
                 pVOGsequence = pVOGsequence + nextLine
 
     def cleanHmmOutDir(self,seqType):  # Remove temporary files from HMM_OUT_DIR
-        if PHATE_PROGRESS:
+        if PHATE_PROGRESS == 'True':
             print("phate_hmm says, cleanHmmOutDir(): Removing raw HMM search output files")
         if seqType.lower() == 'protein' or seqType.lower() == 'peptide' or seqType.lower() == 'aa':
             dir2clean = self.proteinHmmOutDir
