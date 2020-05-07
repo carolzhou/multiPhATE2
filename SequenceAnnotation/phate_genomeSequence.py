@@ -485,8 +485,10 @@ class genome(object):
 
     def printGenomeData2file_GFF(self,FILE_HANDLE):
         FILE_HANDLE.write("%s\n" % (GFF_COMMENT))
-        print("There are", len(self.geneSet.fastaList), "genes, and", len(self.proteinSet.fastaList), "proteins")
-        print("Writing data to GFF file")
+        if PHATE_MESSAGES == 'True':
+            print("There are", len(self.geneSet.fastaList), "genes, and", len(self.proteinSet.fastaList), "proteins")
+            print("Writing data to GFF file")
+
         #*** NOTE: The following code assumes that the list of proteins corresponds precisely to
         #*** the list of genes.  Oh, for the want of a pointer!!!
 

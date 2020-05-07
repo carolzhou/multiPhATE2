@@ -5,7 +5,7 @@
 # Program Title:  multiPhate2.py (/multiPhate2/)
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last Update:  30 April 2020
+# Last Update:  05 May 2020
 #
 # Description: Script multiPhate.py runs an annotation pipeline (phate_runPipeline.py) over any
 #    number of genomes specified in the user's input configuration file (multPhate.config). It then
@@ -61,14 +61,14 @@ CLEAN_PREVIOUS_CGP_RESULTS = True
 CLEAN_RAW_DATA_DEFAULT   = 'True'   # if 'False', the raw Blast and Hmm outputs will be saved in the PipelineOutput folder
 PHATE_WARNINGS_DEFAULT   = 'False'  # multiPhate and phate codes
 PHATE_MESSAGES_DEFAULT   = 'False'
-PHATE_PROGRESS_DEFAULT   = 'True'
+PHATE_PROGRESS_DEFAULT   = 'False'
 #*** REVISIT THESE CONTROLS: eliminate module-specific controls; subordinate modules should follow PHATE settings
 CGC_WARNINGS_DEFAULT     = 'False'  # compareGeneCalls codes
 CGC_MESSAGES_DEFAULT     = 'False'
 CGC_PROGRESS_DEFAULT     = 'False'
 CGP_WARNINGS_DEFAULT     = 'False'  # compareGeneProfiles codes
 CGP_MESSAGES_DEFAULT     = 'False'
-CGP_PROGRESS_DEFAULT     = 'True'
+CGP_PROGRESS_DEFAULT     = 'False'
 
 CLEAN_RAW_DATA = CLEAN_RAW_DATA_DEFAULT
 PHATE_PROGRESS = PHATE_PROGRESS_DEFAULT
@@ -140,6 +140,7 @@ hmmscan                  = False
 hmmbuild                 = False
 hmmsearch                = False
 runCGP                   = False
+runGenomics              = False
 # databases to be used (booleans)
 ncbiVirusGenomeHmm       = False
 ncbiVirusProteinHmm      = False
@@ -176,9 +177,6 @@ customHmmName            = 'unknown'
 customHmmDBname          = 'unknown'
 customHmmDBpath          = 'pathNotSet'
 
-# parameters controlling comparative genomics processing
-runCGP                   = False   # run the CompareGeneProfiles code
-
 # Constants; defaults will apply if not specified in config file
 # Leave all this stuff alone!
 
@@ -190,6 +188,8 @@ PIPELINE_INPUT_DIR_DEFAULT  = BASE_DIR_DEFAULT + "PipelineInput/"
 PIPELINE_OUTPUT_DIR_DEFAULT = BASE_DIR_DEFAULT + "PipelineOutput/"
 CGP_DIR_DEFAULT             = BASE_DIR_DEFAULT + "CompareGeneProfiles/"
 CGP_RESULTS_DIR             = PIPELINE_OUTPUT_DIR_DEFAULT + "CGP_RESULTS/"
+GENOMICS_DIR_DEFAULT        = BASE_DIR_DEFAULT + "Genomics/"
+GENOMICS_RESULTS_DIR        = PIPELINE_OUTPUT_DIR_DEFAULT + "GENOMICS_RESULTS/"
 JSON_DIR                    = BASE_DIR_DEFAULT + "JSON/"
 
 PHATE_PIPELINE_CODE         = 'phate_runPipeline.py' # The annotaton engine
@@ -197,6 +197,8 @@ GENE_FILE                   = 'gene.fnt'             # default filename where ge
 PROTEIN_FILE                = 'protein.faa'          # default filename where protein sequences are written, per genome's PipelineOutput/
 CGP_CODE_NAME               = 'cgp_driver.py'        # top-level, driver program for running CompareGeneProfiles pipeline
 CGP_CODE                    = CGP_DIR_DEFAULT + CGP_CODE_NAME # absolute path of top-level, driver for CompareGeneProfiles pipeline
+GENOMICS_CODE_NAME          = 'genomics_driver.py'   # top-level, driver program for running Genomics analysis
+GENOMICS_CODE               = GENOMICS_DIR_DEFAULT + GENOMICS_CODE_NAME # absolute path of top-level, drive for Genomics analysis
 
 # naming the custom gene caller
 # paths to subordinate codes; '' if installed globally (e.g., via conda)
@@ -239,6 +241,8 @@ os.environ["PHATE_PIPELINE_INPUT_DIR"]      = PIPELINE_INPUT_DIR
 os.environ["PHATE_PIPELINE_OUTPUT_DIR"]     = PIPELINE_OUTPUT_DIR
 os.environ["PHATE_PHATE_BASE_DIR"]          = PHATE_BASE_DIR
 os.environ["PHATE_PIPELINE_DIR"]            = BASE_DIR_DEFAULT
+os.environ["PHATE_CGP_RESULTS_DIR"]         = CGP_RESULTS_DIR
+os.environ["PHATE_GENOMICS_RESULTS_DIR"]    = GENOMICS_RESULTS_DIR
 
 # Gene calling and other codes
 # if installed globally
@@ -1217,7 +1221,8 @@ for cLine in cLines:
     elif match_runCGP:
         value = match_runCGP.group(1)
         if value.lower() == 'true' or value.lower() == 'yes' or value.lower() == 'on':
-            runCGP = True
+            runCGP      = True
+            runGenomics = True
 
     elif match_hmmbuild:         # create hmm profiles
         value = match_hmmbuild.group(1)
@@ -1611,6 +1616,7 @@ if not HPC: # Skip logging if running in high-throughput, else multiPhate.log fi
     if customHmm:
         LOG.write("%s%s\n" % ("   Custom hmm database is located in ",os.environ["PHATE_CUSTOM_HMM_HOME"]))
     LOG.write("%s%s\n" % ("   runCGP is ",runCGP))
+    LOG.write("%s%s\n" % ("   runGenomics is ",runGenomics))
     LOG.write("%s%s\n" % ("   hmmbuild is ",hmmbuild))
     LOG.write("%s%s\n" % ("   hmmsearch is ",hmmsearch))
     LOG.write("%s%s\n" % ("   phate warnings is set to ",os.environ["PHATE_PHATE_WARNINGS"]))
@@ -1734,7 +1740,6 @@ if not HPC:
 
 def phate_threaded(jsonFile):
     print(f'multiPhate says, Running {jsonFile} on PID {os.getpid()}')
-
     if not HPC:
         LOG.write("%s%s\n" % ("Running PhATE using genome json file ",jsonFile))
     command = "python " + PHATE_BASE_DIR + PHATE_PIPELINE_CODE + " " + jsonFile
@@ -1780,7 +1785,8 @@ if runCGP and not translateOnly and (len(genomeList) > 1):
     # Run CompareGeneProfiles
     try:
         command = "python " + CGP_CODE + ' ' + CGP_CONFIG_FILE
-        print("multiPhate says, command is:", command)
+        if PHATE_MESSAGES:
+            print("multiPhate says, command is:", command)
         result = os.system(command)
     except:
         if not HPC:
@@ -1800,14 +1806,17 @@ if runCGP and not translateOnly and (len(genomeList) > 1):
 
         # Move CompareGeneProfiles results directories and files to the CGP_RESULTS_DIR directory
         if CLEAN_PREVIOUS_CGP_RESULTS:
-            print ("multiPhate says, Removing previous CGP Results_ directories")
+            if PHATE_PROGRESS:
+                print ("multiPhate says, Removing previous CGP Results_ directories")
             try:
                 command = "rm -r " + CGP_RESULTS_DIR + "Results_* "
                 result = os.system(command)
             except:
-                print("multiPhate says, Failure in removing previous CGP Results directories")
+                if PHATE_WARNINGS:
+                    print("multiPhate says, Failure in removing previous CGP Results directories")
         else:
-            print("multiPhate says, CAUTION: Not removing previous CGP Results_ directories--data files will accumulate!")
+            if PHATE_WARNINGS:
+                print("multiPhate says, CAUTION: Not removing previous CGP Results_ directories--data files will accumulate!")
 
         try:  
             # move directories and files from main working directory to CGP results directory
@@ -1830,19 +1839,31 @@ if runCGP and not translateOnly and (len(genomeList) > 1):
         except:
             print("multiPhate says, ERROR: cannot move CGP results to output directory")
 
-        ##### Compute gene-gene correspondences between reference genome and all others
-        if PHATE_PROGRESS:
-            print("multiPhate says, Identifying corresponding genes among all genomes.")
-
-        # Create correspondence objects, one for each genome processed
-        for genome in genomeList:
-            # Create comparison object
-            print("multiPhate says, Next genome is",genome.genomeName)  
-
 else:
     if PHATE_PROGRESS:
         print("multiPhate says, Skipping CompareGeneProfiles.")
     LOG.write("%s\n" % ("Skipping CompareGeneProfiles."))
+
+# Override
+runGenomics = False
+if runGenomics:
+    if PHATE_PROGRESS:
+        print("multiPhate says, Performing gene-correspondence analysis.")
+
+    # Invoke the genomics module
+    command = "python " + GENOMICS_CODE
+    result = os.system(command)
+    if PHATE_PROGRESS:
+        print("multiPhate says, Result of genomics processing is:",result)
+
+    # Clean up
+    if PHATE_PROGRESS:
+        print("multiPhate says, Genomics completed.")
+
+else:
+    if PHATE_PROGRESS:
+        print("multiPhate says, Skipping Genomics.")
+    LOG.write("%s\n" % ("Skipping Genomics."))
 
 ##### CLEAN UP
 
