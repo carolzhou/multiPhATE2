@@ -47,6 +47,8 @@ if PHATE_PROGRESS_STRING.lower() == 'true':
 
 # Override
 PHATE_PROGRESS = True
+PHATE_MESSAGES = True
+PHATE_WARNINGS = True
 
 ###########################################################################################
 # BEGIN MAIN
