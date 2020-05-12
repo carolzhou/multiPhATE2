@@ -33,16 +33,19 @@ First, create a working directory on your computer for running multiPhATE. Then,
 
 =) To download the zip file:  Use a browser and navigate to https://github.com/carolzhou/multiPhATE2. Press the green button "Clone or download", and download the zip file. Then, unzip the package in your working (main execution "multiPhate") directory.
 
+```
 $ cd myMultiphateDir
 
 $ unzip multiPhate2-master.zip
+```
 
 =) To clone from github:  Acquire git from https://git-scm.com/downloads. Naviate to your working (main execution "multiPhATE") directory, and clone multiPhATE from the command line: 
 
+```
 $ git init
 
 $ git clone https://github.com/carolzhou/multiPhATE2
-
+```
 
 (Complete instructions for using git and github can be found at http://help.github.com.)
 
@@ -57,7 +60,7 @@ Availability and locations of supporting databases and codes are to be specified
 
 Procedure:
 
-1) At the command line, make a copy of the file, sample.multiPhate.config, and name it appropriately (hereafter referred to as 'multiPhate.config'):  $ cp sample.multiPhate.config multiPhate.config.  Then, edit your config file as described below.
+1) At the command line, make a copy of the file, sample.multiPhate.config, and name it appropriately (hereafter referred to as 'multiPhate.config'):  `$ cp sample.multiPhate.config multiPhate.config`.  Then, edit your config file as described below.
 
 2) List of Genomes:
 For each genome to be processed, provide six lines under "Genome List:" and before "END of list":  for each genome, you need to list the genome number, the name of the genome fasta file, the genome type (typically 'phage', but could be 'bacteria'), the species, if known (no spaces), the name of the genome, and a name for the output directory to hold this genome's output files (again, no spaces), in that order. You can simply copy/paste the six lines provided as many times as needed, and fill in the information appropriate for each genome.
@@ -72,8 +75,9 @@ The gene_caller option specifies which gene caller's results (ie, gene calls) wi
 Set to 'true' each blast or hmm process that you want to be run. Note that you must have acquired the associated database, and in the next section (Databases) you must configure the location of each database. You may also set the desired blast parameters. The blast_identity sets the minimum identity that will be considered; any blast result below that threshold will be ignored. The hit_count parameters will determine how many top hits will be reported. (Note that recent releases of blast+ suggest considering at least 5 hits, and will generate a warning message if you set the hit count to less than 5.) You may select hmm search using phmmer, jackhmmer, or hmmscan. Currently hmm searches are performed only using the protein fasta databases or the pVOG profile database (future releases of multiPhate are expected to support additional databases).
 
 6) Databases:
-For each database that you have in-house, specify the full path/filename. Note that you may need to prepare in advance all blast databases by running the "makeblastdb" utility (see instructions with blast+ code for how to do that). MultiPhate will only run with blast+; it does not support legacy blast. For instructions where to download the databases, see the SUPPORTING DATABASES section below. Note that KEGG is available by license. Note also that in some cases additional files are required. In this case, place the additional file(s) in the same directory as the associated blast database. For example, place the NCBI accession2taxid file in the same directory as your NCBI virus genome file (see below). If you are downloading datasets that you anticipate using specifically with multiPhATE, then it is suggested, for convenience, that you save them in the Databases/ folder in the multiPhATE distribution, but any database can be located anywhere on your local system; you need only indicate in the multiPhate.config file the full path/filename for each database. Remember, the pVOGs and Phantome data sets are included in the multiPhATE distribution in the Databases/ folder, but you will need to run makeblastdb to render the datasets blast-able ($ makeblastdb -help). If you will be running hmmscan, then you will need to format the pVOG database accordingly: 
+For each database that you have in-house, specify the full path/filename. Note that you may need to prepare in advance all blast databases by running the "makeblastdb" utility (see instructions with blast+ code for how to do that). MultiPhate will only run with blast+; it does not support legacy blast. For instructions where to download the databases, see the SUPPORTING DATABASES section below. Note that KEGG is available by license. Note also that in some cases additional files are required. In this case, place the additional file(s) in the same directory as the associated blast database. For example, place the NCBI accession2taxid file in the same directory as your NCBI virus genome file (see below). If you are downloading datasets that you anticipate using specifically with multiPhATE, then it is suggested, for convenience, that you save them in the Databases/ folder in the multiPhATE distribution, but any database can be located anywhere on your local system; you need only indicate in the multiPhate.config file the full path/filename for each database. Remember, the pVOGs and Phantome data sets are included in the multiPhATE distribution in the Databases/ folder, but you will need to run makeblastdb to render the datasets blast-able (`$ makeblastdb -help`). If you will be running hmmscan, then you will need to format the pVOG database accordingly: 
 
+```
 $ cat VOG\*.hmm > pVOGsHmmProfilesDB.hmm
 
 $ mv pVOGsHMMprofilesDB.hmm ../.
@@ -81,6 +85,7 @@ $ mv pVOGsHMMprofilesDB.hmm ../.
 $ cd ..
 
 $ hmmpress pVOGsHmmProfilesDB.hmm
+```
 
 7) Verbosity:
 You may up- or down-regulate verbosity in the multiPhate.config file, under "# VERBOSITY". This includes an option to clean the (voluminous) raw blast and hmm search data from the output directories. It is suggested that clean_raw_data, and phate_progress be set to 'true'. The phate_warnings and phate_messages, when set to 'true', will generate voluminous output; set these to 'true' only when trouble-shooting the pipeline. 
@@ -90,14 +95,14 @@ You may up- or down-regulate verbosity in the multiPhate.config file, under "# V
 
 #### PIPELINE EXECUTION
 
-Run the PhATE pipeline at the command line by passing your multiPhate.config file as an argument to the multiPhate.py pipeline driver script, as follows: $ python multiPhate.py multiPhate.config
+Run the PhATE pipeline at the command line by passing your multiPhate.config file as an argument to the multiPhate.py pipeline driver script, as follows: `$ python multiPhate.py multiPhate.config`
 
 
 #### SUPPORTING DATABASES
 
 It is recommended that the user acquire as many of the following sequence databases and associated codes as is feasible, although none are actually required to run the code. (You may specify "translate_only='true'" to do gene finding then translation, and then stop at that point.) Databases are listed with at least one way of acquiring them, but there may be additional sources, and it is possible to substitute subsets of blast databases (e.g., a subset of the NCBI gene database in place of Refseq Gene). Running the script, getDBs.py (under Utility/), may assist with downloading and running makeblastdb for the databases. (Disclaimer: NCBI occasionally changes what what exactly they are offering on their ftp site, and getDBs.py might not have kept up with these changes.) Remember that NR is a very large database; nobody should have two copies of this database on disk. Script getDBs.py will allow you to select the specific databases you wish to download.
 
-In some cases, you may prefer to download a database through a web interface, and in other cases you may use blast+ to download a database at the command line, if the database of interest is provided by NCBI. The latter method may be more convenient for larger data sets (eg, NCBI Refseq Protein). Blast+ includes a script (/bin/update_blastdb.pl), which can be invoked at the command line to automatically download a specified database. In order for blast+ to search a database, the database must first be converted to a blast-able object using the blast+ program, makeblastdb. Once you have installed blast+, you can query for help in using the program. For example, type at the command line: $ makeblastdb -help.
+In some cases, you may prefer to download a database through a web interface, and in other cases you may use blast+ to download a database at the command line, if the database of interest is provided by NCBI. The latter method may be more convenient for larger data sets (eg, NCBI Refseq Protein). Blast+ includes a script (/bin/update_blastdb.pl), which can be invoked at the command line to automatically download a specified database. In order for blast+ to search a database, the database must first be converted to a blast-able object using the blast+ program, makeblastdb. Once you have installed blast+, you can query for help in using the program. For example, type at the command line: `$ makeblastdb -help`.
 
 NCBI virus genomes - ftp://ftp.ncbi.nlm.nih.gov/refseq/release/viral/. If using a web browser, go to ftp://ftp.ncbi.nlm.nih.gov/refseq/release/viral/. Then, select "Allow" to "Do you want to allow this page to open 'Finder'?". Connect as "Guest". Select the files to be downloaded:  viral.1.1.genomic.fna.gz, also 2.1, and 3.1. These can be dragged to your desktop, which should prompt the download.
 
@@ -118,32 +123,30 @@ KEGG associated files - T40000.pep, T40000.nuc, vg_enzyme.list, vg_genome.list, 
 Phantome protein fasta sequences - http://www.phantome.org/Downloads/phage_proteins_nnnnnnnnn.fasta. (A version of Phantome is included in the multiPhATE distribution.)
 
 pVOGs prepared database (pVOGs.faa) - included in PhATE distribution. This data set was derived by C. Zhou from the pVOGs fasta database. For use in PhATE, the sequence fasta headers have been modified to include the pVOG identifiers (all groups to which each sequence belongs). This re-formatting facilitates pVOG group identification and construction of the alignment-ready fasta files. Codes for reconstructing this modified data set are included in the PhATE distribution. Note that the pVOGs are not mutually exclusive, meaning that a sequence may have membership in more than one VOG group. The codes included in the phate distribution will combine identifiers that belong to a given sequence and list all the VOG identifiers in the fasta header. In this way, the pVOG fasta database used in PhATE is also non-redundant. See documentation in DatabasePrep/dbPrep_createPvogFastaFile.py for instructions how to update your local pVOGs data set for use in PhATE, but you can start with the pVOGs.faa file included in the PhATE distribution. Combine the pVOG fasta sequences into a single file and format for hmmscan profile search as follows:
-   $ cat VOG\*.hmm > pVOGsHmmProfilesDB.hmm
-   $ mv pVOGsHMMprofilesDB.hmm ../.
-   $ cd ..
-   $ hmmpress pVOGsHmmProfilesDB.hmm
+
+```
+$ cat VOG\*.hmm > pVOGsHmmProfilesDB.hmm
+$ mv pVOGsHMMprofilesDB.hmm ../.
+$ cd ..
+$ hmmpress pVOGsHmmProfilesDB.hmm
+```
 
 For simplicity in configuring the locations of dependent databases in the multiPhate.config file, it is suggested that the above databases be placed in a directory structure as follows: 
 
+```
 Databases/
- 
 	KEGG/ 
-
 	NCBI/ 
 		Virus_Genome/ 
 		Virus_Protein/ 
-
 	NR/ 
-
 	Phantome/ 
-
 	Refseq/ 
 		Protein/ 
 		Gene/ 
-
 	Swissprot/ 
-
 	pVOGs/
+```
 
 You must specify in your multiPhate.config file the locations of the data sets that you will be using. Although it is recommended that you place your databases in the above directory structure, they can reside anywhere locally on disk, but in any case you must specify the full directory path/filename to a given resource in your multiPhate.config file.
 
@@ -178,28 +181,28 @@ If you prefer to run multiPhATE in a Conda environment, here are some tips for h
 
 1) First, download and install miniconda3 for Python 3.7 (https://conda.io/en/latest/miniconda.html). For more information about Conda, see https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html.  
 
-2) Check that conda is working:  $ conda --version
+2) Check that conda is working:  `$ conda --version`
  
-    If conda is not recognized, then you may need to  switch to bash shell: $ bash  
-    (and then try again)
+If conda is not recognized, then you may need to  switch to bash shell: `$ bash`  
+(and then try again)
 
 3) Add the following channels:  
 
-    ```bash
-    $ conda config --add channels defaults 
-    $ conda config --add channels conda-forge 
-    $ conda config --add channels bioconda 
-    ```
+```bash
+$ conda config --add channels defaults 
+$ conda config --add channels conda-forge 
+$ conda config --add channels bioconda 
+```
 
-    Note: bioconda is supported on Linux and Mac operating systems, but so far not on Windows.
+Note: bioconda is supported on Linux and Mac operating systems, but so far not on Windows.
 
-4) Create an environment for using multiPhATE; let's call it "multiphate":  $ conda create --name multiphate
+4) Create an environment for using multiPhATE; let's call it "multiphate":  `$ conda create --name multiphate`
 
-5) Activate that environment:  $ source activate multiphate
+5) Activate that environment:  `$ source activate multiphate`
 
-6) Install conda packages within that environment:  $ conda install python=3
+6) Install conda packages within that environment:  `$ conda install python=3`
 
-    Repeat for each of biopython, emboss, blast, glimmer, prodigal, hmmer, trnascan-se.  
+Repeat for each of biopython, emboss, blast, glimmer, prodigal, hmmer, trnascan-se.  
 
 7) When running multiPhATE within your multiphate Conda environment, the pipeline will use the version of python and the third party codes installed within the multiphate environment, so there should be no clashes with other versions of these packages that may be installed elsewhere on your system. When you are finished running multiPhATE, you may exit from the multiphate Conda environment:  $ source deactivate
 
@@ -249,7 +252,9 @@ The auto-generated myGenomeName_phate.config file, to record exactly how you con
 
 #### RUNNING PHATE AS AN "EMBARASSINGLY PARALLEL" CODE
 
-Pipeline outputs are written to user-specified output subdirectories (specified in your multiPhate.config file, and in the auto-generated myGenomeName_phate.config files, one for each genome specified in multiPhate.config). In this way, multiPhATE may be set up to run multiple instances of PhATE in parallel on any number of nodes of a compute cluster without fear of clashes in writing results. Implementing a code in parallel is system dependent; a parallel version of multiPhATE2 is not provided in the distribution. In the case that you have programming expertise at hand, parallelization may be implemented within the multiPhate.py script, upon execution of phate_runPipeline.py over the list of genomes; at this point in the code, the execution of phate_runPipeline.py can be distributed among threads or processors. Alternatively, multiple instances of multiPhATE2 could each be distributed to a different compute node (ie, one genome listed per multiPhate.config file) on a high-performance computing system. In this case you will need to disable the multiPhate.log file to avoid I/O contention among the parallel multiPhATE2 processes; within multiPhate.py, set HPC = True. 
+The MultiPhATE2 Pipeline is configured to run each genome file in parallel using all available processors without fear of clashes in writing results. Outputs for each genome are written to user-specified output subdirectories (specified in your multiPhate.config file, and in the auto-generated myGenomeName_phate.config files, one for each genome specified in multiPhate.config). The number (n) of parallel processes can be limited in the multiphate.py file by setting THREADS = n. To use all available processors, set THREADS = 'ALL'.
+
+Alternatively, multiple instances of multiPhATE2 could each be distributed to a different compute node (ie, one genome listed per multiPhate.config file) on a high-performance computing system. In this case you will need to disable the multiPhate.log file to avoid I/O contention among the parallel multiPhATE2 processes; within multiPhate.py, set HPC = True. 
 
 #### FURTHER RECOMMENDATIONS
 
