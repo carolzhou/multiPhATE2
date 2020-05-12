@@ -270,7 +270,8 @@ def ConstructNewFilename(inFile,infix,extension):
 
 # FUNCTION GetRootFile - Captures file name from directory-path/filename string
 def GetRootFile(inFile):   # strip the inFile of all directory prefixes
-    print ("inFile is", inFile)
+    if PHATE_MESSAGES:
+        print ("inFile is", inFile)
     rootFile = ""
     stringList = re.findall('\/[\w\d\.]*', inFile)
     if stringList:
@@ -431,8 +432,10 @@ ERROR_LOG = open(errorLog,"a")
 ERROR_LOG.write("%s%s\n" % ("Reading command-line input at ",today.read()))
 
 argCount = len(sys.argv)
-print ("cgp_compareGeneProfiles_main says, Reading input arguments")
-print ("  Number of command-line arguments:", argCount)
+if PHATE_PROGRESS:
+    print ("cgp_compareGeneProfiles_main says, Reading input arguments")
+if PHATE_MESSAGES:
+    print ("  Number of command-line arguments:", argCount)
 if argCount in ACCEPTABLE_ARG_COUNT:
     match = re.search("help", sys.argv[1].lower())
     if match:
@@ -487,14 +490,15 @@ if argCount in ACCEPTABLE_ARG_COUNT:
         files["proteinFile1"]    = os.path.join(pathRoot1, joinName1)
         files["proteinFile2"]    = os.path.join(pathRoot2, joinName2)
 
-        print ("  geneFile1 is",       files["geneFile1"])
-        print ("  geneFile2 is",       files["geneFile2"])
-        print ("  proteinFile1 is",    files["proteinFile1"])
-        print ("  proteinFile2 is",    files["proteinFile2"])
-        print ("  annotationFile1 is", files["annotationFile1"])
-        print ("  annotationFile2 is", files["annotationFile2"])
-        print ("  BASE_DIR is",        files["projectDirectory"])
-        print ("  Done reading input parameters")
+        if PHATE_MESSAGES:
+            print ("  geneFile1 is",       files["geneFile1"])
+            print ("  geneFile2 is",       files["geneFile2"])
+            print ("  proteinFile1 is",    files["proteinFile1"])
+            print ("  proteinFile2 is",    files["proteinFile2"])
+            print ("  annotationFile1 is", files["annotationFile1"])
+            print ("  annotationFile2 is", files["annotationFile2"])
+            print ("  BASE_DIR is",        files["projectDirectory"])
+            print ("  Done reading input parameters")
     else:
         print (USAGE_STRING)
         ERROR_LOG.close();  exit(0)
@@ -890,7 +894,8 @@ files["protFile2_root"] = GetRootFile(files["proteinFile2"])
 
 ### Genome 1 - Genome 2
 
-print ("Genome 1 genes against genome 2 genes...")
+if PHATE_PROGRESS:
+    print ("Genome 1 genes against genome 2 genes...")
 blastArgs["query"]   = files["geneFile1"]
 blastArgs["subject"] = files["geneFile2"]
 blastArgs["maxTargetSeqs"] = 1 
@@ -902,7 +907,8 @@ blastArgs["outfile"] = outfile
 files["g1_g2_blastn"] = outfile
 if BLAST_ON:
     result = myBlast.performBlast(blastArgs)
-    print ("cgp_compareGeneProfiles_main says, Result of blasting genes genome1-genome2:", result)
+    if PHATE_MESSAGES:
+        print ("cgp_compareGeneProfiles_main says, Result of blasting genes genome1-genome2:", result)
 
 ### Genome 2 - Genome 1
 
