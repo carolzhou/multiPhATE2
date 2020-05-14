@@ -46,8 +46,11 @@ from multiprocessing import Pool
 # 1) If you are running multiPhATE on a high-performance computing (HPC) system (e.g., using SLURM), you will need to mute the multiPhate log.
 # Set HPC = True to prevent multiPhATE from writing the multiPhate.log file, as each process attempting to write to this one file will cause
 # contention for I/O.
-HPC = False # write to log
-#HPC = True  # mute the log
+HPC = False  # write to log
+# HPC = True  # mute the log
+# Set THREADS to 'ALL' to use all available processors, or to an integer to limit number of parallel processes
+THREADS = 'ALL'
+# THREADS = 1
 # 2) If you are running under a linux system, set PHATE_OUT and PHATE_ERR to 'True'. This will capture standard errors to files. Cannot
 # guarantee this will work under other operating systems.
 PHATE_OUT = 'False'
@@ -1750,7 +1753,14 @@ def phate_threaded(jsonFile):
     if not HPC:
         LOG.write("%s%s\n" % ("End PhATE processing at ",datetime.datetime.now()))
 
-pool = Pool()
+if THREADS is 'ALL':
+    THREADS = os.cpu_count()
+elif THREADS > os.cpu_count():
+    THREADS = os.cpu_count()
+
+print(f'Using {THREADS} threads')
+
+pool = Pool(int(THREADS))
 pool.map(phate_threaded, jsonList)
 pool.close()
 
@@ -1818,7 +1828,7 @@ if runCGP and not translateOnly and (len(genomeList) > 1):
             if PHATE_WARNINGS:
                 print("multiPhate says, CAUTION: Not removing previous CGP Results_ directories--data files will accumulate!")
 
-        try:  
+        try:
             # move directories and files from main working directory to CGP results directory
             command = "mv " + PIPELINE_OUTPUT_DIR + "Results_* "                 + CGP_RESULTS_DIR + '.'
             result = os.system(command)

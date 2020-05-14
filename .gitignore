@@ -1,0 +1,9 @@
+
+PipelineOutput/*
+Databases/*
+.DS_Store
+*.log
+PipelineOutput/dummyFile.txt
+*.pyc
+*.json
+PipelineOutput/dummyFile.txt
