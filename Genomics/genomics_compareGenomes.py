@@ -3,7 +3,7 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Most recent update: 06 May 2020
+# Most recent update: 14 May 2020
 #
 # Module comprising classes and data structures for comparing genomes
 #
@@ -119,7 +119,6 @@ G1_LENGTH            = 27
 G2_SPAN              = 28
 G2_LENGTH            = 29
 
-
 # Class comparison organizes all genomic data and performs comparisons, ultimately yielding
 #   homology groups for each gene/protein in a reference genome.
 class comparison(object):
@@ -139,9 +138,7 @@ class comparison(object):
         self.proteinTemplate      = gene_protein()
         self.proteinTemplate.type = "protein"
 
-
     def performComparison(self):
-
         if PHATE_PROGRESS:
             print("genomics_compareGenomes says, Loading data.")
         self.loadData()
@@ -152,26 +149,26 @@ class comparison(object):
             print("genomics_compareGenomes says, Computing core genome.")
         self.computeCoreGenome()
         if PHATE_PROGRESS:
+            print("genomics_compareGenomes says, Computing gene correspondences.")
+        self.computeCorrespondences()
+        if PHATE_PROGRESS:
             print("genomics_compareGenomes says, Computing homology groups.")
         self.computeHomologyGroups()
         if PHATE_PROGRESS:
             print("genomics_compareGenomes says, Writing homology groups to files.")
         self.saveHomologyGroups()
         self.printReport()
-        #self.printAll()
 
+    #===== COMPARISON DATA LOAD METHODS
 
     def loadData(self):
-
         dirList = self.readDirectories()
         self.parseDirectories(dirList)
         if PHATE_PROGRESS:
             print("genomics_compareGenomes says, Data loading complete.")
         return
 
-
     def readDirectories(self):
-
         dirList = []
         # Query Results files in CGP Results directory
         command = "ls " + CGP_RESULTS_DIR
@@ -189,12 +186,9 @@ class comparison(object):
             print("genomics_compareGenomes says, The following directories have been read:")
             for directory in dirList:
                 print("directory:",directory)
-
         return dirList
 
-
     def parseDirectories(self,dirList):
-
         # Walk through the CGP output directory; determine which genomes were processed; add them to a non-redundant list
         genomeList = []; genomeFastaList = []
         for directory in dirList:
@@ -239,35 +233,9 @@ class comparison(object):
         if PHATE_PROGRESS:
             print("genomics_compareGenomes says, Invoking self.parseReportFiles with dirList,",dirList)
         self.parseReportFiles(dirList)
-        
         return
 
-
-    def writeMutualBestHitList(self):
-        for genome in self.genomeList:
-            if genome.isReference:
-                print("************** ",genome.name," **************")
-                print("************** Mutual Best Hits ")
-                for gene in genome.geneList:
-                    print("** gene ",gene.identifier)
-                    gene.writeMutualBestHitList()
-                print("************** End of Mutual Best Hits List ")
-        return
-
-
-    def writeSingularBestHitList(self):
-        return
-
-
-    def writeLonersList(self):
-        return
-
-
-    def insertAnnotations(self):
-        return
-
-
-    def loadMutualBestHits(self,genome1,genome2,reportFile):
+    def loadBestHits(self,genome1,genome2,reportFile):
         DONE = False; hitCount = 0
         REPORT_H = open(reportFile,"r")
         rLines = REPORT_H.read().splitlines()
@@ -285,10 +253,6 @@ class comparison(object):
                 continue
             fields = rLine.split('\t')
             (genomeNum,hitType) = fields[GENOME_TYPE].split('_')
-            if hitType.lower() != "mutual":
-                continue
-
-            hitCount += 1
             # Data structure for passing parameters to self.addHit2genome()
             dataArgs = { 
                 "genome1"      : genome1,   # the fasta file name
@@ -305,7 +269,6 @@ class comparison(object):
                 "annotations2" : "",
                 "hitType"      : "",
                 }
-
             # Prepare arguments for passing to addHit2genome method
             if genomeNum == "genome1":
                 dataArgs["hitType"] = hitType + '1'
@@ -314,88 +277,24 @@ class comparison(object):
             else:
                 if PHATE_WARNINGS:
                     print("genomics_compareGenomes says, WARNING: Unrecognized GENOME_TYPE")
-
             # Record data from reportFile dataline
+            # gene1
             dataArgs["contig1"]      = fields[G1_CONTIG]
-            dataArgs["contig2"]      = fields[G2_CONTIG]
             dataArgs["gene1"]        = fields[G1_HEADER]
+            dataArgs["annotations1"] = fields[G1_ANNOTATIONS]
+            if dataArgs["annotations1"] != "":
+                dataArgs["geneCall1"] = self.getGeneCallString(fields[G1_ANNOTATIONS]) 
+            # gene2
+            dataArgs["contig2"]      = fields[G2_CONTIG]
             dataArgs["gene2"]        = fields[G2_HEADER]
-            dataArgs["geneCall1"]    = self.getGeneCallString(fields[G1_ANNOTATIONS]) 
-            dataArgs["geneCall2"]    = self.getGeneCallString(fields[G2_ANNOTATIONS]) 
-            dataArgs["annotations1"] = fields[G1_ANNOTATIONS]    
             dataArgs["annotations2"] = fields[G2_ANNOTATIONS]
-
+            if dataArgs["annotations2"] != "":
+                dataArgs["geneCall2"]    = self.getGeneCallString(fields[G2_ANNOTATIONS]) 
             # Insert data record into genome object
             self.addHit2genome(dataArgs)
 
         REPORT_H.close()
         return
-
-
-    def loadSingularBestHits(self,genome1,genome2,reportFile):
-        DONE = False; hitCount = 0
-        REPORT_H = open(reportFile,"r")
-        rLines = REPORT_H.read().splitlines()
-
-        # Select and process mutual-best-hit data lines
-        for rLine in rLines:
-            fields = []; genomeNum = ""; hitType = ""
-            # Skip lines not to be processed in this method
-            match_comment = re.search('^#',rLine)
-            match_protein = re.search('^#PROTEIN\sHITS',rLine)
-            if match_protein:
-                DONE = True
-                break
-            if match_comment:
-                continue
-            fields = rLine.split('\t')
-            (genomeNum,hitType) = fields[GENOME_TYPE].split('_')
-            if hitType.lower() != "singular":
-                continue
-
-            hitCount += 1
-            # Data structure for passing parameters to self.addHit2genome()
-            dataArgs = { 
-                "genome1"      : genome1,   # the fasta file name
-                "genome2"      : genome2,   # the fasta file name
-                "contig1"      : "",
-                "contig2"      : "",
-                "gene1"        : "",
-                "gene2"        : "",
-                #"protein1"     : "",
-                #"protein2"     : "",
-                "geneCall1"    : "",
-                "geneCall2"    : "",
-                "annotations1" : "",
-                "annotations2" : "",
-                "hitType"      : "",
-                }
-
-            # Prepare arguments for passing to addHit2genome method
-            if genomeNum == "genome1":
-                dataArgs["hitType"] = hitType + '1'
-            elif genomeNum == "genome2":
-                dataArgs["hitType"] = hitType + '2'
-            else:
-                if PHATE_WARNINGS:
-                    print("genomics_compareGenomes says, WARNING: Unrecognized GENOME_TYPE")
-
-            # Record data from reportFile dataline
-            dataArgs["contig1"]      = fields[G1_CONTIG]
-            dataArgs["contig2"]      = fields[G2_CONTIG]
-            dataArgs["gene1"]        = fields[G1_HEADER]
-            dataArgs["gene2"]        = fields[G2_HEADER]
-            dataArgs["geneCall1"]    = self.getGeneCallString(fields[G1_ANNOTATIONS]) 
-            dataArgs["geneCall2"]    = self.getGeneCallString(fields[G2_ANNOTATIONS]) 
-            dataArgs["annotations1"] = fields[G1_ANNOTATIONS]    # Skip annotations field for now
-            dataArgs["annotations2"] = fields[G2_ANNOTATIONS]    # Skip annotations field for now
-
-            # Insert data record into genome object
-            self.addHit2genome(dataArgs)
-
-        REPORT_H.close()
-        return
-
 
     # Method getGeneCallString extracts the genecall name from the annotation string
     def getGeneCallString(self,inString):  
@@ -403,90 +302,7 @@ class comparison(object):
         geneCallString = inList[0]          # First element of the list is the genecall string
         return geneCallString
 
-
-    def loadLoners(self,genome1,genome2,reportFile):
-        return
-
-
-    def clearMutualBestHits(self):
-        return
-
-
-    def clearSingularBestHits(self):
-        return
-
-
-    def clearLoners(self):
-        return
-
-
-    def computeCoreGenome(self):
-        return
-
-
-    def computeSingularCorrespondences(self):
-        return
-
-
-    # Method parseReportFiles pulls data from CGP Results_* directories into memory in order to determine
-    # a core genome, gene-gene correspondences among all genomes, and list loner genes per genome.
-    # Note that this code makes several passes through the CGP data, rather than efficiently loading all
-    # the data at once in a single pass, due to dynamic memory limitations. Also, intermediate data are
-    # written to files for the same reason.
-    def parseReportFiles(self,dirList):
-
-        if PHATE_PROGRESS:
-            print("genomics_compareGenomes says, Parsing Report files.")
-
-        # Mutual Best Hits
-        for i in range(0,len(dirList)-1):
-            directory = dirList[i]
-            (genome1,genome2) = self.findGenomes(directory)
-            reportFile = os.path.join(CGP_RESULTS_DIR,directory,CGP_REPORT_FILE)
-            if PHATE_PROGRESS:
-                print("genomics_compareGenomes says, Parsing report file",reportFile,"for mutual best hits.")
-            self.loadMutualBestHits(genome1,genome2,reportFile)
-            
-        # Analyze mutual best hits with respect to reference genome
-        self.writeMutualBestHitList()
-        self.computeCoreGenome()
-        self.insertAnnotations()
-        self.clearMutualBestHits()
-           
-        # Singular Best Hits
-        for i in range(0,len(dirList)-1):
-            directory = dirList[i]
-            (genome1,genome2) = self.findGenomes(directory)
-            reportFile = os.path.join(CGP_RESULTS_DIR,directory,CGP_REPORT_FILE)
-            if PHATE_PROGRESS:
-                print("genomics_compareGenomes says, Parsing report file",reportFile,"for singular best hits.")
-            self.loadSingularBestHits(genome1,genome2,reportFile)
-            
-        # Analyze singular best hits with respect to reference genome
-        self.writeSingularBestHitList()
-        self.computeSingularCorrespondences()
-        self.insertAnnotations()
-        self.clearSingularBestHits()
-
-        # Loners
-        for i in range(0,len(dirList)-1):
-            directory = dirList[i]
-            (genome1,genome2) = self.findGenomes(directory)
-            reportFile = os.path.join(CGP_RESULTS_DIR,directory,CGP_REPORT_FILE)
-            if PHATE_PROGRESS:
-                print("genomics_compareGenomes says, Parsing report file",reportFile,"for loners.")
-            self.loadLoners(genome1,genome2,reportFile)
-
-        # Analyze loners
-        self.writeLonersList()
-        self.insertAnnotations()
-        self.clearLoners()
-
-        return
-
-
     def findGenomes(self,directory):
-
         # Determine which 2 genomes's data are listed in this directory,
         # and which is genome1, genome2.
         genome1 = ""; genome2 = ""
@@ -507,24 +323,20 @@ class comparison(object):
         LOG_H.close()
         return(genome1,genome2)
 
-
     def findGenomeObject(self,genomeName):
-
         for genome_object in self.genomeList:
             if genome_object.name == genomeName:
                 return genome_object
         return
 
-
     def addHit2genome(self,dataArgs):  
-
-        GENE_CALL_NUMBER = -3  # Index for accessing gene-call number, as third-to-last item of the gene-call string
+        gene_obj = self.geneTemplate
         GENOME_ONE = False; GENOME_TWO = False # Should exist data for both genomes if mutual or singular hit; one if loner
-
         # Data needed for "mutual" or "singular" hit entry
         # Determine which genome's hit to process, or both.
         # Find the two genome objects to which mutual hits will be added
         # Compute unique identifiers for query and subject genes 
+        gene1id = ""; gene2id = ""
         if dataArgs["gene1"] != "":
             GENOME_ONE = True
             genome1_obj = self.findGenomeObject(dataArgs["genome1"])
@@ -533,6 +345,11 @@ class comparison(object):
             GENOME_TWO = True
             genome2_obj = self.findGenomeObject(dataArgs["genome2"])
             gene2id = dataArgs["genome2"] + ':' + dataArgs["contig2"] + ':' + dataArgs["gene2"]
+        # Determine type of hit and whether the query is genome1 versus genome2
+        match_mutual   = re.search("mutual",  dataArgs["hitType"])
+        match_singular = re.search("singular",dataArgs["hitType"])
+        match_loner    = re.search("loner",   dataArgs["hitType"])
+        match_query    = re.search("\d",      dataArgs["hitType"])
         
         if GENOME_ONE:
             # Search for query gene in genome1 (if exists)
@@ -555,19 +372,15 @@ class comparison(object):
                 gene_obj.parentGenome = dataArgs["genome1"]
                 gene_obj.contigName   = dataArgs["contig1"]
                 gene_obj.annotation   = dataArgs["annotations1"] 
-
             # Add hit
-            match_mutual   = re.search("mutual",  dataArgs["hitType"])
-            match_singular = re.search("singular",dataArgs["hitType"])
-            match_query    = re.search("\d",      dataArgs["hitType"])
-            ADD_SINGULAR = False
-            if match_query.group(0) == '1':
-                ADD_SINGULAR = True
-            gene_obj.isLoner = False
             if match_mutual:
                 gene_obj.mutualBestHitList.append(gene2id) 
-            elif match_singular and ADD_SINGULAR:
+                gene_obj.isLoner = False
+            if match_singular and match_query.group(0) == '1':
                 gene_obj.singularBestHitList.append(gene2id)
+                gene_obj.isLoner = False
+            if match_loner and match_query.group(0) == '1':
+                gene_obj.lonerList.append(genome1_obj.name)
             if NEW:
                 genome1_obj.geneList.append(gene_obj)
 
@@ -592,24 +405,40 @@ class comparison(object):
                 gene_obj.parentGenome = dataArgs["genome2"]
                 gene_obj.contigName   = dataArgs["contig2"]
                 gene_obj.annotation   = dataArgs["annotations2"] 
-
             # Add hit
-            match_mutual   = re.search("mutual",  dataArgs["hitType"])
-            match_singular = re.search("singular",dataArgs["hitType"])
-            match_query    = re.search("\d",      dataArgs["hitType"])
-            ADD_SINGULAR = False
-            if match_query.group(0) == '2':
-                ADD_SINGULAR = True
-            gene_obj.isLoner = False
             if match_mutual:
                 gene_obj.mutualBestHitList.append(gene1id) 
-            elif match_singular and ADD_SINGULAR:
+                gene_obj.isLoner = False
+            if match_singular and match_query.group(0) == '2':
                 gene_obj.singularBestHitList.append(gene1id)
+                gene_obj.isLoner = False
+            if match_loner and match_query.group(0) == '2':
+                gene_obj.lonerList.append(dataArgs["genome1"])
             if NEW:
                 genome2_obj.geneList.append(gene_obj)
+        return
+
+    # Method parseReportFiles pulls data from CGP Results_* directories into memory in order to determine
+    # a core genome, gene-gene correspondences among all genomes, and list loner genes per genome.
+    # COMBINE SECTIONS INTO A SINGLE PASS
+    def parseReportFiles(self,dirList):
+        if PHATE_PROGRESS:
+            print("genomics_compareGenomes says, Parsing Report files.")
+        # Load data for mutual and singular best hits and loners for all CGP binary genome comparisons.
+        for i in range(0,len(dirList)-1):
+            directory = dirList[i]
+            (genome1,genome2) = self.findGenomes(directory)
+            reportFile = os.path.join(CGP_RESULTS_DIR,directory,CGP_REPORT_FILE)
+            if PHATE_PROGRESS:
+                print("genomics_compareGenomes says, Parsing report file",reportFile,"for mutual and singular best hits, and loners.")
+            self.loadBestHits(genome1,genome2,reportFile)
+
+        # Load data for paralogs from all CGP genome self-blast results
+        #*** WRITE CODE
 
         return
 
+    #===== COMPARISON GENOMIC METHODS
 
     # Method identifyParalogs inspects the CGP blast output for genome x self to identify paralogs
     def identifyParalogs(self):
@@ -625,26 +454,22 @@ class comparison(object):
             print("genomics_compareGenomes says, Paralog identification complete.")
         return
 
+    def computeCorrespondences(self):
+        return
 
     def computeCoreGenome(self):
 
         # Compute core genomes
-
-
         if PHATE_PROGRESS:
             print("genomics_compareGenomes says, Core genome computation complete.")
         return
 
-
     def computeHomologyGroups(self):
 
         # Compute homology groups
-
-
         if PHATE_PROGRESS:
             print("genomics_compareGenomes says, Homology group computation complete.")
         return
-
 
     # For each gene/protein in reference genome, write correspondence set to file
     def saveHomologyGroups(self):
@@ -658,9 +483,9 @@ class comparison(object):
 
         if PHATE_PROGRESS:
             print("genomics_compareGenomes says, Homology groups have been written to files.")
-
         return
 
+    #===== COMPARISON DATA CHECK METHODS
 
     def countGenomes(self):
 
@@ -669,9 +494,7 @@ class comparison(object):
             print("genomics_compareGenomes says, There are",self.genomeCount,"genomes.")
         if DEBUG:
             print("genomics_compareGenomes says, DEBUG: There are",self.genomeCount,"genomes.")
-
         return
-
 
     # For development purposes
     def checkUnique(self):
@@ -684,11 +507,64 @@ class comparison(object):
                 tempList.append(genome.name)
         return
 
+    #===== COMPARISON PRINT METHODS
+
+    def writeMutualBestHitList(self):
+        for genome in self.genomeList:
+            if genome.isReference:
+                print("************** ",genome.name," **************")
+                print("************** Mutual Best Hits ")
+                for gene in genome.geneList:
+                    print("** gene ",gene.identifier)
+                    gene.writeMutualBestHitList()
+                print("************** End of Mutual Best Hits List ")
+        return
+
+    def writeSingularBestHitList(self):
+        for genome in self.genomeList:
+            if genome.isReference:
+                print("************** ",genome.name," **************")
+                print("************** Singular Best Hits ")
+                for gene in genome.geneList:
+                    print("** gene ",gene.identifier)
+                    gene.writeSingularBestHitList()
+                print("************** End of Singular Best Hits List ")
+        return
+
+    def writeGeneCorrespondences(self):
+        runningList = []
+        for genome in self.genomeList:
+            if genome.isReference:
+                print("********** ",genome.name," **********")
+                for gene in self.geneList:
+                    for hit in self.mutualBestHitList:
+                        if hit not in runningList:
+                            runningList.append(hit)
+                    for hit in self.singularBestHitList:
+                        if hit not in runningList:
+                            runningList.append(hit)
+                    print("genes corresponding to",gene.identifier,':')
+                    for hit in runningList:
+                        print("     ",hit)
+                print("********** End of gene correspondences ")
+        return
+
+    def writeLonerList(self):
+        for genome in self.genomeList:
+            if genome.isReference:
+                print("********** ",genome.name," **********")
+                print("********** Loners ")
+                for gene in genome.geneList:
+                    if gene.isLoner:
+                        print(gene.identifier)
+                print("********** End of loner list ")
+        return
 
     def printReport(self):
         self.writeMutualBestHitList()
+        self.writeSingularBestHitList()
+        self.writeLonerList()
         return
-
 
     def printAll(self):
 
@@ -702,7 +578,7 @@ class comparison(object):
         print("=========End Genome Set=========")
         return
 
-
+#############################################################################################################
 # Class genome stores metadat aedDirectories(self):
 class genome(object):
 
@@ -715,8 +591,15 @@ class genome(object):
         self.proteinList          = []     # List of gene_protein objects 
         self.paralogList          = []     # List of paralogSet objects
 
+    def identifyParalogs(self):
+        # 
 
-    # For development purposes
+        if PHATE_PROGRESS:
+            print("genomics_compareGenomes says, Paralogs identified for genome",self.name)
+        return
+
+    #===== GENOME DATA CHECK METHODS
+
     def checkUnique(self):
         tempList = []
         for gene in self.geneList:
@@ -751,19 +634,10 @@ class genome(object):
                 tempList.append(protein.cgpHeader)
         return
 
-
-    def identifyParalogs(self):
-
-        # 
-
-        if PHATE_PROGRESS:
-            print("genomics_compareGenomes says, Paralogs identified for genome",self.name)
-        return
-
+    #===== GENOME PRINT METHODS
 
     def printReport(self):
         return
-
 
     def printAll(self):
         print("=========Genome========")
@@ -794,7 +668,7 @@ class genome(object):
         print("=========End Genome====")
         return
 
-
+#####################################################################################################
 # Class paralog organizes genes and proteins within a given genome that are considered paralogs.
 class paralogSet(object):
     
@@ -803,17 +677,16 @@ class paralogSet(object):
         self.paralogList          = []        # List of either gene or protein unique identifiers
         self.setSize              = 0         # number of paralogs in this set
 
-
     def countParalogs(self):
         self.setSize = len(self.paralogList)
         if PHATE_MESSAGES:
             print("genomics_compareGenomes says, There are",self.setSize,"paralogs")
         return
 
+    #===== PARALOG PRINT METHODS
 
     def printReport(self):
         return
-
 
     def printAll(self):
         print("paralogType:",self.paralogType)
@@ -821,8 +694,8 @@ class paralogSet(object):
         print("paralogList:",self.paralogList)
         return
 
-
-# Class gene stores meta-data about a gene
+######################################################################################################
+# Class gene_protein stores meta-data about a gene or protein.
 class gene_protein(object):
 
     def __init__(self):
@@ -838,27 +711,20 @@ class gene_protein(object):
         self.mutualBestHitList    = []        # list of gene identifiers that are mutual best hits, across genomes
         self.singularBestHitList  = []        # list of gene identifiers that are best hits, relative to this gene, across genomes
         self.correspondenceList   = []        # List of corresponding genes (mutual or best-hit) across genomes: list of gene identifiers 
+        self.lonerList            = []        # List of the genome names that this gene/protein is a loner with respect to
         self.groupList            = []        # list of all corresponding genes plus paralogs
         self.paralogList          = []        # List of paralogs within its own parent genome: list of gene identifiers <data is redundant; should pull paralog list as list of lists at genome level.
-
-    def writeMutualBestHitList(self):
-        for hit in self.mutualBestHitList:
-            print(hit)
-        return
 
     def addMutualBestHit(self,hit):
         self.mutualBestHistList.append(hit)
         return
 
-
     def addSingularBestHit(self,hit):
         self.singularBestHitList.append(hit)
         return
 
-
     def addGroupMember(self,member):
         self.groupList.append(member)
-
 
     # Construct a set of genes/proteins that are related by homology
     def constructGroup(self):
@@ -868,6 +734,7 @@ class gene_protein(object):
             print("genomics_compareGenomes says, Group constructed for gene_protein",self.identifier,";",self.type)
         return
 
+    #===== GENE_PROTEIN DATA CHECK METHODS
 
     # For development purposes
     def verifyLoner(self):
@@ -881,10 +748,25 @@ class gene_protein(object):
             return False
         return True
 
+    #===== GENE_PROTEIN PRINT METHODS
+
+    def writeMutualBestHitList(self):
+        for hit in self.mutualBestHitList:
+            print(hit)
+        return
+
+    def writeSingularBestHitList(self):
+        for hit in self.singularBestHitList:
+            print(hit)
+        return
+
+    def writeLonerList(self):
+        for genome in self.lonerList:
+            print(genome)
+        return
 
     def printReport(self):
         return
-
 
     # For development purposes
     def printAll(self):
@@ -903,4 +785,3 @@ class gene_protein(object):
         print("paralogList:",self.paralogList)
         print("===")
         return
-
