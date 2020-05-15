@@ -10,21 +10,35 @@
 # Classes and Methods:
 #    class comparison
 #       performComparison()
+#       ---
 #       loadData()
 #       readDirectories()
 #       parseDirectories()
-#       checkUnique()
+#       parseReportFiles()
+#       findGenomes()
+#       loadBestHits()
+#       getGeneCallString()
+#       addHit2genome()
+#       findGenomeObject()
+#       ---
 #       identifyParalogs()
 #       computeCoreGenome()
-#       computeHomologyGroupes()
+#       computeCorrespondences()
+#       computeHomologyGroups()
 #       saveHomologyGroups()
+#       ---
 #       countGenomes()
 #       checkUnique()
+#       ---
+#       writeMutualBestHitList()
+#       writeSingularBestHitList()
+#       writeGeneCorespondences()
+#       writeLonerList()
 #       printReport()
 #       printAll()
 #    class genome
-#       checkUnique()
 #       identifyParalogs()
+#       checkUnique()
 #       printReport()
 #       printAll()
 #    class paralogSet
@@ -35,8 +49,12 @@
 #       addMutualBestHit()
 #       addSingularBestHit()
 #       addGroupMember()
-#       constructGroup()
+#       ---
 #       verifyLoner()
+#       ---
+#       writeMutualBestHitList()
+#       writeSingularBestHitList()
+#       writeLonerList()
 #       printReport()
 #       printAll()
 #
@@ -227,13 +245,54 @@ class comparison(object):
                 nextGenome.isReference = True
             nextGenome.file = genomeFastaList[i]
             self.genomeList.append(nextGenome)
-        self.countGenomes()
+        #self.countGenomes()
 
         # Walk through .report files, add mutual & singular best hits, loners
         if PHATE_PROGRESS:
             print("genomics_compareGenomes says, Invoking self.parseReportFiles with dirList,",dirList)
         self.parseReportFiles(dirList)
         return
+
+    # Method parseReportFiles pulls data from CGP Results_* directories into memory in order to determine
+    # a core genome, gene-gene correspondences among all genomes, and list loner genes per genome.
+    # COMBINE SECTIONS INTO A SINGLE PASS
+    def parseReportFiles(self,dirList):
+        if PHATE_PROGRESS:
+            print("genomics_compareGenomes says, Parsing Report files.")
+        # Load data for mutual and singular best hits and loners for all CGP binary genome comparisons.
+        for i in range(0,len(dirList)-1):
+            directory = dirList[i]
+            (genome1,genome2) = self.findGenomes(directory)
+            reportFile = os.path.join(CGP_RESULTS_DIR,directory,CGP_REPORT_FILE)
+            if PHATE_PROGRESS:
+                print("genomics_compareGenomes says, Parsing report file",reportFile,"for mutual and singular best hits, and loners.")
+            self.loadBestHits(genome1,genome2,reportFile)
+
+        # Load data for paralogs from all CGP genome self-blast results
+        #*** WRITE CODE
+
+        return
+
+    def findGenomes(self,directory):
+        # Determine which 2 genomes's data are listed in this directory,
+        # and which is genome1, genome2.
+        genome1 = ""; genome2 = ""
+        logFile = os.path.join(CGP_RESULTS_DIR,directory,CGP_LOG_FILE)
+        LOG_H = open(logFile,"r")
+        lLines = LOG_H.read().splitlines()
+        for lLine in lLines:
+            match_genome1 = re.search('genome\sfile\s#1:',lLine)
+            match_genome2 = re.search('genome\sfile\s#2:',lLine)
+            if match_genome1:
+                (preamble,genomePath) = lLine.split(': ')
+                genome1fasta = os.path.basename(genomePath)
+                (genome1,extension) = genome1fasta.split('.') 
+            if match_genome2:
+                (preamble,genomePath) = lLine.split(': ')
+                genome2fasta = os.path.basename(genomePath)
+                (genome2,extension) = genome2fasta.split('.') 
+        LOG_H.close()
+        return(genome1,genome2)
 
     def loadBestHits(self,genome1,genome2,reportFile):
         DONE = False; hitCount = 0
@@ -301,33 +360,6 @@ class comparison(object):
         inList = ast.literal_eval(inString) # Convert string representation of a list to an actual list
         geneCallString = inList[0]          # First element of the list is the genecall string
         return geneCallString
-
-    def findGenomes(self,directory):
-        # Determine which 2 genomes's data are listed in this directory,
-        # and which is genome1, genome2.
-        genome1 = ""; genome2 = ""
-        logFile = os.path.join(CGP_RESULTS_DIR,directory,CGP_LOG_FILE)
-        LOG_H = open(logFile,"r")
-        lLines = LOG_H.read().splitlines()
-        for lLine in lLines:
-            match_genome1 = re.search('genome\sfile\s#1:',lLine)
-            match_genome2 = re.search('genome\sfile\s#2:',lLine)
-            if match_genome1:
-                (preamble,genomePath) = lLine.split(': ')
-                genome1fasta = os.path.basename(genomePath)
-                (genome1,extension) = genome1fasta.split('.') 
-            if match_genome2:
-                (preamble,genomePath) = lLine.split(': ')
-                genome2fasta = os.path.basename(genomePath)
-                (genome2,extension) = genome2fasta.split('.') 
-        LOG_H.close()
-        return(genome1,genome2)
-
-    def findGenomeObject(self,genomeName):
-        for genome_object in self.genomeList:
-            if genome_object.name == genomeName:
-                return genome_object
-        return
 
     def addHit2genome(self,dataArgs):  
         gene_obj = self.geneTemplate
@@ -418,31 +450,16 @@ class comparison(object):
                 genome2_obj.geneList.append(gene_obj)
         return
 
-    # Method parseReportFiles pulls data from CGP Results_* directories into memory in order to determine
-    # a core genome, gene-gene correspondences among all genomes, and list loner genes per genome.
-    # COMBINE SECTIONS INTO A SINGLE PASS
-    def parseReportFiles(self,dirList):
-        if PHATE_PROGRESS:
-            print("genomics_compareGenomes says, Parsing Report files.")
-        # Load data for mutual and singular best hits and loners for all CGP binary genome comparisons.
-        for i in range(0,len(dirList)-1):
-            directory = dirList[i]
-            (genome1,genome2) = self.findGenomes(directory)
-            reportFile = os.path.join(CGP_RESULTS_DIR,directory,CGP_REPORT_FILE)
-            if PHATE_PROGRESS:
-                print("genomics_compareGenomes says, Parsing report file",reportFile,"for mutual and singular best hits, and loners.")
-            self.loadBestHits(genome1,genome2,reportFile)
-
-        # Load data for paralogs from all CGP genome self-blast results
-        #*** WRITE CODE
-
+    def findGenomeObject(self,genomeName):
+        for genome_object in self.genomeList:
+            if genome_object.name == genomeName:
+                return genome_object
         return
 
     #===== COMPARISON GENOMIC METHODS
 
     # Method identifyParalogs inspects the CGP blast output for genome x self to identify paralogs
     def identifyParalogs(self):
-
         if DEBUG:
             print("genomics_compareGenomes says, DEBUG: Number of genomes in self.genomeList:",len(self.genomeList))
         for genome in self.genomeList:
@@ -458,14 +475,12 @@ class comparison(object):
         return
 
     def computeCoreGenome(self):
-
         # Compute core genomes
         if PHATE_PROGRESS:
             print("genomics_compareGenomes says, Core genome computation complete.")
         return
 
     def computeHomologyGroups(self):
-
         # Compute homology groups
         if PHATE_PROGRESS:
             print("genomics_compareGenomes says, Homology group computation complete.")
@@ -473,7 +488,6 @@ class comparison(object):
 
     # For each gene/protein in reference genome, write correspondence set to file
     def saveHomologyGroups(self):
-
         for genome in self.genomeList:
             if genome.isReference:
                 for gene in genome.geneList:
@@ -488,7 +502,6 @@ class comparison(object):
     #===== COMPARISON DATA CHECK METHODS
 
     def countGenomes(self):
-
         self.genomeCount = len(self.genomeList)
         if PHATE_MESSAGES:
             print("genomics_compareGenomes says, There are",self.genomeCount,"genomes.")
@@ -567,7 +580,6 @@ class comparison(object):
         return
 
     def printAll(self):
-
         print("=========Genome Set=============")
         print("name:",self.name)
         print("referenceGenome:",self.referenceGenome)
