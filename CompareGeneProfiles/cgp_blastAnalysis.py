@@ -1,7 +1,7 @@
 ##############################################
 # Module: blastAnalysis.py
 # Programmer:  Carol L. Ecale Zhou
-# Date of last update:  11 April 2020
+# Date of last update:  16 May 2020
 #
 # Module comprising data structures and methods for blasting the genes and proteins
 #    of two genome objects and comparing the gene profiles and the nt and aa levels.
@@ -66,15 +66,15 @@ DEBUG = True
 
 # Default values used if user- or program-defined defaults not provided
 GENE_MATCH_IDENTITY_DEFAULT = 95
-GENE_MATCH_COVERAGE_DEFAULT = 95
+GENE_MATCH_COVERAGE_DEFAULT = 60 
 GENE_SIMILARITY_IDENTITY_DEFAULT = 60
 GENE_SIMILARITY_COVERAGE_DEFAULT = 75
 DOMAIN_MATCH_IDENTITY_DEFAULT = 95
 DOMAIN_MATCH_COVERAGE_DEFAULT = 45
 DOMAIN_SIMILARITY_IDENTITY_DEFAULT = 60
 DOMAIN_SIMILARITY_COVERAGE_DEFAULT = 45
-PARALOG_MATCH_IDENTITY_DEFAULT = 95
-PARALOG_MATCH_COVERAGE_DEFAULT = 95
+PARALOG_MATCH_IDENTITY_DEFAULT = 10             #
+PARALOG_MATCH_COVERAGE_DEFAULT = 10             #
 PARALOG_SIMILARITY_IDENTITY_DEFAULT = 60
 PARALOG_SIMILARITY_COVERAGE_DEFAULT = 75
 PARALOG_DOMAIN_MATCH_IDENTITY_DEFAULT = 95
@@ -89,8 +89,8 @@ PROTEIN_DOMAIN_MATCH_IDENTITY_DEFAULT = 95
 PROTEIN_DOMAIN_MATCH_COVERAGE_DEFAULT = 45
 PROTEIN_DOMAIN_SIMILARITY_IDENTITY_DEFAULT = 60
 PROTEIN_DOMAIN_SIMILARITY_COVERAGE_DEFAULT = 45
-PROTEIN_PARALOG_MATCH_IDENTITY_DEFAULT = 95
-PROTEIN_PARALOG_MATCH_COVERAGE_DEFAULT = 95
+PROTEIN_PARALOG_MATCH_IDENTITY_DEFAULT = 10      #
+PROTEIN_PARALOG_MATCH_COVERAGE_DEFAULT = 10      # 
 PROTEIN_PARALOG_SIMILARITY_IDENTITY_DEFAULT = 60 
 PROTEIN_PARALOG_SIMILARITY_COVERAGE_DEFAULT = 75
 PROTEIN_PARALOG_DOMAIN_MATCH_IDENTITY_DEFAULT = 95
@@ -119,6 +119,8 @@ class hit(object):
         self.queryCoverage   = 0  # calculate later, when we get q/s lengths
         self.subjectCoverage = 0
         self.hitType         = "unknown"  # fill in with "mutual best", "singular best"
+        self.queryLength     = 0
+        self.subjectLength   = 0
 
     def computeCoverage(self,queryLength,subjectLength):
         errorCode = [] # for debug
@@ -159,6 +161,20 @@ class hit(object):
         FILE_HANDLE.write("%s%s%s%s%s" % ("subject start/end:",self.subjectStart,"/",self.subjectEnd,"\n"))
         FILE_HANDLE.write("%s%s%s" % ("evalue:",self.evalue,"\n"))
         FILE_HANDLE.write("%s%s%s" % ("bitscore:",self.bitscore,"\n"))
+        FILE_HANDLE.write("%s%s%s%s%s" % ("query/subject coverage:",self.queryCoverage,"/",self.subjectCoverage,"\n"))
+
+    def printAll2file_tab(self,FILE_HANDLE):
+        FILE_HANDLE.write("%s%s%s" % ("query:",self.queryHeader,"\t"))
+        FILE_HANDLE.write("%s%s%s" % ("subject:",self.subjectHeader,"\t"))
+        FILE_HANDLE.write("%s%s%s" % ("hit type:",self.hitType,"\t"))
+        FILE_HANDLE.write("%s%s%s" % ("identity:",self.identity,"\t"))
+        FILE_HANDLE.write("%s%s%s" % ("alignment length:",self.alignmentLength,"\t"))
+        FILE_HANDLE.write("%s%s%s" % ("mismatches:",self.mismatches,"\t"))
+        FILE_HANDLE.write("%s%s%s" % ("gapopens:",self.gapopens,"\t"))
+        FILE_HANDLE.write("%s%s%s%s%s" % ("query start/end:",self.queryStart,"/",self.queryEnd,"\t"))
+        FILE_HANDLE.write("%s%s%s%s%s" % ("subject start/end:",self.subjectStart,"/",self.subjectEnd,"\t"))
+        FILE_HANDLE.write("%s%s%s" % ("evalue:",self.evalue,"\t"))
+        FILE_HANDLE.write("%s%s%s" % ("bitscore:",self.bitscore,"\t"))
         FILE_HANDLE.write("%s%s%s%s%s" % ("query/subject coverage:",self.queryCoverage,"/",self.subjectCoverage,"\n"))
 
 ###########################################################################################################
@@ -554,18 +570,27 @@ class paralog(object):  #
     def __init__(self):
         self.header = ""      # header of paralog's fasta sequence
         self.blastHit = None  # hit object that links this paralog
+        self.coverage = 0.0
 
     def printAll(self):
         print ("Paralogs information:")
         print ("header:", self.header)
         print ("blast hit:")
         self.blastHit.printAll()
+        print ("coverage:",self.coverage)
 
     def printAll2file(self,FILE_HANDLE):
-        FILE_HANDLE.write("%s" % ("Paralogs information:\n"))
-        FILE_HANDLE.write("%s%s%s" % ("header:",self.header,"\n"))
-        FILE_HANDLE.write("%s" % ("blast hit:\n"))
+        FILE_HANDLE.write("%s\n" % ("Paralogs information:"))
+        FILE_HANDLE.write("%s%s%s\n" % ("header:",self.header))
+        FILE_HANDLE.write("%s\n" % ("blast hit:"))
         self.blastHit.printAll2file(FILE_HANDLE)
+        FILE_HANDLE.write("%s%s\n" % ("coverage:",self.coverage))
+        
+    def printAll2file_tab(self,FILE_HANDLE):
+        FILE_HANDLE.write("%s%s\n" % ("header:",self.header))
+        FILE_HANDLE.write("%s\n" % ("blast hit:"))
+        self.blastHit.printAll2file_tab(FILE_HANDLE)
+        FILE_HANDLE.write("%s%s\n" % ("coverage:",self.coverage))
         
 ###########################################################################################################
 class blast(object):
@@ -574,9 +599,9 @@ class blast(object):
 
     def __init__(self):
         self.blastHits = hitList()  # List of hit objects w/associated data 
-        self.blastHit = hit()
-        self.paralogT = paralog()   # paralog template
-        self.homologs = homology()
+        self.blastHit  = hit()
+        self.paralogT  = paralog()   # paralog template
+        self.homologs  = homology()
 
     def identifyLoners(self,kvargs):  # kvargs contains 2 sequence lists and a homology object
         if "seqList1" in kvargs.keys():       # a multi-fasta object
@@ -651,11 +676,18 @@ class blast(object):
 
         # For each sequence, record any qualifying hits to other sequences in the genome 
         for seq in inList1.fastaList:
+            qLength = abs(int(seq.start) - int(seq.end))
             for nextHit in inList2.blastHits:  # check if it's a hit of seq against non-self seq
+                qSpan = abs(int(nextHit.queryStart) - int(nextHit.queryEnd))
+                try:
+                    seqCoverage = 100 * (float(qSpan) / float(qLength))
+                except:
+                    seqCoverage = 0.0
                 if seq.header == nextHit.queryHeader and nextHit.queryHeader != nextHit.subjectHeader:
-                    if float(nextHit.identity) >= float(identity):  # check hit quality
+                    if float(nextHit.identity) >= float(identity) and seqCoverage >= coverage: # check hit quality
                         newParalog = copy.deepcopy(self.paralogT) # replicate the paralog template
                         newParalog.header = nextHit.subjectHeader
+                        newParalog.coverage = seqCoverage
                         newParalog.blastHit = nextHit
                         seq.paralogList.append(newParalog) # add to list of paralogs for this sequence object
                         paralogCount += 1 

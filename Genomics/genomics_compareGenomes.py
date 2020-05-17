@@ -3,14 +3,14 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Most recent update: 14 May 2020
+# Most recent update: 16 May 2020
 #
 # Module comprising classes and data structures for comparing genomes
 #
 # Classes and Methods:
 #    class comparison
 #       performComparison()
-#       ---
+#       ---data input
 #       loadData()
 #       readDirectories()
 #       parseDirectories()
@@ -20,38 +20,43 @@
 #       getGeneCallString()
 #       addHit2genome()
 #       findGenomeObject()
-#       ---
+#       ---comparison
 #       identifyParalogs()
-#       computeCoreGenome()
-#       computeCorrespondences()
 #       computeHomologyGroups()
 #       saveHomologyGroups()
-#       ---
+#       ---verification
 #       countGenomes()
 #       checkUnique()
-#       ---
+#       ---reporting
+#       writeCoreGenome()
+#       writeCorrespondences()
 #       writeMutualBestHitList()
 #       writeSingularBestHitList()
-#       writeGeneCorespondences()
 #       writeLonerList()
 #       printReport()
 #       printAll()
 #    class genome
+#       ---comparison
 #       identifyParalogs()
+#       ---verification
 #       checkUnique()
+#       ---reporting
 #       printReport()
 #       printAll()
 #    class paralogSet
+#       ---verification
 #       countParalogs()
+#       ---reporting
 #       printReport()
 #       printAll()
 #    class gene_protein
+#       ---data input
 #       addMutualBestHit()
 #       addSingularBestHit()
 #       addGroupMember()
-#       ---
+#       ---verification
 #       verifyLoner()
-#       ---
+#       ---reporting
 #       writeMutualBestHitList()
 #       writeSingularBestHitList()
 #       writeLonerList()
@@ -89,13 +94,13 @@ if PHATE_MESSAGES_STRING.lower() == 'true':
 if PHATE_PROGRESS_STRING.lower() == 'true':
     PHATE_PROGRESS = True
 
-# Override during development
+# Override
 PHATE_PROGRESS = True
 PHATE_WARNINGS = True
 PHATE_MESSAGES = True
 
+DEBUG = False
 DEBUG = True
-#DEBUG = False
 
 # Locations and files
 CGP_RESULTS_DIR      = os.environ["PHATE_CGP_RESULTS_DIR"]
@@ -143,18 +148,20 @@ class comparison(object):
     
     def __init__(self):
 
-        self.name                 = "multiPhATE2"     # Can assign a set to this genome comparison
-        self.directories          = []                # List of Results directories to be processed
-        self.referenceGenome      = ""                # name of genome assigned as the reference
-        self.genomeCount          = 0                 # number of genomes in set
-        self.genomeList           = []                # set of genome class objects
-        self.commonCore           = []                # list of genes that are common among all genomes; how to define exactly???
+        self.name                  = "multiPhATE2"  # Can assign a set to this genome comparison
+        self.directories           = []             # List of Results directories to be processed
+        self.referenceGenome       = ""             # name of genome assigned as the reference
+        self.genomeCount           = 0              # number of genomes in set
+        self.genomeList            = []             # set of genome class objects
+        self.commonCore            = []             # list of genes that are common among all genomes; how to define exactly???
+        self.geneHomologyGroups    = []             # closely related genes for hmmbuild (list of lists)
+        self.proteinHomologyGroups = []             # closely related proteins for hmmbuild (list of lists)
         # Templates
-        self.genomeTemplate       = genome()
-        self.geneTemplate         = gene_protein()
-        self.geneTemplate.type    = "gene"
-        self.proteinTemplate      = gene_protein()
-        self.proteinTemplate.type = "protein"
+        self.genomeTemplate        = genome()
+        self.geneTemplate          = gene_protein()
+        self.geneTemplate.type     = "gene"
+        self.proteinTemplate       = gene_protein()
+        self.proteinTemplate.type  = "protein"
 
     def performComparison(self):
         if PHATE_PROGRESS:
@@ -163,12 +170,6 @@ class comparison(object):
         if PHATE_PROGRESS:
             print("genomics_compareGenomes says, Identifying paralogs.")
         self.identifyParalogs()
-        if PHATE_PROGRESS:
-            print("genomics_compareGenomes says, Computing core genome.")
-        self.computeCoreGenome()
-        if PHATE_PROGRESS:
-            print("genomics_compareGenomes says, Computing gene correspondences.")
-        self.computeCorrespondences()
         if PHATE_PROGRESS:
             print("genomics_compareGenomes says, Computing homology groups.")
         self.computeHomologyGroups()
@@ -205,6 +206,9 @@ class comparison(object):
             for directory in dirList:
                 print("directory:",directory)
         return dirList
+
+    def parseBlastFiles(self,dirList):
+        return
 
     def parseDirectories(self,dirList):
         # Walk through the CGP output directory; determine which genomes were processed; add them to a non-redundant list
@@ -260,7 +264,7 @@ class comparison(object):
         if PHATE_PROGRESS:
             print("genomics_compareGenomes says, Parsing Report files.")
         # Load data for mutual and singular best hits and loners for all CGP binary genome comparisons.
-        for i in range(0,len(dirList)-1):
+        for i in range(0,len(dirList)):
             directory = dirList[i]
             (genome1,genome2) = self.findGenomes(directory)
             reportFile = os.path.join(CGP_RESULTS_DIR,directory,CGP_REPORT_FILE)
@@ -471,15 +475,6 @@ class comparison(object):
             print("genomics_compareGenomes says, Paralog identification complete.")
         return
 
-    def computeCorrespondences(self):
-        return
-
-    def computeCoreGenome(self):
-        # Compute core genomes
-        if PHATE_PROGRESS:
-            print("genomics_compareGenomes says, Core genome computation complete.")
-        return
-
     def computeHomologyGroups(self):
         # Compute homology groups
         if PHATE_PROGRESS:
@@ -509,7 +504,12 @@ class comparison(object):
             print("genomics_compareGenomes says, DEBUG: There are",self.genomeCount,"genomes.")
         return
 
-    # For development purposes
+    def checkMutualBestHitList(self):
+        genomeCount = len(self.genomeList)
+        for genome in self.genomeList:
+            genome.checkMutualBestHitList(genomeCount)
+        return
+
     def checkUnique(self):
         tempList = []
         for genome in genomeList:
@@ -521,6 +521,42 @@ class comparison(object):
         return
 
     #===== COMPARISON PRINT METHODS
+
+    def writeCorrespondences(self):
+        for genome in self.genomeList:
+            if genome.isReference:
+                print("********** GENE CORRESPONDENCES **********")
+                # For each reference gene, print non-redundant list of mutual or singular best hit wrt each other genome
+                for gene in genome.geneList:
+                    correspondenceList = []
+                    print("Genes corresponding to",gene.identifier)
+                    for hit in gene.mutualBestHitList:
+                        if hit not in correspondenceList:
+                            correspondenceList.append(hit)
+                    for hit in gene.singularBestHitList:
+                        if hit not in correspondenceList:
+                            correspondenceList.append(hit)
+                    for hit in correspondenceList:
+                        print("  ",hit)
+                print("********** End Gene Correspondences")
+        return
+
+    def writeCoreGenome(self):
+        genomeCount = len(self.genomeList)
+        count = 0
+        for genome in self.genomeList:
+            if genome.isReference:
+                print("********** CORE GENOME **********")
+                # For each reference gene that matches genes in all other genomes, list the gene set
+                for gene in genome.geneList:
+                    if len(gene.mutualBestHitList) == genomeCount-1:
+                        count += 1
+                        print("Gene Set #",count,':')
+                        print(gene.identifier)
+                        for hit in gene.mutualBestHitList:
+                            print(hit)
+                print("********** End Core Genome **********")
+        return
 
     def writeMutualBestHitList(self):
         for genome in self.genomeList:
@@ -577,6 +613,8 @@ class comparison(object):
         self.writeMutualBestHitList()
         self.writeSingularBestHitList()
         self.writeLonerList()
+        self.writeCoreGenome()
+        self.writeCorrespondences()
         return
 
     def printAll(self):
@@ -611,6 +649,14 @@ class genome(object):
         return
 
     #===== GENOME DATA CHECK METHODS
+
+    def checkMutualBestHitList(self,genomeCount):
+        for gene in self.geneList:
+            if len(gene.mutualBestHitList) != genomeCount-1:
+                if PRINT_WARNINGS:
+                    print("genomics_compareGenomes says, WARNING: mutualBestHitList for gene",gene.identifier,"incorrect")
+                    print("   ",gene.mutualBestHitList)
+        return
 
     def checkUnique(self):
         tempList = []

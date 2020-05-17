@@ -6,7 +6,7 @@
 # compareGeneProfiles_main.py
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last update: 29 April 2020
+# Last update: 16 May 2020
 #
 # This program compares the gene calls from 2 genomes and identifies genes that 
 # match, are similar, or are unique in each genome. This code is a re-write of
@@ -126,6 +126,7 @@ ANNOTATION_FILE2 = ""   #
 OUT_FILE         = "compareGeneProfiles_main.out"
 REPORT_FILE      = "compareGeneProfiles_main.report"
 SUMMARY_FILE     = "compareGeneProfiles_main.summary"
+PARALOG_FILE     = "compareGeneProfiles_main.paralogs"
 LOG_FILE         = "compareGeneProfiles_main.log"
 LOG_COPY         = "compareGeneProfiles_main.log.copy"
 OUT              = ""   # File handles...
@@ -180,6 +181,7 @@ projectDirectory = "" # d
 outFile      = ""     # Contains misc output
 reportFile   = ""     # Contains binary genome comparison data 
 summaryFile  = ""     # Contains summary data pertaining to binary comparison
+paralogFile  = ""     # Contains list of paralogs detected
 logFile      = ""     # script log
 
 errorLog = os.path.join(CODE_BASE_DIR, "compareGeneProfiles_main.err") # error log (records prior to script main body)
@@ -200,8 +202,8 @@ parameters = { # data structure for input to class methods; defaults as indicate
 "domainMatchCoverage"                    : 45,
 "domainSimilarityIdentity"               : 60,
 "domainSimilarityCoverage"               : 45,
-"paralogMatchIdentity"                   : 80,
-"paralogMatchCoverage"                   : 80,
+"paralogMatchIdentity"                   : 20,  # TESTING
+"paralogMatchCoverage"                   : 20,  #
 "paralogSimilarityIdentity"              : 60,
 "paralogSimilarityCoverage"              : 75,
 "paralogDomainMatchIdentity"             : 95,
@@ -216,8 +218,8 @@ parameters = { # data structure for input to class methods; defaults as indicate
 "proteinDomainMatchCoverage"             : 45,
 "proteinDomainSimilarityIdentity"        : 60,
 "proteinDomainSimilarityCoverage"        : 45,
-"proteinParalogMatchIdentity"            : 95,
-"proteinParalogMatchCoverage"            : 95,
+"proteinParalogMatchIdentity"            : 20,  #
+"proteinParalogMatchCoverage"            : 20,  #
 "proteinParalogSimilarityIdentity"       : 60,
 "proteinParalogSimilarityCoverage"       : 75,
 "proteinParalogDomainMatchIdentity"      : 95,
@@ -539,6 +541,7 @@ if SERVER:
     OUT_DIR      = os.path.join(files["projectDirectory"], OUT_DIR)
     reportFile   = os.path.join(OUT_DIR, "compareGeneProfiles_main.report")
     profilesFile = os.path.join(OUT_DIR, "compareGeneProfiles_main.out")
+    paralogFile  = os.path.join(OUT_DIR, "compareGeneProfiles_main.paralogs")
     logFile      = os.path.join(OUT_DIR, LOG_FILE)
 
 if PHATE_PROGRESS:
@@ -592,7 +595,8 @@ command = "mkdir " + OUT_DIR
 os.system(command)
 outFile      = os.path.join(OUT_DIR, OUT_FILE)     # Contains misc output
 reportFile   = os.path.join(OUT_DIR, REPORT_FILE)  # Contains binary genome comparison data
-summaryFile  = os.path.join(OUT_DIR, SUMMARY_FILE )# Contains summary data pertaining to binary comparison
+summaryFile  = os.path.join(OUT_DIR, SUMMARY_FILE) # Contains summary data pertaining to binary comparison
+paralogFile  = os.path.join(OUT_DIR, PARALOG_FILE) # Contains list of paralogs detected
 logFile      = os.path.join(OUT_DIR, LOG_FILE)
 
 LOG          = open(logFile,"w")
@@ -633,6 +637,7 @@ GENOME_FILE1.close()
 
 fLines = GENOME_FILE2.read().splitlines()
 genome2 = genomeSequence.genome()
+genome2.filename = files["genomeFile2"]
 genome2.addContigs(fLines)
 GENOME_FILE2.close()
 
@@ -690,6 +695,8 @@ def ExtractGeneCalls(genomeX,lines):
         "type"           : "nt",
         "parentSequence" : "",
         "order"          : 0,
+        "start"          : 0,
+        "end"            : 0,
         "annotationList" : [],
         }
     protein = {  # for passing data to fasta class
@@ -699,6 +706,8 @@ def ExtractGeneCalls(genomeX,lines):
         "type"           : "nt",
         "parentSequence" : "",
         "order"          : 0,
+        "start"          : 0,
+        "end"            : 0,
         "annotationList" : [],
         }
     translationArgs = {  # for passing to translate2protein function
@@ -735,6 +744,8 @@ def ExtractGeneCalls(genomeX,lines):
 
             # Transfer data to gene dict
             gene["order"]          = geneCountCDS
+            gene["start"]          = gff["start"]
+            gene["end"]            = gff["end"]
             gene["name"]           = "cds" + str(geneCountCDS)
             gene["parentSequence"] = fields[0]  # the contig this gene is on (a shortHeader if from RAST)
             gene["sequence"] = genomeX.getSubsequence(gff["start"],gff["end"],gene["parentSequence"])
@@ -753,6 +764,8 @@ def ExtractGeneCalls(genomeX,lines):
 
             # Transfer data to protein dict
             protein["order"]                = gene["order"]
+            protein["start"]                = gene["start"]
+            protein["end"]                  = gene["end"]
             protein["name"]                 = gene["name"]
             protein["parentSequence"]       = gene["parentSequence"]
             protein["header"]               = gene["header"]
@@ -1236,6 +1249,39 @@ REPORT.close()
 if PHATE_PROGRESS:
     print("cgp_compareGeneProfiles_main says, Report(s) created.")
 
+#######################################################################################################
+# Create paralog reports
+#######################################################################################################
+
+if PHATE_MESSAGES:
+    print("cgp_compareGeneProfiles_main says, Writing paralog file.")
+PARALOG = open(paralogFile,"w")
+
+# genome1
+PARALOG.write("%s%s\n" % ("# PARALOGS for genome ",genome1.filename))
+PARALOG.write("%s\n" % ("# Gene Paralogs"))
+for fasta_obj in genome1.geneSet.fastaList:
+    for paralog_obj in fasta_obj.paralogList:
+        paralog_obj.printAll2file_tab(PARALOG)
+PARALOG.write("%s\n" % ("# Protein Paralogs"))
+for fasta_obj in genome1.proteinSet.fastaList:
+    for paralog_obj in fasta_obj.paralogList:
+        paralog_obj.printAll2file_tab(PARALOG)
+# genome2
+PARALOG.write("%s%s\n" % ("# PARALOGS for genome ",genome2.filename))
+PARALOG.write("%s\n" % ("# Gene Paralogs"))
+for fasta_obj in genome2.geneSet.fastaList:
+    for paralog_obj in fasta_obj.paralogList:
+        paralog_obj.printAll2file_tab(PARALOG)
+PARALOG.write("%s\n" % ("# Protein Paralogs"))
+for fasta_obj in genome2.proteinSet.fastaList:
+    for paralog_obj in fasta_obj.paralogList:
+        paralog_obj.printAll2file_tab(PARALOG)
+
+PARALOG.close()
+if PHATE_PROGRESS:
+    print("cgp_compareGeneProfiles_main says, gene paralog file created.")
+
 #########################################################################################################
 # Clean Up
 #########################################################################################################
@@ -1246,15 +1292,17 @@ LOG.close()
 #***  For pairwise comparison, that means: out, summary, report files
 #***  For NxN comparisons, that means overall results files (not yet generated) 
 
-EMAIL_DIR   = BASE_DIR 
-logCopy     = os.path.join(EMAIL_DIR, LOG_COPY)
-outCopy     = os.path.join(EMAIL_DIR, OUT_FILE)
-reportCopy  = os.path.join(EMAIL_DIR, REPORT_FILE)
-summaryCopy = os.path.join(EMAIL_DIR, SUMMARY_FILE)
-call(["cp", logFile,     logCopy])
-call(["cp", outFile,     outCopy])
-call(["cp", reportFile,  reportCopy])
-call(["cp", summaryFile, summaryCopy])
+EMAIL_DIR    = BASE_DIR 
+logCopy      = os.path.join(EMAIL_DIR, LOG_COPY)
+outCopy      = os.path.join(EMAIL_DIR, OUT_FILE)
+reportCopy   = os.path.join(EMAIL_DIR, REPORT_FILE)
+summaryCopy  = os.path.join(EMAIL_DIR, SUMMARY_FILE)
+paralogCopy  = os.path.join(EMAIL_DIR, PARALOG_FILE)
+call(["cp", logFile,      logCopy])
+call(["cp", outFile,      outCopy])
+call(["cp", reportFile,   reportCopy])
+call(["cp", summaryFile,  summaryCopy])
+call(["cp", paralogFile,  paralogCopy])
 
 if PHATE_PROGRESS:
     print ("cpg_compareGeneProfiles_main says, CompareGeneProfiles completed.")

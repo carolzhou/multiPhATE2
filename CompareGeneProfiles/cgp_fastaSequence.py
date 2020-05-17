@@ -2,6 +2,8 @@
 # Module: cgp_fastaSequence.py
 #
 # Programmer: Carol L. Ecale Zhou
+#
+# Last update: 16 May 2020
 # 
 # Module containing classes and methods for representing a multi-fasta sequence and associated methods
 # Classes and methods: 
@@ -192,6 +194,10 @@ class fasta(object):
                 self.sequence = geneData["sequence"]
             if "type" in list(geneData.keys()):
                 self.sequenceType = geneData["type"]
+            if "start" in list(geneData.keys()):
+                self.start = geneData["start"]
+            if "end" in list(geneData.keys()):
+                self.end = geneData["end"]
             if "parentSequence" in list(geneData.keys()):
                 self.parentSequence = geneData["parentSequence"]
             if "parentName" in list(geneData.keys()):
@@ -216,6 +222,10 @@ class fasta(object):
                 self.sequence = proteinData["sequence"]
             if "type" in list(proteinData.keys()):
                 self.sequenceType = proteinData["type"]
+            if "start" in list(proteinData.keys()):
+                self.start = proteinData["start"]
+            if "end" in list(proteinData.keys()):
+                self.end = proteinData["end"]
             if "parentSequence" in list(proteinData.keys()):
                 self.parentSequence = proteinData["parentSequence"]
             if "parentName" in list(proteinData.keys()):
