@@ -1,4 +1,4 @@
-##############################################
+#############################################
 # Module: blastAnalysis.py
 # Programmer:  Carol L. Ecale Zhou
 # Date of last update:  16 May 2020
@@ -568,27 +568,28 @@ class homology(object):  # holds comparative information between 2 gene/protein 
 ###########################################################################################################
 class paralog(object):  #
     def __init__(self):
-        self.header = ""      # header of paralog's fasta sequence
-        self.blastHit = None  # hit object that links this paralog
+        self.header   = ""      # header of paralog's fasta sequence
+        self.contig   = ""
+        self.blastHit = None    # hit object that links this paralog
         self.coverage = 0.0
 
     def printAll(self):
         print ("Paralogs information:")
-        print ("header:", self.header)
+        print ("header:", self.header," contig:",self.contig)
         print ("blast hit:")
         self.blastHit.printAll()
         print ("coverage:",self.coverage)
 
     def printAll2file(self,FILE_HANDLE):
         FILE_HANDLE.write("%s\n" % ("Paralogs information:"))
-        FILE_HANDLE.write("%s%s%s\n" % ("header:",self.header))
-        FILE_HANDLE.write("%s\n" % ("blast hit:"))
+        FILE_HANDLE.write("%s%s%s%s\n" % ("header:",self.header," contig:",self.contig))
+        FILE_HANDLE.write("%s\n" % ("# blast hit:"))
         self.blastHit.printAll2file(FILE_HANDLE)
         FILE_HANDLE.write("%s%s\n" % ("coverage:",self.coverage))
         
     def printAll2file_tab(self,FILE_HANDLE):
-        FILE_HANDLE.write("%s%s\n" % ("header:",self.header))
-        FILE_HANDLE.write("%s\n" % ("blast hit:"))
+        FILE_HANDLE.write("%s%s%s%s\n" % ("header:",self.header," contig:",self.contig))
+        FILE_HANDLE.write("%s\n" % ("# blast hit:"))
         self.blastHit.printAll2file_tab(FILE_HANDLE)
         FILE_HANDLE.write("%s%s\n" % ("coverage:",self.coverage))
         
@@ -678,16 +679,19 @@ class blast(object):
         for seq in inList1.fastaList:
             qLength = abs(int(seq.start) - int(seq.end))
             for nextHit in inList2.blastHits:  # check if it's a hit of seq against non-self seq
+                seqContig = seq.contig
                 qSpan = abs(int(nextHit.queryStart) - int(nextHit.queryEnd))
                 try:
                     seqCoverage = 100 * (float(qSpan) / float(qLength))
                 except:
                     seqCoverage = 0.0
+                # Identify hit corresponing to current sequence, and exclude hits that are self-self.
                 if seq.header == nextHit.queryHeader and nextHit.queryHeader != nextHit.subjectHeader:
                     if float(nextHit.identity) >= float(identity) and seqCoverage >= coverage: # check hit quality
                         newParalog = copy.deepcopy(self.paralogT) # replicate the paralog template
-                        newParalog.header = nextHit.subjectHeader
+                        newParalog.header   = nextHit.subjectHeader
                         newParalog.coverage = seqCoverage
+                        newParalog.contig   = seqContig
                         newParalog.blastHit = nextHit
                         seq.paralogList.append(newParalog) # add to list of paralogs for this sequence object
                         paralogCount += 1 

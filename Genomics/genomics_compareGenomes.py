@@ -3,7 +3,7 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Most recent update: 16 May 2020
+# Most recent update: 18 May 2020
 #
 # Module comprising classes and data structures for comparing genomes
 #
@@ -107,6 +107,7 @@ CGP_RESULTS_DIR      = os.environ["PHATE_CGP_RESULTS_DIR"]
 GENOMICS_RESULTS_DIR = os.environ["PHATE_GENOMICS_RESULTS_DIR"]
 CGP_LOG_FILE         = "compareGeneProfiles_main.log"           # Lists genome fasta and annotation files
 CGP_REPORT_FILE      = "compareGeneProfiles_main.report"        # Tabbed file with gene-gene listing
+CGP_PARALOG_FILE     = "compareGeneProfiles_main.paralogs"      # Paralogs detected by CGP; text format 
 CGP_OUT_FILE         = "compareGeneProfiles_main.out"           # Same data as report file, but in python list format
 CGP_SUMMARY_FILE     = "compareGeneProfiles_main.summary"       # High-level summary of genome-genome comparison
 
@@ -164,18 +165,20 @@ class comparison(object):
         self.proteinTemplate.type  = "protein"
 
     def performComparison(self):
+
         if PHATE_PROGRESS:
             print("genomics_compareGenomes says, Loading data.")
         self.loadData()
-        if PHATE_PROGRESS:
-            print("genomics_compareGenomes says, Identifying paralogs.")
-        self.identifyParalogs()
+
         if PHATE_PROGRESS:
             print("genomics_compareGenomes says, Computing homology groups.")
         self.computeHomologyGroups()
         if PHATE_PROGRESS:
             print("genomics_compareGenomes says, Writing homology groups to files.")
         self.saveHomologyGroups()
+
+        if PHATE_PROGRESS:
+            print("genomics_compareGenomes says, Writing final reports.")
         self.printReport()
 
     #===== COMPARISON DATA LOAD METHODS
@@ -206,9 +209,6 @@ class comparison(object):
             for directory in dirList:
                 print("directory:",directory)
         return dirList
-
-    def parseBlastFiles(self,dirList):
-        return
 
     def parseDirectories(self,dirList):
         # Walk through the CGP output directory; determine which genomes were processed; add them to a non-redundant list
@@ -259,7 +259,6 @@ class comparison(object):
 
     # Method parseReportFiles pulls data from CGP Results_* directories into memory in order to determine
     # a core genome, gene-gene correspondences among all genomes, and list loner genes per genome.
-    # COMBINE SECTIONS INTO A SINGLE PASS
     def parseReportFiles(self,dirList):
         if PHATE_PROGRESS:
             print("genomics_compareGenomes says, Parsing Report files.")
@@ -267,13 +266,12 @@ class comparison(object):
         for i in range(0,len(dirList)):
             directory = dirList[i]
             (genome1,genome2) = self.findGenomes(directory)
-            reportFile = os.path.join(CGP_RESULTS_DIR,directory,CGP_REPORT_FILE)
+            reportFile  = os.path.join(CGP_RESULTS_DIR,directory,CGP_REPORT_FILE)
+            paralogFile = os.path.join(CGP_RESULTS_DIR,directory,CGP_PARALOG_FILE)
             if PHATE_PROGRESS:
                 print("genomics_compareGenomes says, Parsing report file",reportFile,"for mutual and singular best hits, and loners.")
             self.loadBestHits(genome1,genome2,reportFile)
-
-        # Load data for paralogs from all CGP genome self-blast results
-        #*** WRITE CODE
+            self.loadParalogs(paralogFile)
 
         return
 
@@ -357,6 +355,136 @@ class comparison(object):
             self.addHit2genome(dataArgs)
 
         REPORT_H.close()
+        return
+
+    def loadParalogs(self,paralogFile):
+        PARALOG_H = open(paralogFile,"r")
+        pLines = PARALOG_H.read().splitlines()
+
+        # Select and process mutual-best-hit data lines
+        fields = []; genomeNum = ""; paralogType = ""; genomeName = ""
+        GENE = False; PROTEIN = False
+
+        # First, reset dataArgs data structure, for passing parameters to self.addHit2genome
+        dataArgs = { 
+            "genome1"      : "",   # the fasta file name
+            "genome2"      : "",   
+            "contig1"      : "",   
+            "contig2"      : "",   
+            "gene1"        : "",
+            "gene2"        : "",
+            "protein1"     : "",
+            "protein2"     : "",
+            "geneCall1"    : "",
+            "geneCall2"    : "",
+            "annotations1" : "",
+            "annotations2" : "",
+            "hitType"      : "",
+            }
+
+        # Parse data from paralogs report file
+        for pLine in pLines:
+
+            # Skip lines not to be processed in this method
+            match_comment = re.search('^#',pLine)
+            match_blank   = re.search('^$',pLine)
+            if match_comment or match_blank:
+                continue
+            match_genome   = re.search('PARALOGS',         pLine)
+            match_gene     = re.search('Gene\sParalogs',   pLine)
+            match_protein  = re.search('Protein\sParalogs',pLine)
+            match_header   = re.search('header:',          pLine)
+            match_hitLine  = re.search('query:',           pLine)
+            match_coverage = re.search('coverage:',        pLine)
+
+            # Determine which genome's paralogs are being reported
+            if match_genome:
+                match_genomePath = re.search('[\w\d\/\.]',pLine)
+                if match_genomePath:
+                    genomePathString       = match_genomePath.group(0)
+                    genomeFileString       = os.path.basename(genomePath)
+                    (genomeName,extension) = genomeFileString.split('.')
+                    dataArgs["genome1"] = genomeName
+                else:
+                    if PHATE_WARNINGS:
+                        print("genomics_compareGenomes says, WARNING: Cannot read genome path from paralogs file,",paralogFile)
+            else:
+                if PHATE_WARNINGS:
+                    print("genomics_compareGenomes says, WARNING: Cannot read genome name from paralogs file,",paralogFile)
+
+            # Determine whether it's a gene versus protein paralog
+            if match_gene:
+                GENE = True
+            if match_protein:
+                PROTEIN = True
+
+            # Parse paralog data; add to paralog list 
+            if match_hitLine:
+                fields = pLine.split('\t')
+                queryString        = fields[0]
+                subjectString      = fields[1]
+                hitType            = fields[2]
+                identity           = fields[3]
+                alignLength        = fields[4]
+                mismatches         = fields[5]
+                gapopens           = fields[6]
+                queryStartEnd      = fields[7]
+                subjectStartEnd    = fields[8]
+                (preamble,query)   = queryString.split(':')
+                (preamble,subject) = subjectString.split(':')
+            if GENE:
+                dataArgs["gene1"]    = query
+                dataArgs["gene2"]    = subject
+                dataArgs["hitType"]  = "gene_paralog"
+            elif PROTEIN:
+                dataArgs["protein1"] = query
+                dataArgs["protein2"] = subject
+                dataArgs["hitType"]  = "protein_paralog"
+
+            # Read coverage (last data line per paralog) and add this paralog to genome's paralogList; Then, reset
+            if match_coverage:
+                coverage = re.search('[\d\.]',pLine)
+
+                # Insert data record into genome object
+                self.addParalog2genome(dataArgs)
+
+                # Reset data structures
+                dataArgs = { 
+                    "genome1"      : "",   # the fasta file name
+                    "genome2"      : "",   # not used for paralog hit 
+                    "contig1"      : "",   
+                    "contig2"      : "",   
+                    "gene1"        : "",
+                    "gene2"        : "",
+                    "protein1"     : "",
+                    "protein2"     : "",
+                    "geneCall1"    : "",
+                    "geneCall2"    : "",
+                    "annotations1" : "",
+                    "annotations2" : "",
+                    "hitType"      : "paralog",
+                    }
+                GENE       = False
+                PROTEIN    = False
+                genomeName = ""
+                query      = ""
+                subject    = ""
+                coverage   = 0.0
+
+        PARALOG_H.close()
+        return
+
+    def addParalog2genome(self,dataArgs):
+        if "genome1" in dataArgs.keys():
+            genome = dataArgs["genome1"]
+        else:
+            if PHATE_WARNINGS:
+                print("genomics_compareGenomes says, WARNING: Expected genome1 name in addParalog2genome")
+                return
+        for genome_obj in self.genomeList:
+            if genome_obj.name == genome:
+                genome_obj.addParalog(dataArgs)
+                break
         return
 
     # Method getGeneCallString extracts the genecall name from the annotation string
@@ -463,17 +591,17 @@ class comparison(object):
     #===== COMPARISON GENOMIC METHODS
 
     # Method identifyParalogs inspects the CGP blast output for genome x self to identify paralogs
-    def identifyParalogs(self):
-        if DEBUG:
-            print("genomics_compareGenomes says, DEBUG: Number of genomes in self.genomeList:",len(self.genomeList))
-        for genome in self.genomeList:
-            if PHATE_PROGRESS:
-                print("genomics_compareGenomes says, Identifying paralogs for genome",genome.name)
-            genome.identifyParalogs()
-
-        if PHATE_PROGRESS:
-            print("genomics_compareGenomes says, Paralog identification complete.")
-        return
+    #def identifyParalogs(self):
+    #    if DEBUG:
+    #        print("genomics_compareGenomes says, DEBUG: Number of genomes in self.genomeList:",len(self.genomeList))
+    #    for genome in self.genomeList:
+    #        if PHATE_PROGRESS:
+    #            print("genomics_compareGenomes says, Identifying paralogs for genome",genome.name)
+    #        genome.identifyParalogs()
+    #
+    #    if PHATE_PROGRESS:
+    #        print("genomics_compareGenomes says, Paralog identification complete.")
+    #    return
 
     def computeHomologyGroups(self):
         # Compute homology groups
@@ -629,7 +757,8 @@ class comparison(object):
         return
 
 #############################################################################################################
-# Class genome stores metadat aedDirectories(self):
+# Class genome stores metadata 
+#############################################################################################################
 class genome(object):
 
     def __init__(self):
@@ -641,11 +770,45 @@ class genome(object):
         self.proteinList          = []     # List of gene_protein objects 
         self.paralogList          = []     # List of paralogSet objects
 
-    def identifyParalogs(self):
-        # 
+    def addParalog(self,dataArgs):
+        hitType = ""; gene1 = ""; gene2 = ""; protein1 = ""; protein2 = ""
+        geneCall1 = ""; geneCall2 = ""
 
-        if PHATE_PROGRESS:
-            print("genomics_compareGenomes says, Paralogs identified for genome",self.name)
+        # Read input parameters; not all these are being used just yet
+        if "hitType" in dataArgs.keys():
+            hitType = dataArgs["hitType"]
+        if re.search('gene',hitType):
+            if "gene1" in dataArgs.keys():
+                gene1 = dataArgs["gene1"]
+            if "gene2" in dataArgs.keys():
+                gene2 = dataArgs["gene2"]
+        elif re.search('protein',hitType):
+            if "protein1" in dataArgs.keys():
+                protein1 = dataArgs["protein1"]
+            if "protein2" in dataArgs.keys():
+                protein2 = dataArgs["protein2"]
+        if "contig1" in dataArgs.keys():
+            contig1 = dataArgs["contig1"]
+        if "contig2" in dataArgs.keys():
+            contig2 = dataArgs["contig2"]
+        if "geneCall1" in dataArgs.keys():
+            geneCall1 = dataArgs["geneCall1"]
+        if "geneCall2" in dataArgs.keys():
+            geneCall2 = dataArgs["geneCall2"]
+        if "annotation1" in dataArgs.keys():
+            annotation1 = dataArgs["annotation1"]
+        if "annotation2" in dataArgs.keys():
+            annotation2 = dataArgs["annotation2"]
+
+        # Find gene1 and gene2 in genome; get gene identifiers
+        for gene_obj1 in self.geneList:
+            if gene_obj1.cgpHeader == gene1:
+                for gene_obj2 in self.geneList:
+                    if gene_obj2.cgpHeader == gene2:
+                        paralogID = gene_obj2.identifier
+                        if paralogID not in gene_obj1.paralogList:
+                            gene_obj1.paralogList.append(paralogID)
+                            break
         return
 
     #===== GENOME DATA CHECK METHODS

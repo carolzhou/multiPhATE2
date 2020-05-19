@@ -689,6 +689,7 @@ def ExtractGeneCalls(genomeX,lines):
         "source"       : "multiPhATE",  #***
         }  
     gene = {  # for passing data to fasta class
+        "contig"         : "",
         "header"         : "",
         "name"           : "",
         "sequence"       : "",
@@ -700,6 +701,7 @@ def ExtractGeneCalls(genomeX,lines):
         "annotationList" : [],
         }
     protein = {  # for passing data to fasta class
+        "contig"         : "",
         "header"         : "",
         "name"           : "",
         "sequence"       : "",
@@ -748,6 +750,7 @@ def ExtractGeneCalls(genomeX,lines):
             gene["end"]            = gff["end"]
             gene["name"]           = "cds" + str(geneCountCDS)
             gene["parentSequence"] = fields[0]  # the contig this gene is on (a shortHeader if from RAST)
+            gene["contig"]         = fields[0]
             gene["sequence"] = genomeX.getSubsequence(gff["start"],gff["end"],gene["parentSequence"])
             if gff["strand"] == '-':  # Reverse complement sequence if on reverse strand
                 #reverseComplement = gene["sequence"].translate(complements)[::-1]
@@ -763,6 +766,7 @@ def ExtractGeneCalls(genomeX,lines):
             newGene.addAnnotation(newAnnotation)
 
             # Transfer data to protein dict
+            protein["contig"]               = gene["contig"]
             protein["order"]                = gene["order"]
             protein["start"]                = gene["start"]
             protein["end"]                  = gene["end"]
