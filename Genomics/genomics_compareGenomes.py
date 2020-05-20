@@ -3,7 +3,7 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Most recent update: 18 May 2020
+# Most recent update: 19 May 2020
 #
 # Module comprising classes and data structures for comparing genomes
 #
@@ -297,19 +297,19 @@ class comparison(object):
         return(genome1,genome2)
 
     def loadBestHits(self,genome1,genome2,reportFile):
-        DONE = False; hitCount = 0
+        PROTEIN = False; hitCount = 0
         REPORT_H = open(reportFile,"r")
         rLines = REPORT_H.read().splitlines()
 
         # Select and process mutual-best-hit data lines
+        # Gene hits are loaded first, then protein
         for rLine in rLines:
             fields = []; genomeNum = ""; hitType = ""
             # Skip lines not to be processed in this method
             match_comment = re.search('^#',rLine)
             match_protein = re.search('^#PROTEIN\sHITS',rLine)
-            if match_protein:
-                DONE = True
-                break
+            if match_protein: 
+                PROTEIN = True  # Prepare for loading protein hits next
             if match_comment:
                 continue
             fields = rLine.split('\t')
@@ -322,14 +322,16 @@ class comparison(object):
                 "contig2"      : "",
                 "gene1"        : "",
                 "gene2"        : "",
-                #"protein1"     : "",
-                #"protein2"     : "",
+                "protein1"     : "",
+                "protein2"     : "",
                 "geneCall1"    : "",
                 "geneCall2"    : "",
                 "annotations1" : "",
                 "annotations2" : "",
                 "hitType"      : "",
+                "hitFlavor"    : "",
                 }
+
             # Prepare arguments for passing to addHit2genome method
             if genomeNum == "genome1":
                 dataArgs["hitType"] = hitType + '1'
@@ -338,19 +340,28 @@ class comparison(object):
             else:
                 if PHATE_WARNINGS:
                     print("genomics_compareGenomes says, WARNING: Unrecognized GENOME_TYPE")
+
             # Record data from reportFile dataline
-            # gene1
-            dataArgs["contig1"]      = fields[G1_CONTIG]
-            dataArgs["gene1"]        = fields[G1_HEADER]
-            dataArgs["annotations1"] = fields[G1_ANNOTATIONS]
+            # Fields pertaining to gene or protein
+            dataArgs["contig1"]          = fields[G1_CONTIG]
+            dataArgs["contig2"]          = fields[G2_CONTIG]
+            dataArgs["annotations1"]     = fields[G1_ANNOTATIONS]
             if dataArgs["annotations1"] != "":
-                dataArgs["geneCall1"] = self.getGeneCallString(fields[G1_ANNOTATIONS]) 
-            # gene2
-            dataArgs["contig2"]      = fields[G2_CONTIG]
-            dataArgs["gene2"]        = fields[G2_HEADER]
-            dataArgs["annotations2"] = fields[G2_ANNOTATIONS]
+                dataArgs["geneCall1"]    = self.getGeneCallString(fields[G1_ANNOTATIONS]) 
+            dataArgs["annotations2"]     = fields[G2_ANNOTATIONS]
             if dataArgs["annotations2"] != "":
                 dataArgs["geneCall2"]    = self.getGeneCallString(fields[G2_ANNOTATIONS]) 
+
+            # Protein-, gene-specific fields
+            if PROTEIN:
+                dataArgs["hitFlavor"]    = "protein"
+                dataArgs["protein1"]     = fields[G1_HEADER]
+                dataArgs["protein2"]     = fields[G2_HEADER]
+            else:
+                dataArgs["hitFlavor"]    = "gene"
+                dataArgs["gene1"]        = fields[G1_HEADER]
+                dataArgs["gene2"]        = fields[G2_HEADER]
+
             # Insert data record into genome object
             self.addHit2genome(dataArgs)
 
@@ -493,93 +504,194 @@ class comparison(object):
         geneCallString = inList[0]          # First element of the list is the genecall string
         return geneCallString
 
-    def addHit2genome(self,dataArgs):  
-        gene_obj = self.geneTemplate
+    def addHit2genome(self,dataArgs): 
+        # This method inserts a new gene hit into a genome's geneList or proteinList, or records a gene as a loner
+        # with respect to another genome. Note that every gene is assumed a loner until proven otherwise. Any mutual
+        # or singular hit to a gene/protein of another genome nullifies that gene's status as a loner.
+
+        # First, create gene or protein object
+        hitFlavor = "gene"; GENE = False; PROTEIN = False
+        gene1id = ""; gene2id = ""; protein1id = ""; protein2id = ""
+        gene_obj = None; protein_obj = None   # a gene_protein object (gene or protein template)
+
+        # Create gene_protein object, according to flavor
+        if "hitFlavor" in dataArgs.keys():
+            hitFlavor = dataArgs["hitFlavor"]
+        else:
+            if PHATE_WARNINGS:
+                print("genomics_compareGenomes says, WARNING: hitFlavor not specified")
+                return
+        if hitFlavor == "gene":
+            gene_obj = self.geneTemplate
+            GENE = True
+        elif hitFlavor == "protein":
+            protein_obj = self.proteinTemplate 
+            PROTEIN = True
+        else:
+            if PHATE_WARNINGS:
+                print("genomics_compareGenomes says, WARNING: Unrecognized hitFlavor, ",dataArgs["hitFlavor"])
+                return
+
         GENOME_ONE = False; GENOME_TWO = False # Should exist data for both genomes if mutual or singular hit; one if loner
         # Data needed for "mutual" or "singular" hit entry
         # Determine which genome's hit to process, or both.
         # Find the two genome objects to which mutual hits will be added
         # Compute unique identifiers for query and subject genes 
-        gene1id = ""; gene2id = ""
-        if dataArgs["gene1"] != "":
-            GENOME_ONE = True
-            genome1_obj = self.findGenomeObject(dataArgs["genome1"])
-            gene1id = dataArgs["genome1"] + ':' + dataArgs["contig1"] + ':' + dataArgs["gene1"]
-        if dataArgs["gene2"] != "":
-            GENOME_TWO = True
-            genome2_obj = self.findGenomeObject(dataArgs["genome2"])
-            gene2id = dataArgs["genome2"] + ':' + dataArgs["contig2"] + ':' + dataArgs["gene2"]
+
         # Determine type of hit and whether the query is genome1 versus genome2
         match_mutual   = re.search("mutual",  dataArgs["hitType"])
         match_singular = re.search("singular",dataArgs["hitType"])
         match_loner    = re.search("loner",   dataArgs["hitType"])
         match_query    = re.search("\d",      dataArgs["hitType"])
-        
+
+        if GENE:
+            if dataArgs["gene1"] != "":
+                GENOME_ONE = True
+                genome1_obj = self.findGenomeObject(dataArgs["genome1"])
+                gene1id = dataArgs["genome1"] + ':' + dataArgs["contig1"] + ':' + dataArgs["gene1"]
+            if dataArgs["gene2"] != "":
+                GENOME_TWO = True
+                genome2_obj = self.findGenomeObject(dataArgs["genome2"])
+                gene2id = dataArgs["genome2"] + ':' + dataArgs["contig2"] + ':' + dataArgs["gene2"]
+        elif PROTEIN:
+            if dataArgs["protein1"] != "":
+                GENOME_ONE = True
+                genome1_obj = self.findGenomeObject(dataArgs["genome1"])
+                protein1id = dataArgs["genome1"] + ':' + dataArgs["contig1"] + ':' + dataArgs["protein1"]
+            if dataArgs["protein2"] != "":
+                GENOME_TWO = True
+                genome2_obj = self.findGenomeObject(dataArgs["genome2"])
+                protein2id = dataArgs["genome2"] + ':' + dataArgs["contig2"] + ':' + dataArgs["protein2"]
+
         if GENOME_ONE:
             # Search for query gene in genome1 (if exists)
-            GENE_FOUND = False; NEW = False
-            for gene_obj in genome1_obj.geneList:
-                if gene_obj.contigName == dataArgs["contig1"] and gene_obj.name == dataArgs["gene1"]:
-                    GENE_FOUND = True
-                    break
-            if not GENE_FOUND: 
-                # Create and populate a new gene object
-                NEW = True
-                gene_obj = copy.deepcopy(self.geneTemplate)
-                gene_obj.name         = dataArgs["gene1"]
-                gene_obj.type         = "gene"
-                gene_obj.identifier   = gene1id 
-                gene_obj.cgpHeader    = dataArgs["gene1"]
-                geneCallFields        = dataArgs["gene1"].split('/')
-                (cds,geneNumber)      = geneCallFields[0].split('cds')
-                gene_obj.number       = geneNumber
-                gene_obj.parentGenome = dataArgs["genome1"]
-                gene_obj.contigName   = dataArgs["contig1"]
-                gene_obj.annotation   = dataArgs["annotations1"] 
-            # Add hit
-            if match_mutual:
-                gene_obj.mutualBestHitList.append(gene2id) 
-                gene_obj.isLoner = False
-            if match_singular and match_query.group(0) == '1':
-                gene_obj.singularBestHitList.append(gene2id)
-                gene_obj.isLoner = False
-            if match_loner and match_query.group(0) == '1':
-                gene_obj.lonerList.append(genome1_obj.name)
-            if NEW:
-                genome1_obj.geneList.append(gene_obj)
+            GENE_FOUND = False; PROTEIN_FOUND = False; NEW = False
+            if GENE:
+                for gene_obj in genome1_obj.geneList:
+                    if gene_obj.contigName == dataArgs["contig1"] and gene_obj.name == dataArgs["gene1"]:
+                        GENE_FOUND = True
+                        break
+                if not GENE_FOUND: 
+                    # Create and populate a new gene object
+                    NEW = True
+                    gene_obj = copy.deepcopy(self.geneTemplate)
+                    gene_obj.name         = dataArgs["gene1"]
+                    gene_obj.type         = "gene"
+                    gene_obj.identifier   = gene1id 
+                    gene_obj.cgpHeader    = dataArgs["gene1"]
+                    geneCallFields        = dataArgs["gene1"].split('/')   # format: cds#/strand/start/stop/
+                    (cds,geneNumber)      = geneCallFields[0].split('cds')
+                    gene_obj.number       = geneNumber
+                    gene_obj.parentGenome = dataArgs["genome1"]
+                    gene_obj.contigName   = dataArgs["contig1"]
+                    gene_obj.annotation   = dataArgs["annotations1"] 
+                # Add hit
+                if match_mutual:
+                    gene_obj.mutualBestHitList.append(gene2id) 
+                    gene_obj.isLoner = False
+                if match_singular and match_query.group(0) == '1':
+                    gene_obj.singularBestHitList.append(gene2id)
+                    gene_obj.isLoner = False
+                if match_loner and match_query.group(0) == '1':
+                    gene_obj.lonerList.append(genome1_obj.name)   # To record a loner, append the name of the genome that this gene is a loner wrt
+                # If this gene object needed to be newly created, then add to geneList; else it's already there!
+                if NEW:
+                    genome1_obj.geneList.append(gene_obj)
+            elif PROTEIN:
+                for protein_obj in genome1_obj.proteinList:
+                    if protein_obj.contigName == dataArgs["contig1"] and protein_obj.name == dataArgs["protein1"]:
+                        PROTEIN_FOUND = True
+                        break
+                if not PROTEIN_FOUND: 
+                    # Create and populate a new gene object
+                    NEW = True
+                    protein_obj = copy.deepcopy(self.proteinTemplate)
+                    protein_obj.name         = dataArgs["protein1"]
+                    protein_obj.type         = "protein"
+                    protein_obj.identifier   = protein1id 
+                    protein_obj.cgpHeader    = dataArgs["protein1"]
+                    proteinNameFields        = dataArgs["protein1"].split('/')  # format: cds#/strand/start/stop/
+                    (cds,proteinNumber)      = proteinNameFields[0].split('cds')
+                    protein_obj.number       = proteinNumber
+                    protein_obj.parentGenome = dataArgs["genome1"]
+                    protein_obj.contigName   = dataArgs["contig1"]
+                    protein_obj.annotation   = dataArgs["annotations1"] 
+                # Add hit
+                if match_mutual:
+                    protein_obj.mutualBestHitList.append(gene2id) 
+                    protein_obj.isLoner = False
+                if match_singular and match_query.group(0) == '1':
+                    protein_obj.singularBestHitList.append(protein2id)
+                    protein_obj.isLoner = False
+                if match_loner and match_query.group(0) == '1':
+                    protein_obj.lonerList.append(genome1_obj.name)
+                # If this protein object needed to be newly created, then add to proteinList; else it's already there!
+                if NEW:
+                    genome1_obj.proteinList.append(protein_obj)
 
         if GENOME_TWO:
             # Search for query gene in genome2 (if exists)
-            GENE_FOUND = False; NEW = False
-            for geneObj in genome2_obj.geneList:
-                if geneObj.contigName == dataArgs["contig2"] and geneObj.name == dataArgs["gene2"]:
-                    GENE_FOUND = True
-                    break
-            if not GENE_FOUND: 
-                # Create and populate a new gene object
-                NEW = True
-                gene_obj = copy.deepcopy(self.geneTemplate)
-                gene_obj.name         = dataArgs["gene2"]
-                gene_obj.type         = "gene"
-                gene_obj.identifier   = gene2id 
-                gene_obj.cgpHeader    = dataArgs["gene2"]
-                geneNameFields        = dataArgs["gene2"].split('/')
-                (cds,geneNumber)      = geneNameFields[0].split('cds')
-                gene_obj.number       = geneNumber
-                gene_obj.parentGenome = dataArgs["genome2"]
-                gene_obj.contigName   = dataArgs["contig2"]
-                gene_obj.annotation   = dataArgs["annotations2"] 
-            # Add hit
-            if match_mutual:
-                gene_obj.mutualBestHitList.append(gene1id) 
-                gene_obj.isLoner = False
-            if match_singular and match_query.group(0) == '2':
-                gene_obj.singularBestHitList.append(gene1id)
-                gene_obj.isLoner = False
-            if match_loner and match_query.group(0) == '2':
-                gene_obj.lonerList.append(dataArgs["genome1"])
-            if NEW:
-                genome2_obj.geneList.append(gene_obj)
+            GENE_FOUND = False; PROTEIN_FOUND = False; NEW = False
+            if GENE:
+                for geneObj in genome2_obj.geneList:
+                    if geneObj.contigName == dataArgs["contig2"] and geneObj.name == dataArgs["gene2"]:
+                        GENE_FOUND = True
+                        break
+                if not GENE_FOUND: 
+                    # Create and populate a new gene object
+                    NEW = True
+                    gene_obj = copy.deepcopy(self.geneTemplate)
+                    gene_obj.name         = dataArgs["gene2"]
+                    gene_obj.type         = "gene"
+                    gene_obj.identifier   = gene2id 
+                    gene_obj.cgpHeader    = dataArgs["gene2"]
+                    geneNameFields        = dataArgs["gene2"].split('/')
+                    (cds,geneNumber)      = geneNameFields[0].split('cds')
+                    gene_obj.number       = geneNumber
+                    gene_obj.parentGenome = dataArgs["genome2"]
+                    gene_obj.contigName   = dataArgs["contig2"]
+                    gene_obj.annotation   = dataArgs["annotations2"] 
+                # Add hit
+                if match_mutual:
+                    gene_obj.mutualBestHitList.append(gene1id) 
+                    gene_obj.isLoner = False
+                if match_singular and match_query.group(0) == '2':
+                    gene_obj.singularBestHitList.append(gene1id)
+                    gene_obj.isLoner = False
+                if match_loner and match_query.group(0) == '2':
+                    gene_obj.lonerList.append(dataArgs["genome1"])
+                if NEW:
+                    genome2_obj.geneList.append(gene_obj)
+            elif PROTEIN:
+                for proteinObj in genome2_obj.proteinList:
+                    if proteinObj.contigName == dataArgs["contig2"] and proteinObj.name == dataArgs["protein2"]:
+                        PROTEIN_FOUND = True
+                        break
+                if not PROTEIN_FOUND: 
+                    # Create and populate a new gene object
+                    NEW = True
+                    protein_obj = copy.deepcopy(self.proteinTemplate)
+                    protein_obj.name         = dataArgs["protein2"]
+                    protein_obj.type         = "protein"
+                    protein_obj.identifier   = protein2id 
+                    protein_obj.cgpHeader    = dataArgs["protein2"]
+                    proteinNameFields        = dataArgs["protein2"].split('/')
+                    (cds,proteinNumber)      = proteinNameFields[0].split('cds')
+                    protein_obj.number       = proteinNumber
+                    protein_obj.parentGenome = dataArgs["genome2"]
+                    protein_obj.contigName   = dataArgs["contig2"]
+                    protein_obj.annotation   = dataArgs["annotations2"] 
+                # Add hit
+                if match_mutual:
+                    protein_obj.mutualBestHitList.append(protein1id) 
+                    protein_obj.isLoner = False
+                if match_singular and match_query.group(0) == '2':
+                    protein_obj.singularBestHitList.append(protein1id)
+                    protein_obj.isLoner = False
+                if match_loner and match_query.group(0) == '2':
+                    protein_obj.lonerList.append(dataArgs["genome1"])
+                if NEW:
+                    genome2_obj.proteinList.append(protein_obj)
         return
 
     def findGenomeObject(self,genomeName):
@@ -589,19 +701,6 @@ class comparison(object):
         return
 
     #===== COMPARISON GENOMIC METHODS
-
-    # Method identifyParalogs inspects the CGP blast output for genome x self to identify paralogs
-    #def identifyParalogs(self):
-    #    if DEBUG:
-    #        print("genomics_compareGenomes says, DEBUG: Number of genomes in self.genomeList:",len(self.genomeList))
-    #    for genome in self.genomeList:
-    #        if PHATE_PROGRESS:
-    #            print("genomics_compareGenomes says, Identifying paralogs for genome",genome.name)
-    #        genome.identifyParalogs()
-    #
-    #    if PHATE_PROGRESS:
-    #        print("genomics_compareGenomes says, Paralog identification complete.")
-    #    return
 
     def computeHomologyGroups(self):
         # Compute homology groups
