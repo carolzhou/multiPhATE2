@@ -185,6 +185,9 @@ class comparison(object):
             print("genomics_compareGenomes says, Loading data.")
         self.loadData()
 
+        # Do data checking
+        self.runDataChecks()
+
         if PHATE_PROGRESS:
             print("genomics_compareGenomes says, Computing homology groups.")
         self.computeHomologyGroups()
@@ -307,6 +310,9 @@ class comparison(object):
         LOG_H.close()
         return(genome1,genome2)
 
+    # Method loadBestHits reads the CGP report file in a single pass, picking up mutual-best and singular-best hits
+    # plus loners. The hits are then forwarded to method addhit2genome for recording in the genome's gene_protein
+    # data structure.
     def loadBestHits(self,genome1,genome2,reportFile):
         PROTEIN = False; hitCount = 0
         REPORT_H = open(reportFile,"r")
@@ -319,16 +325,23 @@ class comparison(object):
             # Skip lines not to be processed in this method
             match_comment = re.search('^#',rLine)
             match_protein = re.search('^#PROTEIN\sHITS',rLine)
+            match_dataLine = re.search('^\d+',rLine)
             if match_protein: 
                 PROTEIN = True  # Prepare for loading protein hits next
+                continue
             if match_comment:
                 continue
-            fields = rLine.split('\t')
-            (genomeNum,hitType) = fields[GENOME_TYPE].split('_')
+            if match_dataLine:
+                fields = rLine.split('\t')
+                (genomeNum,hitType) = fields[GENOME_TYPE].split('_')
+            else:
+                if PHATE_WARNINGS:
+                    print("genomics_compareGenomes says, WARNING: expected dataLine: ",rLine)
+                    continue
             # Data structure for passing parameters to self.addHit2genome()
             dataArgs = { 
-                "genome1"      : genome1,   # the fasta file name
-                "genome2"      : genome2,   # the fasta file name
+                "genome1"      : genome1,   # the fasta file name without extension
+                "genome2"      : genome2,   # the fasta file name without extension
                 "contig1"      : "",
                 "contig2"      : "",
                 "gene1"        : "",
@@ -363,27 +376,26 @@ class comparison(object):
             if dataArgs["annotations2"] != "":
                 dataArgs["geneCall2"]    = self.getGeneCallString(fields[G2_ANNOTATIONS]) 
 
-            # Protein-, gene-specific fields
+            # Protein- and gene-specific fields
             if PROTEIN:
                 dataArgs["hitFlavor"]    = "protein"
                 dataArgs["protein1"]     = fields[G1_HEADER]
                 dataArgs["protein2"]     = fields[G2_HEADER]
-            else:
+            else: # gene
                 dataArgs["hitFlavor"]    = "gene"
                 dataArgs["gene1"]        = fields[G1_HEADER]
                 dataArgs["gene2"]        = fields[G2_HEADER]
 
             # Insert data record into genome object
+            print("DEBUG: dataArgs: ")
+            for item in dataArgs.keys():
+                print(item,dataArgs[item])
             self.addHit2genome(dataArgs)
 
         REPORT_H.close()
         return
 
     def loadParalogs(self,paralogFile):
-        DEBUG = True
-        PARALOG_H = open(paralogFile,"r")
-        pLines = PARALOG_H.read().splitlines()
-
         # Select and process mutual-best-hit data lines
         fields = []; genomeNum = ""; paralogType = ""; genomeName = ""
         GENE = False; PROTEIN = False
@@ -407,15 +419,17 @@ class comparison(object):
             }
 
         # Parse data from paralogs report file
+        PARALOG_H = open(paralogFile,"r")
+        pLines = PARALOG_H.read().splitlines()
         for pLine in pLines:
 
             # Skip lines not to be processed in this method
-            match_genome   = re.search('PARALOGS',         pLine)
-            match_gene     = re.search('Gene\sParalogs',   pLine)
-            match_protein  = re.search('Protein\sParalogs',pLine)
-            match_header   = re.search('header:',          pLine)
-            match_hitLine  = re.search('query:',           pLine)
-            match_coverage = re.search('^coverage:([\d\.])',       pLine)
+            match_genome   = re.search('PARALOGS',          pLine)
+            match_gene     = re.search('Gene\sParalogs',    pLine)
+            match_protein  = re.search('Protein\sParalogs', pLine)
+            match_header   = re.search('^header:',           pLine)
+            match_hitLine  = re.search('^query:',            pLine)
+            match_coverage = re.search('^coverage:',        pLine)
 
             # Determine which genome's paralogs are being reported
             if match_genome:
@@ -425,8 +439,6 @@ class comparison(object):
                     genomeFileString = os.path.basename(genomePathString)
                     (genomeName,extension) = genomeFileString.split('.')
                     dataArgs["genome1"] = genomeName
-                    if DEBUG:
-                        print("DEBUG: genomeName is",genomeName)
                 else:
                     if PHATE_WARNINGS:
                         print("genomics_compareGenomes says, WARNING: Cannot read genome path from paralogs file,",paralogFile)
@@ -434,12 +446,8 @@ class comparison(object):
             # Determine whether it's a gene versus protein paralog
             elif match_gene:
                 GENE = True
-                if DEBUG:
-                    print("DEBUG: GENE is",GENE)
             elif match_protein:
                 PROTEIN = True
-                if DEBUG:
-                    print("DEBUG: PROTEIN is",PROTEIN)
 
             # Parse paralog data; add to paralog list 
             elif match_hitLine:
@@ -455,27 +463,20 @@ class comparison(object):
                 subjectStartEnd    = fields[8]
                 (preamble,query)   = queryString.split(':')
                 (preamble,subject) = subjectString.split(':')
-                if DEBUG:
-                    print("DEBUG: hitLine is",pLine)
-            elif GENE:
-                dataArgs["gene1"]    = query
-                dataArgs["gene2"]    = subject
-                dataArgs["hitType"]  = "gene_paralog"
-            elif PROTEIN:
-                dataArgs["protein1"] = query
-                dataArgs["protein2"] = subject
-                dataArgs["hitType"]  = "protein_paralog"
+                if GENE:
+                    dataArgs["gene1"]    = query
+                    dataArgs["gene2"]    = subject
+                    dataArgs["hitType"]  = "gene_paralog"
+                elif PROTEIN:
+                    dataArgs["protein1"] = query
+                    dataArgs["protein2"] = subject
+                    dataArgs["hitType"]  = "protein_paralog"
 
             # Read coverage (last data line per paralog) and add this paralog to genome's paralogList; Then, reset
             elif match_coverage:
-                coverage = match_coverage.group(1) 
-                if DEBUG:
-                    print("DEBUG: coverage is",coverage)
+                (preamble,coverage) = match_coverage.group(0).split(':')
 
                 # Insert data record into genome object
-                DEBUG = True
-                if DEBUG:
-                    print("Calling addParalog2genome with dataArgs:",dataArgs)
                 self.addParalog2genome(dataArgs)
 
                 # Reset data structures
@@ -520,13 +521,13 @@ class comparison(object):
     # Method getGeneCallString extracts the genecall name from the annotation string
     def getGeneCallString(self,inString):  
         inList = ast.literal_eval(inString) # Convert string representation of a list to an actual list
-        geneCallString = inList[0]          # First element of the list is the genecall string
+        geneCallString = inList[0][0]          # First element of the list is the genecall string
         return geneCallString
 
+    # Method addHit2genome inserts a new gene hit into a genome's geneList or proteinList, or records a gene as a
+    # loner with respect to another genome. Note that every gene is assumed a loner until proven otherwise. Any 
+    # mutual or singular hit to a gene/protein of another genome nullifies that gene's status as a loner.
     def addHit2genome(self,dataArgs): 
-        # This method inserts a new gene hit into a genome's geneList or proteinList, or records a gene as a loner
-        # with respect to another genome. Note that every gene is assumed a loner until proven otherwise. Any mutual
-        # or singular hit to a gene/protein of another genome nullifies that gene's status as a loner.
 
         # First, create gene or protein object
         hitFlavor = "gene"; GENE = False; PROTEIN = False
@@ -561,7 +562,7 @@ class comparison(object):
         match_mutual   = re.search("mutual",  dataArgs["hitType"])
         match_singular = re.search("singular",dataArgs["hitType"])
         match_loner    = re.search("loner",   dataArgs["hitType"])
-        match_query    = re.search("\d",      dataArgs["hitType"])
+        match_query    = re.search("(\d)",      dataArgs["hitType"])
 
         if GENE:
             if dataArgs["gene1"] != "":
@@ -585,6 +586,7 @@ class comparison(object):
         if GENOME_ONE:
             # Search for query gene in genome1 (if exists)
             GENE_FOUND = False; PROTEIN_FOUND = False; NEW = False
+
             if GENE:
                 for gene_obj in genome1_obj.geneList:
                     if gene_obj.contigName == dataArgs["contig1"] and gene_obj.name == dataArgs["gene1"]:
@@ -606,16 +608,21 @@ class comparison(object):
                     gene_obj.annotation   = dataArgs["annotations1"] 
                 # Add hit
                 if match_mutual:
-                    gene_obj.mutualBestHitList.append(gene2id) 
+                    #gene_obj.mutualBestHitList.append(gene2id) 
+                    self.addMutualBestHit(gene_obj.mutualBestHitList,gene2id,"genome1",dataArgs["genome1"],gene1id,dataArgs["genome2"],gene2id)
                     gene_obj.isLoner = False
-                if match_singular and match_query.group(0) == '1':
-                    gene_obj.singularBestHitList.append(gene2id)
+                if match_singular and match_query.group(1) == '1':
+                    #gene_obj.singularBestHitList.append(gene2id)
+                    self.addSingularBestHit(gene_obj.singularBestHitList,gene2id,"genome1",dataArgs["genome1"],gene1id,dataArgs["genome2"],gene2id)
                     gene_obj.isLoner = False
-                if match_loner and match_query.group(0) == '1':
-                    gene_obj.lonerList.append(genome1_obj.name)   # To record a loner, append the name of the genome that this gene is a loner wrt
+                if match_loner and match_query.group(1) == '1':
+                    #gene_obj.lonerList.append(dataArgs["genome2"])   # To record a loner, append the name of the genome that this gene is a loner wrt
+                    #self.addLoner(gene_obj.lonerList,dataArgs["genome2"],dataArgs["genome1"],gene1id,dataArgs["genome2"],dataArgs["gene2"])
+                    self.addLoner(gene_obj.lonerList,dataArgs["genome2"])
                 # If this gene object needed to be newly created, then add to geneList; else it's already there!
                 if NEW:
                     genome1_obj.geneList.append(gene_obj)
+
             elif PROTEIN:
                 for protein_obj in genome1_obj.proteinList:
                     if protein_obj.contigName == dataArgs["contig1"] and protein_obj.name == dataArgs["protein1"]:
@@ -637,13 +644,16 @@ class comparison(object):
                     protein_obj.annotation   = dataArgs["annotations1"] 
                 # Add hit
                 if match_mutual:
-                    protein_obj.mutualBestHitList.append(protein2id) 
+                    #protein_obj.mutualBestHitList.append(protein2id) 
+                    self.addMutualBestHit(protein_obj.mutualBestHitList,protein2id,"genome1",dataArgs["genome1"],protein1id,dataArgs["genome2"],protein2id)
                     protein_obj.isLoner = False
-                if match_singular and match_query.group(0) == '1':
-                    protein_obj.singularBestHitList.append(protein2id)
+                if match_singular and match_query.group(1) == '1':
+                    #protein_obj.singularBestHitList.append(protein2id)
+                    self.addSingularBestHit(protein_obj.singularBestHitList,protein2id,"genome1",dataArgs["genome1"],protein1id,dataArgs["genome2"],protein2id)
                     protein_obj.isLoner = False
-                if match_loner and match_query.group(0) == '1':
-                    protein_obj.lonerList.append(genome1_obj.name)
+                if match_loner and match_query.group(1) == '1':
+                    #protein_obj.lonerList.append(dataArgs["genome2"])
+                    self.addLoner(protein_obj.lonerList,dataArgs["genome2"])
                 # If this protein object needed to be newly created, then add to proteinList; else it's already there!
                 if NEW:
                     genome1_obj.proteinList.append(protein_obj)
@@ -651,6 +661,7 @@ class comparison(object):
         if GENOME_TWO:
             # Search for query gene in genome2 (if exists)
             GENE_FOUND = False; PROTEIN_FOUND = False; NEW = False
+
             if GENE:
                 for geneObj in genome2_obj.geneList:
                     if geneObj.contigName == dataArgs["contig2"] and geneObj.name == dataArgs["gene2"]:
@@ -672,15 +683,19 @@ class comparison(object):
                     gene_obj.annotation   = dataArgs["annotations2"] 
                 # Add hit
                 if match_mutual:
-                    gene_obj.mutualBestHitList.append(gene1id) 
+                    #gene_obj.mutualBestHitList.append(gene1id) 
+                    self.addMutualBestHit(gene_obj.mutualBestHitList,gene1id,"genome2",dataArgs["genome1"],gene1id,dataArgs["genome2"],gene2id)
                     gene_obj.isLoner = False
-                if match_singular and match_query.group(0) == '2':
-                    gene_obj.singularBestHitList.append(gene1id)
+                if match_singular and match_query.group(1) == '2':
+                    #gene_obj.singularBestHitList.append(gene1id)
+                    self.addSingularBestHit(gene_obj.singularBestHitList,gene1id,"genome2",dataArgs["genome1"],gene1id,dataArgs["genome2"],gene2id)
                     gene_obj.isLoner = False
-                if match_loner and match_query.group(0) == '2':
-                    gene_obj.lonerList.append(dataArgs["genome1"])
+                if match_loner and match_query.group(1) == '2':
+                    #gene_obj.lonerList.append(dataArgs["genome1"])
+                    self.addLoner(gene_obj.lonerList,dataArgs["genome1"])
                 if NEW:
                     genome2_obj.geneList.append(gene_obj)
+
             elif PROTEIN:
                 for proteinObj in genome2_obj.proteinList:
                     if proteinObj.contigName == dataArgs["contig2"] and proteinObj.name == dataArgs["protein2"]:
@@ -702,13 +717,16 @@ class comparison(object):
                     protein_obj.annotation   = dataArgs["annotations2"] 
                 # Add hit
                 if match_mutual:
-                    protein_obj.mutualBestHitList.append(protein1id) 
+                    #protein_obj.mutualBestHitList.append(protein1id) 
+                    self.addMutualBestHit(protein_obj.mutualBestHitList,protein1id,"genome2",dataArgs["genome1"],protein1id,dataArgs["genome2"],protein2id)
                     protein_obj.isLoner = False
                 if match_singular and match_query.group(0) == '2':
-                    protein_obj.singularBestHitList.append(protein1id)
+                    #protein_obj.singularBestHitList.append(protein1id)
+                    self.addSingularBestHit(protein_obj.singularBestHitList,protein1id,"genome2",dataArgs["genome1"],protein1id,dataArgs["genome2"],protein2id)
                     protein_obj.isLoner = False
                 if match_loner and match_query.group(0) == '2':
-                    protein_obj.lonerList.append(dataArgs["genome1"])
+                    #protein_obj.lonerList.append(dataArgs["genome1"])
+                    self.addLoner(protein_obj.lonerList,dataArgs["genome1"])
                 if NEW:
                     genome2_obj.proteinList.append(protein_obj)
         return
@@ -717,6 +735,36 @@ class comparison(object):
         for genome_object in self.genomeList:
             if genome_object.name == genomeName:
                 return genome_object
+        return
+
+    def addMutualBestHit(self,hitList,hit,item1,item2,item3,item4,item5):
+        print("genomics_comparGenomes says, Adding hit ",hit," to mutualBestHitList:")
+        print("other data: ",item1,' ',item2,' ',item3,' ',item4,' ',item5)
+        for hitString in hitList:
+            print("   ",hitString)
+        hitList.append(hit)
+        print(" yielding,")
+        for hitString in hitList:
+            print("   ",hitString)
+        print('\n')
+        return
+
+    def addSingularBestHit(self,hitList,hit,item1,item2,item3,item4,item5):
+        print("genomics_comparGenomes says, Adding hit ",hit," to singularBestHitList ",hitList)
+        print("other data: ",item1,' ',item2,' ',item3,' ',item4,' ',item5)
+        for hitString in hitList:
+            print("   ",hitString)
+        hitList.append(hit)
+        print(" yielding,")
+        for hitString in hitList:
+            print("   ",hitString)
+        print('\n')
+        return
+
+    def addLoner(self,lonerList,loner):
+        print("genomics_compareGenomes says, Adding loner ",loner," to lonerList ",lonerList)
+        lonerList.append(loner)
+        print("resulting list: ",lonerList,'\n')
         return
 
     #===== COMPARISON GENOMIC METHODS
@@ -728,71 +776,84 @@ class comparison(object):
         refProteinList = []  # Names of reference proteins that have been combined into a group 
         for genome in self.genomeList:
             if genome.isReference:
+
+                # Compute gene homology lists
                 for gene in genome.geneList:
                     if gene.identifier in refGeneList: # Already processed this gene
-                        break
+                        continue 
                     else:
+                        # Account for the gene itself
                         refGeneList.append(gene.identifier)
+                        # Account for each mutual best hit
                         for homolog in gene.mutualBestHitList:
                             gene.homologyList.append(homolog)
+                        # Account for each singular best hit
                         for homolog in gene.singularBestHitList:
                             gene.homologyList.append(homolog)
-                        for paralog in gene.paralogList:
-                            gene.homologyList.append(paralog)
-                            refGeneList.append(paralog)
-                            paralog_obj = self.findGeneParalog(genome.name,paralog)
-                            if paralog_obj.identifier == paralog:
-                                for homolog in paralog_obj.mutualBestHitList:
-                                    gene.homologyList.append(homolog.identifier)
-                                for homolog in paralog_obj.singularBestHitList:
-                                    gene.homologyList.append(homolog.identifier)
-                            else:
-                                if PHATE_WARNINGS:
-                                    print("genomics_compareGenomes says, WARNING: paralog_obj not found for paralog ",paralog)
+                        # Account for each paralog of the gene itself
+                        for homolog in gene.paralogList:
+                            gene.homologyList.append(homolog)
+                            refGeneList.append(homolog) # record here so doesn't provoke another homology group 
+                            # Account for each mutual and singular best hit of each paralog
+                            paralog_obj = self.findGeneParalog(genome.name,homolog)
+                            for gHomolog in paralog_obj.mutualBestHitList:
+                                gene.homologyList.append(gHomolog)
+                            for gHomolog in paralog_obj.singularBestHitList:
+                                gene.homologyList.append(gHomolog)
+
+                # Compute protein homology lists
                 for protein in genome.proteinList:
                     if protein.identifier in refProteinList: # Already processed this gene
-                        break
+                        continue 
                     else:
+                        # Account for the protein itself
                         refProteinList.append(protein.identifier)
+                        # Account for each mutual best hit
                         for homolog in protein.mutualBestHitList:
                             protein.homologyList.append(homolog)
+                        # Account for each singular best hit
                         for homolog in protein.singularBestHitList:
                             protein.homologyList.append(homolog)
-                        for paralog in protein.paralogList:
-                            protein.homologyList.append(paralog)
-                            refProteinList.append(paralog)
-                            paralog_obj = self.findProteinParalog(genome.name,paralog)
-                            if paralog_obj.identifier == paralog:
-                                for homolog in paralog_obj.mutualBestHitList:
-                                    protein.homologyList.append(homolog.identifier)
-                                for homolog in paralog_obj.singularBestHitList:
-                                    protein.homologyList.append(homolog.identifier)
-                            else:
-                                if PHATE_WARNINGS:
-                                    print("genomics_compareGenomes says, WARNING: paralog_obj not found for paralog ",paralog)
+                        # Account for each paralog of the protein itself
+                        for homolog in protein.paralogList:
+                            protein.homologyList.append(homolog)
+                            refProteinList.append(homolog) # record here so doesn't provoke another homology group
+                            # Account for each mutual and singular best hit of each paralog
+                            paralog_obj = self.findProteinParalog(genome.name,homolog)
+                            for pHomolog in paralog_obj.mutualBestHitList:
+                                protein.homologyList.append(pHomolog)
+                            for pHomolog in paralog_obj.singularBestHitList:
+                                protein.homologyList.append(pHomolog)
         if PHATE_PROGRESS:
             print("genomics_compareGenomes says, Homology group computation complete.")
         return
 
-    def findGeneParalogObject(self,genomeName,geneIdentifier):
-        gene = self.geneTemplate
+    def findGeneParalog(self,genomeName,geneIdentifier):
+        gene_obj = self.geneTemplate
         for genome in self.genomeList:
             if genome.name == genomeName:
-                for gene in genome.geneList:
-                    if gene.identifier == geneIdentifier:
-                        return gene
-        return gene
+                for gene_obj in genome.geneList:
+                    if gene_obj.identifier == geneIdentifier:
+                        return gene_obj
+        return gene_obj
 
-    def findProteinParalogObject(self,genomeName,proteinIdentifier):
-        protein = self.proteinTemplate
+    def findProteinParalog(self,genomeName,proteinIdentifier):
+        protein_obj = self.proteinTemplate
         for genome in self.genomeList:
             if genome.name == genomeName:
-                for protein in genome.proteinList:
-                    if protein.identifier == proteinIdentifier:
-                        return protein 
-        return protein 
+                for protein_obj in genome.proteinList:
+                    if protein_obj.identifier == proteinIdentifier:
+                        return protein_obj 
+        return protein_obj 
 
     #===== COMPARISON DATA CHECK METHODS
+
+    def runDataChecks(self):
+        self.countGenomes()
+        self.checkUnique()
+        self.checkMutualBestHitLists()
+        self.checkSingularBestHitLists()
+        return
 
     def countGenomes(self):
         self.genomeCount = len(self.genomeList)
@@ -800,15 +861,21 @@ class comparison(object):
             print("genomics_compareGenomes says, There are",self.genomeCount,"genomes.")
         return
 
-    def checkMutualBestHitList(self):
+    def checkMutualBestHitLists(self):
         genomeCount = len(self.genomeList)
         for genome in self.genomeList:
             genome.checkMutualBestHitList(genomeCount)
         return
 
+    def checkSingularBestHitLists(self):
+        genomeCount = len(self.genomeList)
+        for genome in self.genomeList:
+            genome.checkSingularBestHitList(genomeCount)
+        return
+
     def checkUnique(self):
         tempList = []
-        for genome in genomeList:
+        for genome in self.genomeList:
             if genome.name in tempList:
                 if PHATE_WARNINGS:
                     print("genomics_compareGenomes genomes obj says, WARNING: ",genome.name," occurs more than once in genomes object.")
@@ -937,16 +1004,21 @@ class comparison(object):
 
     def writeMutualBestHitList2file(self,FILE_H):
         for genome in self.genomeList:
-            if genome.isReference:
-                FILE_H.write("%s%s\n" % ("***** ",genome.name))
-                FILE_H.write("%s\n" % ("*** Mutual Best Hits: Gene"))
-                for gene in genome.geneList:
-                    FILE_H.write("%s%s\n" % ("  gene ",gene.identifier))
-                    gene.writeMutualBestHitList2file(FILE_H)
-                FILE_H.write("%s\n" % ("*** Mutual Best Hits: Protein"))
-                for protein in genome.geneList:
-                    FILE_H.write("%s%s\n" % ("  protein ",protein.identifier))
-                    protein.writeMutualBestHitList2file(FILE_H)
+            count = 0
+            #if genome.isReference:
+            FILE_H.write("%s\n" % ("*******************************"))
+            FILE_H.write("%s\n" % (genome.name))
+            FILE_H.write("%s\n" % ("*** Mutual Best Hits: Gene"))
+            for gene in genome.geneList:
+                count += 1
+                FILE_H.write("%s%s%s\n" % (count,") gene ",gene.identifier))
+                gene.writeMutualBestHitList2file(FILE_H)
+            FILE_H.write("%s\n" % ("*** Mutual Best Hits: Protein"))
+            count = 0
+            for protein in genome.geneList:
+                count += 1
+                FILE_H.write("%s%s%s\n" % (count,") protein ",protein.identifier))
+                protein.writeMutualBestHitList2file(FILE_H)
         return
 
     def writeMutualBestHitList(self):
@@ -967,16 +1039,21 @@ class comparison(object):
 
     def writeSingularBestHitList2file(self,FILE_H):
         for genome in self.genomeList:
-            if genome.isReference:
-                FILE_H.write("%s%s\n" % ("***** ",genome.name))
-                FILE_H.write("%s\n" % ("*** Singular Best Hits: Gene"))
-                for gene in genome.geneList:
-                    FILE_H.write("%s%s\n" % ("* gene ",gene.identifier))
-                    gene.writeSingularBestHitList2file(FILE_H)
-                FILE_H.write("%s\n" % ("*** Singular Best Hits: Protein"))
-                for protein in genome.proteinList:
-                    FILE_H.write("%s%s\n" % ("* protein ",protein.identifier))
-                    protein.writeSingularBestHitList2file(FILE_H)
+            #if genome.isReference:
+            FILE_H.write("%s\n" % ("*************************"))
+            FILE_H.write("%s%s\n" % ("*** ",genome.name))
+            FILE_H.write("%s\n" % ("*** Singular Best Hits: Gene"))
+            count = 0
+            for gene in genome.geneList:
+                count += 1
+                FILE_H.write("%s%s%s\n" % (count,") gene ",gene.identifier))
+                gene.writeSingularBestHitList2file(FILE_H)
+            FILE_H.write("%s\n" % ("*** Singular Best Hits: Protein"))
+            count = 0
+            for protein in genome.proteinList:
+                count += 1
+                FILE_H.write("%s%s%s\n" % (count,") protein ",protein.identifier))
+                protein.writeSingularBestHitList2file(FILE_H)
         return
 
     def writeSingularBestHitList(self):
@@ -1242,8 +1319,6 @@ class genome(object):
         self.paralogList          = []     # List of paralogSet objects
 
     def addParalog(self,dataArgs):
-        if DEBUG:
-            print("Adding paralog; dataArgs:",dataArgs)
         hitType = ""; gene1 = ""; gene2 = ""; protein1 = ""; protein2 = ""
         geneCall1 = ""; geneCall2 = ""
 
@@ -1304,16 +1379,35 @@ class genome(object):
 
     def checkMutualBestHitList(self,genomeCount):
         for gene in self.geneList:
-            if len(gene.mutualBestHitList) != genomeCount-1:
-                if PRINT_WARNINGS:
+            if len(gene.mutualBestHitList) > genomeCount-1:
+                if PHATE_WARNINGS:
                     print("genomics_compareGenomes says, WARNING: mutualBestHitList for gene",gene.identifier,"incorrect")
-                    print("   ",gene.mutualBestHitList)
-        for protein in self.proteinList:
-            if len(protein.mutualBestHitList) != genomeCount-1:
-                if PRINT_WARNINGS:
-                    print("genomics_compareGenomes says, WARNING: mutualBestHitList for protein",protein.identifier,"incorrect")
-                    print("   ",protein.mutualBestHitList)
+                    print("   Length is ",len(gene.mutualBestHitList))
+                    print("    ",gene.mutualBestHitList)
+            if gene.identifier in gene.mutualBestHitList:
+                if PHATE_WARNINGS:
+                    print("genomics_compareGenomes says, WARNING: gene,",gene.identifier," is listed in its own mutualBestHitList.")
 
+        for protein in self.proteinList:
+            if len(protein.mutualBestHitList) > genomeCount-1:
+                if PHATE_WARNINGS:
+                    print("genomics_compareGenomes says, WARNING: mutualBestHitList for protein",protein.identifier,"incorrect")
+                    print("   Length is ",len(protein.mutualBestHitList))
+                    print("    ",protein.mutualBestHitList)
+            if protein.identifier in protein.mutualBestHitList:
+                if PHATE_WARNINGS:
+                    print("genomics_compareGenomes says, WARNING: protein,",protein.identifier," is listed in its own mutualBestHitList.")
+        return
+
+    def checkSingularBestHitList(self,genomeCount):
+        for gene in self.geneList:
+            if gene.identifier in gene.singularBestHitList:
+                if PHATE_WARNINGS:
+                    print("genomics_compareGenomes says, WARNING: gene,",gene.identifier," is listed in its own singularBestHitList.")
+        for protein in self.proteinList:
+            if protein.identifier in protein.singularBestHitList:
+                if PHATE_WARNINGS:
+                    print("genomics_compareGenomes says, WARNING: protein,",protein.identifier," is listed in its own singularBestHitList.")
         return
 
     def checkUnique(self):
@@ -1509,7 +1603,7 @@ class gene_protein(object):
 
     def writeMutualBestHitList2file(self,FILE_H):
         for hit in self.mutualBestHitList:
-            FILE_H.write("%s\n" % (hit))
+            FILE_H.write("%s%s\n" % ('   ',hit))
         return
 
     def writeMutualBestHitList(self):
@@ -1519,7 +1613,7 @@ class gene_protein(object):
 
     def writeSingularBestHitList2file(self,FILE_H):
         for hit in self.singularBestHitList:
-            FILE_H.write("%s\n" % (hit))
+            FILE_H.write("%s%s\n" % ('   ',hit))
         return
 
     def writeSingularBestHitList(self):
