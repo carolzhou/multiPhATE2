@@ -97,12 +97,12 @@ if PHATE_PROGRESS_STRING.lower() == 'true':
     PHATE_PROGRESS = True
 
 # Override
-PHATE_PROGRESS = True
-PHATE_WARNINGS = True
-PHATE_MESSAGES = True
+#PHATE_PROGRESS = True
+#PHATE_WARNINGS = True
+#PHATE_MESSAGES = True
 
 DEBUG = False
-DEBUG = True
+#DEBUG = True
 
 # Locations and files
 CGP_RESULTS_DIR                 = os.environ["PHATE_CGP_RESULTS_DIR"]
@@ -325,8 +325,8 @@ class comparison(object):
         for rLine in rLines:
             fields = []; genomeNum = ""; hitType = ""
             # Skip lines not to be processed in this method
-            match_comment = re.search('^#',rLine)
-            match_protein = re.search('^#PROTEIN\sHITS',rLine)
+            match_comment  = re.search('^#',rLine)
+            match_protein  = re.search('^#PROTEIN\sHITS',rLine)
             match_dataLine = re.search('^\d+',rLine)
             if match_protein: 
                 PROTEIN = True  # Prepare for loading protein hits next
@@ -389,9 +389,6 @@ class comparison(object):
                 dataArgs["gene2"]        = fields[G2_HEADER]
 
             # Insert data record into genome object
-            print("DEBUG: dataArgs: ")
-            for item in dataArgs.keys():
-                print(item,dataArgs[item])
             self.addHit2genome(dataArgs)
 
         REPORT_H.close()
@@ -593,9 +590,8 @@ class comparison(object):
 
         if MUTUAL or SINGULAR_ONE or LONER_ONE:
             # Search for query gene in genome1 (if exists)
-            GENE_FOUND = False; PROTEIN_FOUND = False; NEW = False
-
             if GENE:
+                GENE_FOUND = False; NEW = False
                 for gene_obj in genome1_obj.geneList:
                     if gene_obj.contigName == dataArgs["contig1"] and gene_obj.name == dataArgs["gene1"]:
                         GENE_FOUND = True
@@ -624,13 +620,13 @@ class comparison(object):
                     gene_obj.isLoner = False
                 if LONER_ONE:
                     gene_obj.lonerList.append(dataArgs["genome2"])   # To record a loner, append the name of the genome that this gene is a loner wrt
-                    self.addLoner(gene_obj.lonerList,dataArgs["genome2"])
 
                 # If this gene object needed to be newly created, then add to geneList; else it's already there!
                 if NEW:
                     genome1_obj.geneList.append(gene_obj)
 
             elif PROTEIN:
+                PROTEIN_FOUND = False; NEW = False
                 for protein_obj in genome1_obj.proteinList:
                     if protein_obj.contigName == dataArgs["contig1"] and protein_obj.name == dataArgs["protein1"]:
                         PROTEIN_FOUND = True
@@ -666,11 +662,10 @@ class comparison(object):
 
         if MUTUAL or SINGULAR_TWO or LONER_TWO:
             # Search for query gene in genome2 (if exists)
-            GENE_FOUND = False; PROTEIN_FOUND = False; NEW = False
-
             if GENE:
-                for geneObj in genome2_obj.geneList:
-                    if geneObj.contigName == dataArgs["contig2"] and geneObj.name == dataArgs["gene2"]:
+                GENE_FOUND = False; NEW = False
+                for gene_obj in genome2_obj.geneList:
+                    if gene_obj.contigName == dataArgs["contig2"] and gene_obj.name == dataArgs["gene2"]:
                         GENE_FOUND = True
                         break
                 if not GENE_FOUND: 
@@ -701,8 +696,9 @@ class comparison(object):
                     genome2_obj.geneList.append(gene_obj)
 
             elif PROTEIN:
-                for proteinObj in genome2_obj.proteinList:
-                    if proteinObj.contigName == dataArgs["contig2"] and proteinObj.name == dataArgs["protein2"]:
+                PROTEIN_FOUND = False; NEW = False
+                for protein_obj in genome2_obj.proteinList:
+                    if protein_obj.contigName == dataArgs["contig2"] and protein_obj.name == dataArgs["protein2"]:
                         PROTEIN_FOUND = True
                         break
                 if not PROTEIN_FOUND: 
