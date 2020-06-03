@@ -1740,7 +1740,6 @@ if not HPC:
     LOG.write("%s%s\n" % ("Processing genomes through PhATE. Begin processing at ",datetime.datetime.now()))
 
 # Run the phate pipeline over each genome, as specified in the multiPhate.config file
-
 def phate_threaded(jsonFile):
     print(f'multiPhate says, Running {jsonFile} on PID {os.getpid()}')
     if not HPC:
@@ -1762,6 +1761,7 @@ print(f'Using {THREADS} threads')
 
 pool = Pool(int(THREADS))
 pool.map(phate_threaded, jsonList)
+
 pool.close()
 
 # Run the comparative genomics module to compare proteoms among the user's specified genomes
@@ -1855,7 +1855,7 @@ else:
     LOG.write("%s\n" % ("Skipping CompareGeneProfiles."))
 
 # Override
-runGenomics = False
+#runGenomics = False
 if runGenomics:
     if PHATE_PROGRESS:
         print("multiPhate says, Performing gene-correspondence analysis.")
