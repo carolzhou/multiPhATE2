@@ -3,7 +3,7 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Most recent update: 26 May 2020
+# Most recent update: 02 June 2020
 #
 # Module comprising classes and data structures for comparing genomes
 #
@@ -97,9 +97,9 @@ if PHATE_PROGRESS_STRING.lower() == 'true':
     PHATE_PROGRESS = True
 
 # Override
-#PHATE_PROGRESS = True
-#PHATE_WARNINGS = True
-#PHATE_MESSAGES = True
+PHATE_PROGRESS = True
+PHATE_WARNINGS = True
+PHATE_MESSAGES = True
 
 DEBUG = False
 #DEBUG = True
@@ -112,6 +112,7 @@ CGP_PARALOG_FILE                = "compareGeneProfiles_main.paralogs"      # Par
 CGP_OUT_FILE                    = "compareGeneProfiles_main.out"           # Same data as report file, but in python list format
 CGP_SUMMARY_FILE                = "compareGeneProfiles_main.summary"       # High-level summary of genome-genome comparison
 GENOMICS_RESULTS_DIR            = os.environ["PHATE_GENOMICS_RESULTS_DIR"]
+GENOMICS_HOMOLOGY_GROUPS_DIR    = GENOMICS_RESULTS_DIR + "HOMOLOGY_GROUPS"
 GENOMICS_MUTUAL_BEST_HIT_FILE   = "genomics_mutualBestHits.out"
 GENOMICS_SINGULAR_BEST_HIT_FILE = "genomics_singularBestHits.out"
 GENOMICS_CORE_GENOME_FILE       = "genomics_coreGenome.out"
@@ -119,6 +120,8 @@ GENOMICS_CORRESPONDENCE_FILE    = "genomics_correspondences.out"
 GENOMICS_LONER_FILE             = "genomics_loners.out"
 GENOMICS_PARALOG_FILE           = "genomics_paralogs.out"
 GENOMICS_HOMOLOGY_GROUP_FILE    = "genomics_homologyGroups.out"
+GENOMICS_HOMOLOGY_FASTA_FILE    = "genomics.homGrp"
+HOMOLOGY_PREFIX                 = "homologyGroup_"
 MUTUAL_BEST_HIT_FILE            = os.path.join(GENOMICS_RESULTS_DIR,GENOMICS_MUTUAL_BEST_HIT_FILE)
 SINGULAR_BEST_HIT_FILE          = os.path.join(GENOMICS_RESULTS_DIR,GENOMICS_SINGULAR_BEST_HIT_FILE)
 CORE_GENOME_FILE                = os.path.join(GENOMICS_RESULTS_DIR,GENOMICS_CORE_GENOME_FILE)
@@ -126,6 +129,10 @@ CORRESPONDENCE_FILE             = os.path.join(GENOMICS_RESULTS_DIR,GENOMICS_COR
 LONER_FILE                      = os.path.join(GENOMICS_RESULTS_DIR,GENOMICS_LONER_FILE)
 PARALOG_FILE                    = os.path.join(GENOMICS_RESULTS_DIR,GENOMICS_PARALOG_FILE)
 HOMOLOGY_GROUP_FILE             = os.path.join(GENOMICS_RESULTS_DIR,GENOMICS_HOMOLOGY_GROUP_FILE)
+
+PHATE_PIPELINE_OUTPUT_DIR       = os.environ["PHATE_PIPELINE_OUTPUT_DIR"] 
+CGP_GENES_FILENAME              = "cgp_gene.fnt"
+CGP_PROTEINS_FILENAME           = "cgp_protein.fnt"   # This should be ".faa"
 
 # Report file fields
 SORT_POSITION        = 0
@@ -193,6 +200,18 @@ class comparison(object):
         if PHATE_PROGRESS:
             print("genomics_compareGenomes says, Computing homology groups.")
         self.computeHomologyGroups()
+
+        if PHATE_PROGRESS:
+            print("genomics_compareGenomes says, Creating homology group fasta files.")
+            print("...for genes...")
+        try:
+            os.stat(GENOMICS_HOMOLOGY_GROUPS_DIR)
+        except:
+            os.mkdir(GENOMICS_HOMOLOGY_GROUPS_DIR)
+        self.createGeneHomologyFastaFiles(GENOMICS_HOMOLOGY_GROUPS_DIR)
+        if PHATE_PROGRESS:
+            print("...for proteins...")
+        self.createProteinHomologyFastaFiles(GENOMICS_HOMOLOGY_GROUPS_DIR)
 
         if PHATE_PROGRESS:
             print("genomics_compareGenomes says, Writing final reports.")
@@ -843,6 +862,100 @@ class comparison(object):
                     if protein_obj.identifier == proteinIdentifier:
                         return protein_obj 
         return protein_obj 
+
+    def createGeneHomologyFastaFiles(self,directory='./'):
+        geneFasta   = ""
+        groupNumber = 0
+        for genome in self.genomeList:
+            if genome.isReference:
+                for gene in genome.geneList:
+
+                    if gene.homologyList:
+                        # Construct full path/filename string for next homology group fasta file name
+                        groupNumber += 1
+                        homFileName = HOMOLOGY_PREFIX + str(groupNumber) + '.fnt' 
+                        nextHomologyFastaFile = os.path.join(directory,homFileName)
+                        # Get fasta sequence for this reference protein
+                        filePathName = self.getGeneFile(genome.name) 
+                        geneSeq = self.getSequence(gene.name,filePathName)
+                        FILE_H = open(nextHomologyFastaFile,'w')
+                        fastaString = '>' + gene.identifier + '\n' + geneSeq + '\n'
+                        FILE_H.write("%s" % (fastaString))
+
+                        # Get fasta sequence for each member of this reference genes homology group 
+                        for seqID in gene.homologyList:
+                            (genomeName,contigName,cgpHeader) = seqID.split(':')
+                            filePathName = self.getGeneFile(genomeName)
+                            geneFasta = self.getSequence(cgpHeader,filePathName)
+                            fastaString = '>' + seqID + '\n' + geneSeq + '\n'
+                            FILE_H.write("%s" % (fastaString))
+                        FILE_H.close()
+        return geneFasta
+
+    def createProteinHomologyFastaFiles(self,directory='./'):
+        proteinFasta = ""
+        groupNumber  = 0
+        homologyFastaFile = ""
+        for genome in self.genomeList:
+            if genome.isReference:  # Reference genome is basis for homology groups
+                for protein in genome.proteinList:
+
+                    if protein.homologyList:  # Remember that homology groups include paralogs and their correspondences
+                        # Construct full path/filename string for next homology group fasta file name
+                        groupNumber += 1
+                        homFileName = HOMOLOGY_PREFIX + str(groupNumber) + '.faa'          
+                        nextHomologyFastaFile = os.path.join(directory,homFileName)   
+                        # Get fasta sequence for this reference protein
+                        filePathName = self.getProteinFile(genome.name) 
+                        proteinSeq = self.getSequence(protein.name,filePathName)
+                        FILE_H = open(nextHomologyFastaFile,'w')
+                        fastaString = '>' + protein.identifier + '\n' + proteinSeq + '\n'
+                        FILE_H.write("%s" % (fastaString))
+
+                        # Get fasta sequences for each member of this reference protein's homology group
+                        for seqID in protein.homologyList:
+                            (genomeName,contigName,cgpHeader) = seqID.split(':')
+                            filePathName = self.getProteinFile(genomeName)
+                            proteinSeq = self.getSequence(cgpHeader,filePathName)
+                            fastaString = '>' + seqID + '\n' + proteinSeq + '\n'
+                            FILE_H.write("%s" % (fastaString))
+                        FILE_H.close()
+        return proteinFasta
+
+    def getGeneFile(self,genomeName):
+        filePathName = ""
+        cgpGenesFilename = genomeName + '_' + CGP_GENES_FILENAME
+        filePathName = os.path.join(PHATE_PIPELINE_OUTPUT_DIR,genomeName,cgpGenesFilename)
+        return filePathName 
+
+    def getProteinFile(self,genomeName):
+        filePathName = ""
+        cgpProteinsFilename = genomeName + '_' + CGP_PROTEINS_FILENAME
+        filePathName = os.path.join(PHATE_PIPELINE_OUTPUT_DIR,genomeName,cgpProteinsFilename)
+        return filePathName 
+
+    def getSequence(self,cgpHeader,filePathName):
+        seq = ""
+        try:
+            file_h = open(filePathName,'r')
+        except:
+            print("genomics_compareGenomes says, ERROR: Cannot open file ",filePathName)
+            return fasta
+        fLines = file_h.read().splitlines()
+        for i in range(0,len(fLines)):
+            fLine = fLines[i]
+            # Note: using the cgpHeader as a search string fails if it has '+' (for strand)
+            # Thus, need to substitute the '+' in order to find the original string in file
+            new_cgpHeader = re.sub('\+','\\+',cgpHeader)
+            match_header = re.search(new_cgpHeader,fLine)
+            if match_header:
+                seq = fLines[i+1]
+                break
+        if seq == "":
+            if PHATE_WARNINGS:
+                print("genomics_compareGenomes says, WARNING: Failed to find sequence for cgpHeader ",cgpHeader)
+        file_h.close()
+        return seq 
 
     #===== COMPARISON DATA CHECK METHODS
 
