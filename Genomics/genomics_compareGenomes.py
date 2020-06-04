@@ -3,7 +3,7 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Most recent update: 02 June 2020
+# Most recent update: 03 June 2020
 #
 # Module comprising classes and data structures for comparing genomes
 #
@@ -122,6 +122,7 @@ GENOMICS_PARALOG_FILE           = "genomics_paralogs.out"
 GENOMICS_HOMOLOGY_GROUP_FILE    = "genomics_homologyGroups.out"
 GENOMICS_HOMOLOGY_FASTA_FILE    = "genomics.homGrp"
 HOMOLOGY_PREFIX                 = "homologyGroup_"
+HOMOLOGY_ANNOT_PREFIX           = "homologyGroup_"
 MUTUAL_BEST_HIT_FILE            = os.path.join(GENOMICS_RESULTS_DIR,GENOMICS_MUTUAL_BEST_HIT_FILE)
 SINGULAR_BEST_HIT_FILE          = os.path.join(GENOMICS_RESULTS_DIR,GENOMICS_SINGULAR_BEST_HIT_FILE)
 CORE_GENOME_FILE                = os.path.join(GENOMICS_RESULTS_DIR,GENOMICS_CORE_GENOME_FILE)
@@ -863,6 +864,7 @@ class comparison(object):
                         return protein_obj 
         return protein_obj 
 
+    # Method createGeneHomologyFastaFiles creates homoloyg fasta files (for the reference genome)
     def createGeneHomologyFastaFiles(self,directory='./'):
         geneFasta   = ""
         groupNumber = 0
@@ -892,35 +894,60 @@ class comparison(object):
                         FILE_H.close()
         return geneFasta
 
+    # Method createProteinHomologyFastaFiles creates not only homology fasta files, but also annotation files
     def createProteinHomologyFastaFiles(self,directory='./'):
-        proteinFasta = ""
         groupNumber  = 0
-        homologyFastaFile = ""
+        # Identify reference genome and construct homology fasta files and homology annotation files
         for genome in self.genomeList:
             if genome.isReference:  # Reference genome is basis for homology groups
                 for protein in genome.proteinList:
-
+                    # Walk through protein list, gather fasta sequences for each homology group
                     if protein.homologyList:  # Remember that homology groups include paralogs and their correspondences
+
                         # Construct full path/filename string for next homology group fasta file name
                         groupNumber += 1
                         homFileName = HOMOLOGY_PREFIX + str(groupNumber) + '.faa'          
-                        nextHomologyFastaFile = os.path.join(directory,homFileName)   
-                        # Get fasta sequence for this reference protein
+                        nextHomologyFastaFile = os.path.join(directory,homFileName) 
+
+                        # Construct full path/filename string for next homology group annotation file name
+                        annotFileName = HOMOLOGY_ANNOT_PREFIX + str(groupNumber) + '.annot'
+                        nextHomologyAnnotFile = os.path.join(directory,annotFileName)
+
+                        # Open fasta and annotation files
+                        FASTA_FILE_H = open(nextHomologyFastaFile,'w')
+                        ANNOT_FILE_H = open(nextHomologyAnnotFile,'w')
+
+                        # Get fasta sequence for this reference protein and write to file
                         filePathName = self.getProteinFile(genome.name) 
                         proteinSeq = self.getSequence(protein.name,filePathName)
-                        FILE_H = open(nextHomologyFastaFile,'w')
                         fastaString = '>' + protein.identifier + '\n' + proteinSeq + '\n'
-                        FILE_H.write("%s" % (fastaString))
+                        FASTA_FILE_H.write("%s" % (fastaString))
 
-                        # Get fasta sequences for each member of this reference protein's homology group
+                        # Get fasta sequence for each member of this reference protein's homology group and write to file
                         for seqID in protein.homologyList:
                             (genomeName,contigName,cgpHeader) = seqID.split(':')
                             filePathName = self.getProteinFile(genomeName)
                             proteinSeq = self.getSequence(cgpHeader,filePathName)
                             fastaString = '>' + seqID + '\n' + proteinSeq + '\n'
-                            FILE_H.write("%s" % (fastaString))
-                        FILE_H.close()
-        return proteinFasta
+                            FASTA_FILE_H.write("%s" % (fastaString))
+
+                        # Get annotation for this reference protein and write to file
+                        fullAnnotation = ast.literal_eval(protein.annotation)
+                        annotation = fullAnnotation[0][1:] 
+                        ANNOT_FILE_H.write("%s\t%s\n" % (protein.identifier,annotation))
+
+                        # Get annotation for each member of the reference protein's homology group and write to file
+                        for seqID in protein.homologyList:
+                            fullAnnotation = ast.literal_eval(self.getAnnotation(seqID,"protein"))
+                            annotation = fullAnnotation[0][1:]
+                            ANNOT_FILE_H.write("%s\t%s\n" % (seqID,annotation))
+
+                        # Clean up
+                        FASTA_FILE_H.close()
+                        ANNOT_FILE_H.close()
+
+                        # Get annotations for this reference protein
+        return
 
     def getGeneFile(self,genomeName):
         filePathName = ""
@@ -940,7 +967,7 @@ class comparison(object):
             file_h = open(filePathName,'r')
         except:
             print("genomics_compareGenomes says, ERROR: Cannot open file ",filePathName)
-            return fasta
+            return seq 
         fLines = file_h.read().splitlines()
         for i in range(0,len(fLines)):
             fLine = fLines[i]
@@ -956,6 +983,23 @@ class comparison(object):
                 print("genomics_compareGenomes says, WARNING: Failed to find sequence for cgpHeader ",cgpHeader)
         file_h.close()
         return seq 
+
+    def getAnnotation(self,identifier,seqType):
+        annot = ""
+        (genomeName,contigName,cgpHeader) = identifier.split(':')
+        for genome in self.genomeList:
+            # Identify the genome in question
+            if genome.name == genomeName:
+                # Identify the gene or protein, and capture it's annotation
+                if seqType.lower() == "gene" or seqType.lower() == "nucleotide" or seqType.lower() == "nt":
+                    for gene in genome.geneList:
+                        if gene.cgpHeader == cgpHeader:
+                            annot = gene.annotation 
+                elif seqType.lower() == "protein" or seqType.lower() == "peptide" or seqType.lower() == "aa" or seqType.lower() == "prot":
+                    for protein in genome.proteinList:
+                        if protein.cgpHeader == cgpHeader:
+                            annot = protein.annotation
+        return annot
 
     #===== COMPARISON DATA CHECK METHODS
 

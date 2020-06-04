@@ -49,8 +49,8 @@ from multiprocessing import Pool
 HPC = False  # write to log
 # HPC = True  # mute the log
 # Set THREADS to 'ALL' to use all available processors, or to an integer to limit number of parallel processes
-THREADS = 'ALL'
-# THREADS = 1
+#THREADS = 'ALL'
+ THREADS = 1
 # 2) If you are running under a linux system, set PHATE_OUT and PHATE_ERR to 'True'. This will capture standard errors to files. Cannot
 # guarantee this will work under other operating systems.
 PHATE_OUT = 'False'
