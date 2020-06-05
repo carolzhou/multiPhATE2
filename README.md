@@ -14,6 +14,7 @@ THIS CODE IS COVERED BY THE BSD LICENSE. SEE INCLUDED FILE BSD-3.pdf FOR DETAILS
 4) The PhATE annotation pipeline now runs phmmer and hmmscan, in addition to jackhmmer.
 5) PhATE now captures the raw hmm search output (ie, alignments).
 6) multiPhATE now runs CompareGeneProfiles, a code that identifies gene similarities among genomes.
+7) A genomics module computes gene and protein homology groups among all genomes input to the pipeline
 
 #### ABOUT THE MULTI-PHATE PIPELINE DRIVER
 
