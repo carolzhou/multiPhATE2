@@ -5,7 +5,7 @@
 # Program Title:  multiPhate2.py (/multiPhate2/)
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last Update:  05 May 2020
+# Last Update:  05 June 2020
 #
 # Description: Script multiPhate.py runs an annotation pipeline (phate_runPipeline.py) over any
 #    number of genomes specified in the user's input configuration file (multPhate.config). It then
@@ -50,7 +50,9 @@ HPC = False  # write to log
 # HPC = True  # mute the log
 # Set THREADS to 'ALL' to use all available processors, or to an integer to limit number of parallel processes
 #THREADS = 'ALL'
- THREADS = 1
+THREADS = 1
+# Set the number of blast threads that blast+ will invoke
+BLAST_THREADS = 1
 # 2) If you are running under a linux system, set PHATE_OUT and PHATE_ERR to 'True'. This will capture standard errors to files. Cannot
 # guarantee this will work under other operating systems.
 PHATE_OUT = 'False'
@@ -133,7 +135,6 @@ customGeneDBpath         = 'pathNotSet'
 customProteinDBpath      = 'pathNotSet'
 
 # programs, databases, and booleans controlling hmm processes
-# programs
 #hmmProgram               = ''     # hmm program for blast database search; currently only choice is 'jackhmmer'; '' = off
 #jackhmmer                = False  # hmm programs for hmm search
 blastpSearch             = False  # if True, run blastp against fasta blast database(s)
@@ -179,6 +180,11 @@ customHmm                = False
 customHmmName            = 'unknown'
 customHmmDBname          = 'unknown'
 customHmmDBpath          = 'pathNotSet'
+
+# parameters controlling parallelism
+threads                  = THREADS        # Value should be a positive integer or ALL
+hpc                      = HPC            # True or False
+blastThreads             = BLAST_THREADS  # positive integer
 
 # Constants; defaults will apply if not specified in config file
 # Leave all this stuff alone!
@@ -536,6 +542,11 @@ p_phanotateHome               = re.compile("phanotate_home='(.*)'")
 p_genemarkHome                = re.compile("genemark_home='(.*)'")
 p_hmmerHome                   = re.compile("hmmer_home='(.*)'")
 
+# PARALLELISM
+p_threads                     = re.compile("threads='(.*)'")
+p_hpc                         = re.compile("HPC='(.*)'")
+p_blastThreads                = re.compile("blast_threads='(.*)'")
+
 # VERBOSTIY
 p_phateWarnings               = re.compile("phate_warnings='(.*)'")
 p_phateMessages               = re.compile("phate_messages='(.*)'")
@@ -771,6 +782,11 @@ for cLine in cLines:
     match_runCGP                    = re.search(p_runCGP,cLine)
     match_hmmbuild                  = re.search(p_hmmbuild,cLine)
     match_hmmsearch                 = re.search(p_hmmsearch,cLine)
+
+    # parallelism
+    match_threads                   = re.search(p_threads,cLine)
+    match_hpc                       = re.search(p_hpc,cLine)
+    match_blastThreads              = re.search(p_blastThreads,cLine)
 
     # verbosity
     match_phateWarnings             = re.search(p_phateWarnings,cLine)
@@ -1422,6 +1438,28 @@ for cLine in cLines:
             customHmmDBpath = value
         os.environ["PHATE_CUSTOM_HMM_HOME"] = customHmmDBpath
 
+    ##### PARALLELISM #####
+
+    elif match_threads:
+        value = match_threads.group(1)
+        if int(value) >= 1:
+            threads = int(value) 
+        elif value == 'ALL':
+            threads = value
+        else:
+            threads = 1
+
+    elif match_hpc:
+        value = match_hpc.group(1)
+        if value.lower() == 'true' or value.lower() == 'yes' or value.lower() == 'on':
+            hpc = True
+            HPC = hpc   #*** need some cleanup wrt this variable, now that it's been moved to config file
+
+    elif match_blastThreads:
+        value = match_blastThreads.group(1)
+        if int(value) >= 1:
+            blastThreads = int(value)
+
     ##### VERBOSITY #####
 
     elif match_phateWarnings:
@@ -1622,6 +1660,10 @@ if not HPC: # Skip logging if running in high-throughput, else multiPhate.log fi
     LOG.write("%s%s\n" % ("   runGenomics is ",runGenomics))
     LOG.write("%s%s\n" % ("   hmmbuild is ",hmmbuild))
     LOG.write("%s%s\n" % ("   hmmsearch is ",hmmsearch))
+    LOG.write("%s%s\n" % ("   threads is ",threads))
+    LOG.write("%s%s\n" % ("   HPC is ",HPC))
+    LOG.write("%s%s\n" % ("   hpc is ",hpc))
+    LOG.write("%s%s\n" % ("   blastThreads is ",blastThreads))
     LOG.write("%s%s\n" % ("   phate warnings is set to ",os.environ["PHATE_PHATE_WARNINGS"]))
     LOG.write("%s%s\n" % ("   phate messages is set to ",os.environ["PHATE_PHATE_MESSAGES"]))
     LOG.write("%s%s\n" % ("   phate progress is set to ",os.environ["PHATE_PHATE_PROGRESS"]))
@@ -1725,6 +1767,7 @@ for genome in genomeList:
             "customHmm":customHmm,
             "customHmmDBname":customHmmDBname,
             "customHmmDBpath":customHmmDBpath,
+            "blastThreads":blastThreads,
             }
 
     # Write next json file
@@ -1752,10 +1795,11 @@ def phate_threaded(jsonFile):
     if not HPC:
         LOG.write("%s%s\n" % ("End PhATE processing at ",datetime.datetime.now()))
 
-if THREADS is 'ALL':
-    THREADS = os.cpu_count()
-elif THREADS > os.cpu_count():
-    THREADS = os.cpu_count()
+# Set up to run processing in parallel on multiple threads
+if threads is 'ALL':
+    threads = os.cpu_count()
+elif threads > os.cpu_count():
+    threads = os.cpu_count()
 
 print(f'Using {THREADS} threads')
 

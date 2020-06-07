@@ -10,7 +10,7 @@
 #
 # Programmer: CEZhou
 #
-# Latest Update: 11 April 2020
+# Latest Update: 05 June 2020
 # Version 1.5
 #
 ################################################################
@@ -175,6 +175,7 @@ RUN_GENOME_BLAST         = False         # blasting against genome database
 RUN_GENE_BLAST           = False         # blasting against gene database
 RUN_PROTEIN_BLAST        = False         # blasting against any protein database
 BLASTP_SEARCH            = False         # If True, run blastp against fasta blast DB(s)
+BLAST_THREADS            = 1             # Positive integer; assume serial execution unless indicated otherwise
 PHMMER_SEARCH            = False         # if True, run phmmer against fasta blast DB(s)
 JACKHMMER_SEARCH         = False         # if True, run jackhmmer against fasta blast DB(s)
 HMMSCAN                  = False         # Default; can be configured by user ###*** to be deprecated
@@ -229,6 +230,7 @@ p_blastpIdentityParam        = re.compile('^-i')   # blastp identity cutoff
 p_blastnIdentityParam        = re.compile('^-j')   # blastn identity cutoff
 p_blastpHitCountParam        = re.compile('^-h')   # blastp top hit count
 p_blastnHitCountParam        = re.compile('^-H')   # blastn top hit count
+p_blastThreadsParam          = re.compile('^-z')   # number of blast threads to execute
 p_translateOnlyParam         = re.compile('^-x')   # if user passes 'true' => get genes, translate, compare, then stop before annotation
 p_blastDatabaseStringParam   = re.compile('^-b')   # string listing database(s) to blast against
 p_blastProgramStringParam    = re.compile('^-B')   # string listing hmm program and database(s) to search against
@@ -303,6 +305,7 @@ for i in range(0,argCount):
     match_blastnIdentityParam        = re.search(p_blastnIdentityParam,        argList[i])
     match_blastpHitCountParam        = re.search(p_blastpHitCountParam,        argList[i])
     match_blastnHitCountParam        = re.search(p_blastnHitCountParam,        argList[i])
+    match_blastThreadsParam          = re.search(p_blastThreadsParam,          argList[i])
 
     match_blastDatabaseStringParam   = re.search(p_blastDatabaseStringParam,   argList[i]) # blast databases
     match_blastProgramStringParam    = re.search(p_blastProgramStringParam,    argList[i]) # blast programs for blast database search
@@ -395,6 +398,10 @@ for i in range(0,argCount):
             value = argList[i+1]
             if int(value) > 0 and int(value) <= int(MAX_BLASTN_HIT_COUNT):
                 blastnHitCount = int(value)
+
+    if match_blastThreadsParam:
+        if i < argCount:
+            blastThreads = int(argList[i+1])
 
     # Blast, Hmm, and Profile database processing
 
@@ -675,6 +682,7 @@ LOGFILE_H.write("%s%s\n" % ("blastpIdentity is ",blastpIdentity))
 LOGFILE_H.write("%s%s\n" % ("blastnIdentity is ",blastnIdentity))
 LOGFILE_H.write("%s%s\n" % ("blastpHitCount is ",blastpHitCount))
 LOGFILE_H.write("%s%s\n" % ("blastnHitCount is ",blastnHitCount))
+LOGFILE_H.write("%s%s\n" % ("blastThreads is ",str(blastThreads)))
 if TRANSLATE_ONLY:
     LOGFILE_H.write("%s\n" % ("Translating only; no annotation."))
 else:
@@ -741,6 +749,7 @@ if PHATE_MESSAGES == 'True':
     print("  blastn identity is", blastnIdentity)
     print("  blastp hit count is", blastpHitCount)
     print("  blastn hit count is", blastnHitCount)
+    print("  blastThreads is", blastThreads)
     if TRANSLATE_ONLY:
         print("  Translating only; no annotation.")
     else:
@@ -1002,6 +1011,7 @@ else:
             'geneCallDir'     : outputDir, 
             'blastOutDir'     : geneBlastOutputDir,
             'refseqGeneBlast' : REFSEQ_GENE_BLAST,
+            'blastThreads'    : blastThreads,
         }
         blast.setBlastParameters(myParamSet)
         blast.setBlastFlavor('blastn') 
@@ -1062,6 +1072,7 @@ else:
             'swissprotBlast'        : SWISSPROT_BLAST,
             'uniprotBlast'          : UNIPROT_BLAST,
             'nrBlast'               : NR_BLAST,
+            'blastThreads'          : blastThreads,
         }
         blast.setBlastParameters(myParamSet)
         blast.setBlastFlavor('blastp')

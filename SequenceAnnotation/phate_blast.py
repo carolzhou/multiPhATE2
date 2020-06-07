@@ -6,7 +6,7 @@
 #
 # Programmer:  Carol Zhou
 #
-# Last Update:  10 April 2020
+# Last Update:  05 June 2020
 # 
 # Classes and Methods:
 #    multiBlast
@@ -126,6 +126,7 @@ class multiBlast(object):
         self.topHitCount              = 3         # default: Number of best hits to record
         self.scoreEdge                = SCORE_EDGE_MAX # default: BLAST recommended default
         self.overhang                 = OVERHANG_MAX   # default: BLAST recommended default
+        self.blastThreads             = 1         # default: run in serial
         self.outputFormat             = 5         # default: XML output
         self.blastAnnotations         = []        # List of phate_annotation objects; blast output get temporarily stored here
         # move to hit class:  self.topHitList     = []        # 
@@ -165,6 +166,8 @@ class multiBlast(object):
                 self.setScoreEdge(paramset['scoreEdge'])
             if 'overhang' in list(paramset.keys()):
                 self.setOverhang(paramset['overhang'])
+            if 'blastThreads' in list(paramset.keys()):
+                self.setBlastThreads(paramset['blastThreads'])
             if 'geneCallDir' in list(paramset.keys()):
                 self.setGeneCallDir(paramset['geneCallDir'])
             if 'blastOutDir' in list(paramset.keys()):
@@ -263,6 +266,12 @@ class multiBlast(object):
             if PHATE_WARNINGS == 'True':
                 print("phate_blast says, WARNING: Overhang should be between 0 and", OVERHANG_MAX, "If this is insufficient, you may change OVERHANG_MAX in phate_blast.py.")
 
+    def setBlastThreads(self,blastThreads):
+        if int(blastThreads) >= 1:
+            self.blastThreads = int(blastThreads)
+        else:
+            self.blastThreads = 1
+
     def setGeneCallDir(self,geneCallDir):
         self.geneCallDir = geneCallDir
         GENE_CALL_DIR = geneCallDir
@@ -298,14 +307,16 @@ class multiBlast(object):
                 " -task blastn -db " + database + " -evalue " + str(self.evalueMin) + \
                 " -best_hit_score_edge " + str(self.scoreEdge) + " -best_hit_overhang " + \
                 str(self.overhang) + " -outfmt " + str(self.outputFormat) + " -perc_identity " + \
-                str(self.identityMin) + " -max_target_seqs " + str(self.topHitCount) 
+                str(self.identityMin) + " -max_target_seqs " + str(self.topHitCount) + \
+                " -num_threads " + str(self.blastThreads)
 
         elif self.blastFlavor == 'blastp': # Recall: You can't specificy %identity, but can filter afterward
             command = BLAST_HOME + "blastp -query " + fastaFile + " -out " + outfile + \
                 " -task blastp -db " + database + " -evalue " + str(self.evalueMin) + \
                 " -best_hit_score_edge " + str(self.scoreEdge) + " -best_hit_overhang " + \
                 str(self.overhang) + " -outfmt " + str(self.outputFormat) + \
-                " -max_target_seqs " + str(self.topHitCount)
+                " -max_target_seqs " + str(self.topHitCount) + \
+                " -num_threads " + str(self.blastThreads)
                 #" -max_target_seqs " + str(self.topHitCount) + \
                 #" -sorthits " + str(HIT_SORT_CRITERION) + \
                 #" -sorthsps " + str(HSP_SORT_CRITERION)

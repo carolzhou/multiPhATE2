@@ -6,7 +6,7 @@
 # compareGeneProfiles_main.py
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last update: 16 May 2020
+# Last update: 05 June 2020
 #
 # This program compares the gene calls from 2 genomes and identifies genes that 
 # match, are similar, or are unique in each genome. This code is a re-write of
@@ -202,8 +202,8 @@ parameters = { # data structure for input to class methods; defaults as indicate
 "domainMatchCoverage"                    : 45,
 "domainSimilarityIdentity"               : 60,
 "domainSimilarityCoverage"               : 45,
-"paralogMatchIdentity"                   : 20,  # TESTING
-"paralogMatchCoverage"                   : 20,  #
+"paralogMatchIdentity"                   : 60,  
+"paralogMatchCoverage"                   : 60,  
 "paralogSimilarityIdentity"              : 60,
 "paralogSimilarityCoverage"              : 75,
 "paralogDomainMatchIdentity"             : 95,
@@ -218,8 +218,8 @@ parameters = { # data structure for input to class methods; defaults as indicate
 "proteinDomainMatchCoverage"             : 45,
 "proteinDomainSimilarityIdentity"        : 60,
 "proteinDomainSimilarityCoverage"        : 45,
-"proteinParalogMatchIdentity"            : 20,  #
-"proteinParalogMatchCoverage"            : 20,  #
+"proteinParalogMatchIdentity"            : 60,  
+"proteinParalogMatchCoverage"            : 60,  
 "proteinParalogSimilarityIdentity"       : 60,
 "proteinParalogSimilarityCoverage"       : 75,
 "proteinParalogDomainMatchIdentity"      : 95,

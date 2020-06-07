@@ -4,7 +4,7 @@
 #
 # Programmers: Jeff Kimbrel, Carol Zhou
 #
-# Last update: 11 April 2020
+# Last update: 06 June 2020
 #
 # Description: Single command to run PHANOTATE, Prodigal, Glimmer and GeneMarkS on a fasta file
 #
@@ -16,6 +16,8 @@
 import os
 import sys
 import re
+import subprocess
+#from subprocess import PIPE, run
 
 DEBUG = False 
 #DEBUG = True
@@ -356,6 +358,7 @@ if PRODIGAL_CALLS:
         print("\n########## Prodigal ##########")
     logfile.write("%s\n" % ("Processing Prodigal"))
 
+    dumpFile = "./dump.out"
     command = prodigalPath + 'prodigal -q -i ' + fastaFileName + ' -o ' + outputFolder + 'prodigal.gff -f gff -p meta'
     systemCall(command)
 
@@ -364,6 +367,7 @@ if PRODIGAL_CALLS:
 
     command = prodigalPath + 'prodigal -i ' + fastaFileName + ' -o ' + outputFolder + 'prodigal.genes.sco -f sco -p meta -d ' + prodigalPeptideFile + ' -s ' + prodigalPotentialFile
     systemCall(command)
+
     files['Raw Prodigal GFF'] = outputFolder + 'prodigal.gff'
 
     prodigalFile = open(files['Raw Prodigal GFF'], 'r')

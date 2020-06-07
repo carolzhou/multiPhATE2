@@ -4,7 +4,7 @@
 #
 # Program Title:  phate_runPipeline.py ()
 #
-# Most recent update:  10 April 2020
+# Most recent update:  05 June 2020
 #
 # Description: Runs the phate annotation pipeline.  This code runs under Python 3.7, and requires
 #    dependent packages.
@@ -242,6 +242,7 @@ blastnIdentity           = 60
 blastpIdentity           = 60
 blastnHitCount           = 5
 blastpHitCount           = 5
+blastThreads             = 1
 ncbiVirusGenomeBlast     = False
 ncbiVirusProteinBlast    = False
 refseqGeneBlast          = False
@@ -311,6 +312,7 @@ with open(jsonFile, 'r') as jsonParameters:
     blastpIdentity           = parameters["blastpIdentity"]
     blastnHitCount           = parameters["blastnHitCount"]
     blastpHitCount           = parameters["blastpHitCount"]
+    blastThreads             = parameters["blastThreads"]
     ncbiVirusGenomeBlast     = parameters["ncbiVirusGenomeBlast"]
     ncbiVirusProteinBlast    = parameters["ncbiVirusProteinBlast"]
     refseqProteinBlast       = parameters["refseqProteinBlast"]
@@ -420,6 +422,7 @@ if PHATE_MESSAGES == 'True':
     print("blastnIdentity is", blastnIdentity) 
     print("blastpHitCount is", blastpHitCount) 
     print("blastnHitCount is", blastnHitCount)
+    print("blastThreads is", blastThreads)
     print("ncbiVirusGenomeBlast is", ncbiVirusGenomeBlast)
     print("ncbiVirusProteinBlast is", ncbiVirusProteinBlast)
     print("refseqProteinBlast is", refseqProteinBlast)
@@ -487,6 +490,7 @@ RUNLOG.write("%s%s\n" % ("   blastpIdentity is ",blastpIdentity))
 RUNLOG.write("%s%s\n" % ("   blastnIdentity is ",blastnIdentity))
 RUNLOG.write("%s%s\n" % ("   blastpHitCount is ",blastpHitCount))
 RUNLOG.write("%s%s\n" % ("   blastnHitCount is ",blastnHitCount))
+RUNLOG.write("%s%s\n" % ("   blastThreads is ",blastThreads))
 RUNLOG.write("%s%s\n" % ("   ncbiVirusGenomeBlast is ",ncbiVirusGenomeBlast))
 RUNLOG.write("%s%s\n" % ("   ncbiVirusProteinBlast is ",ncbiVirusProteinBlast))
 RUNLOG.write("%s%s\n" % ("   refseqProteinBlast is ",refseqProteinBlast))
@@ -673,6 +677,10 @@ blastProgramParameterString = ''   # programs
 if blastpSearch:
     blastProgramParameterString += '_blastp'
 
+blastThreadsParameterString = ''   # number of blast threads to run
+if blastThreads > 0:
+    blastThreadsParameterString =  str(blastThreads)
+
 # For now, use same databases for hmm search against sequence databases
 seqDatabaseParameterString = blastDatabaseParameterString 
 
@@ -719,6 +727,8 @@ if hmmscan:
 # Set empty strings (so parameter is passed regardless, not as '')
 if blastProgramParameterString == '':
     blastProgramParameterString = 'none'
+if blastThreadsParameterString == '':
+    blastThreadsParameterString = 'none'
 if blastDatabaseParameterString == '':
     blastDatabaseParameterString = 'none'
 if hmmProgramParameterString == '':
@@ -739,8 +749,9 @@ commandRoot6  = " -h "    + blastpHitCount          + " -H " + blastnHitCount   
 commandRoot7  = " -B "    + blastProgramParameterString   + " -b " + blastDatabaseParameterString            # blast and hmm search of blast/sequence database(s)
 commandRoot8  = " -M "    + hmmProgramParameterString     + " -m " + seqDatabaseParameterString              # hmm search of hmm profile database(s)
 commandRoot9  = " -R "    + profileProgramParameterString + " -r " + profileDatabaseParameterString          # program and databases for hmm search
+commandRoot10 = " -z "    + blastThreadsParameterString
 commandRootA  = commandRoot1 + commandRoot2 + commandRoot3 + commandRoot4 + commandRoot5
-commandRoot   = commandRootA + commandRoot6 + commandRoot7 + commandRoot8 + commandRoot9
+commandRoot   = commandRootA + commandRoot6 + commandRoot7 + commandRoot8 + commandRoot9 + commandRoot10
 
 # As appropriate, append additional parameters
 if translateOnly:

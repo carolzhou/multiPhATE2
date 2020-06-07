@@ -7,8 +7,6 @@
 #
 # Module comprising classes and data structures for comparing genomes
 #
-# Programmer's notes: There is a genome1/2 mismatch in assigning mutual hits (for WPhi v. pro483 data).
-#
 # Classes and Methods:
 #    class comparison
 #       performComparison()

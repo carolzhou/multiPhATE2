@@ -50,6 +50,9 @@ PHATE_PROGRESS = True
 PHATE_MESSAGES = True
 PHATE_WARNINGS = True
 
+# Environmental Variables
+GENOMICS_RESULTS_DIR = os.environ["PHATE_GENOMICS_RESULTS_DIR"]
+
 ###########################################################################################
 # BEGIN MAIN
 #
@@ -60,10 +63,16 @@ if PHATE_PROGRESS:
 # Create genome comparison object
 genomeComparison = genomics_compareGenomes.comparison()
 
+# Create output directory
+try:
+    os.stat(GENOMICS_RESULTS_DIR)
+except:
+    os.mkdir(GENOMICS_RESULTS_DIR)
+
 # Perform genome comparisons
 genomeComparison.performComparison()
 
 # Clean up
 if PHATE_PROGRESS:
-    print("genomic_driver says, Genome comparison complete.")
+    print("genomics_driver says, Genome comparison complete.")
 
