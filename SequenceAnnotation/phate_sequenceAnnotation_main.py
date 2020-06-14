@@ -10,7 +10,7 @@
 #
 # Programmer: CEZhou
 #
-# Latest Update: 05 June 2020
+# Latest Update: 09 June 2020
 # Version 1.5
 #
 ################################################################
@@ -89,6 +89,8 @@ REFSEQ_GENE_BASE_DIR          = os.environ["PHATE_REFSEQ_GENE_BASE_DIR"]
 REFSEQ_GENE_BLAST_HOME        = os.environ["PHATE_REFSEQ_GENE_BLAST_HOME"]
 PVOGS_BASE_DIR                = os.environ["PHATE_PVOGS_BASE_DIR"]
 PVOGS_BLAST_HOME              = os.environ["PHATE_PVOGS_BLAST_HOME"]
+VOGS_BASE_DIR                 = os.environ["PHATE_VOGS_BASE_DIR"]
+VOGS_BLAST_HOME               = os.environ["PHATE_VOGS_BLAST_HOME"]
 PHANTOME_BASE_DIR             = os.environ["PHATE_PHANTOME_BASE_DIR"]
 PHANTOME_BLAST_HOME           = os.environ["PHATE_PHANTOME_BLAST_HOME"]
 PHAGE_ENZYME_BASE_DIR         = os.environ["PHATE_PHAGE_ENZYME_BASE_DIR"]
@@ -115,6 +117,7 @@ NCBI_VIRUS_PROTEIN_HMM_HOME   = os.environ["PHATE_NCBI_VIRUS_PROTEIN_HMM_HOME"]
 REFSEQ_PROTEIN_HMM_HOME       = os.environ["PHATE_REFSEQ_PROTEIN_HMM_HOME"]
 REFSEQ_GENE_HMM_HOME          = os.environ["PHATE_REFSEQ_GENE_HMM_HOME"]
 PVOGS_HMM_HOME                = os.environ["PHATE_PVOGS_HMM_HOME"]
+VOGS_HMM_HOME                 = os.environ["PHATE_VOGS_HMM_HOME"]
 PHANTOME_HMM_HOME             = os.environ["PHATE_PHANTOME_HMM_HOME"]
 PHAGE_ENZYME_HMM_HOME         = os.environ["PHATE_PHAGE_ENZYME_BLAST_HOME"]
 PFAM_HMM_HOME                 = os.environ["PHATE_PFAM_BLAST_HOME"]
@@ -187,6 +190,7 @@ NCBI_VIRUS_PROTEIN_BLAST = False
 REFSEQ_PROTEIN_BLAST     = False
 REFSEQ_GENE_BLAST        = False
 PVOGS_BLAST              = False
+VOGS_BLAST               = False
 PHANTOME_BLAST           = False
 PHAGE_ENZYME_BLAST       = False
 KEGG_VIRUS_BLAST         = False
@@ -202,6 +206,7 @@ REFSEQ_PROTEIN_HMM       = False
 REFSEQ_GENE_HMM          = False
 KEGG_VIRUS_HMM           = False
 PVOGS_HMM                = False
+VOGS_HMM                 = False
 PHANTOME_HMM             = False
 PHAGE_ENZYME_HMM         = False
 SWISSPROT_HMM            = False
@@ -247,6 +252,7 @@ p_ncbiVirusProtein     = re.compile('ncbiVirusProtein')
 p_refseqProtein        = re.compile('refseqP')             
 p_refseqGene           = re.compile('refseqG')             
 p_pvogs                = re.compile('pvogs')               
+p_vogs                 = re.compile('Vogs')               
 p_phantome             = re.compile('phantome')            
 p_phageEnzyme          = re.compile('phageEnzyme')               
 p_keggVirus            = re.compile('kegg')                
@@ -262,6 +268,7 @@ p_ncbiVirusProteinHmm  = re.compile('ncbiVirusProteinHmm')
 p_refseqProteinHmm     = re.compile('refseqPhmm')          
 p_refseqGeneHmm        = re.compile('refseqGhmm')          
 p_pvogsHmm             = re.compile('pvogsHmm')            
+p_vogsHmm              = re.compile('VogsHmm')            
 p_phantomeHmm          = re.compile('phantomeHmm')         
 p_phageEnzymeHmm       = re.compile('phageEnzymeHmm')            
 p_keggVirusHmm         = re.compile('keggHmm')             
@@ -413,6 +420,7 @@ for i in range(0,argCount):
             match_refseqProtein    = re.search(p_refseqProtein,value)
             match_refseqGene       = re.search(p_refseqGene,value)
             match_pvogs            = re.search(p_pvogs,value)
+            match_vogs             = re.search(p_vogs,value)
             match_phantome         = re.search(p_phantome,value)
             match_phageEnzyme      = re.search(p_phageEnzyme,value)
             match_keggVirus        = re.search(p_keggVirus,value)
@@ -431,6 +439,8 @@ for i in range(0,argCount):
                 REFSEQ_GENE_BLAST = True
             if match_pvogs:
                 PVOGS_BLAST = True 
+            if match_vogs:
+                VOGS_BLAST = True 
             if match_phantome:
                 PHANTOME_BLAST = True
             if match_phageEnzyme:
@@ -463,6 +473,7 @@ for i in range(0,argCount):
             match_refseqProtein    = re.search(p_refseqProtein,value)
             match_refseqGene       = re.search(p_refseqGene,value)
             match_pvogs            = re.search(p_pvogs,value)
+            match_vogs             = re.search(p_vogs,value)
             match_phantome         = re.search(p_phantome,value)
             match_phageEnzyme      = re.search(p_phageEnzyme,value)
             match_keggVirus        = re.search(p_keggVirus,value)
@@ -481,6 +492,8 @@ for i in range(0,argCount):
                 REFSEQ_GENE_BLAST = True
             if match_pvogs:
                 PVOGS_BLAST = True 
+            if match_vogs:
+                VOGS_BLAST = True 
             if match_phantome:
                 PHANTOME_BLAST = True
             if match_phageEnzyme:
@@ -516,6 +529,7 @@ for i in range(0,argCount):
             match_refseqProteinHmm    = re.search(p_refseqProteinHmm,value)
             match_refseqGeneHmm       = re.search(p_refseqGeneHmm,value)
             match_pvogsHmm            = re.search(p_pvogsHmm,value)
+            match_vogsHmm             = re.search(p_pvogsHmm,value)
             match_phantomeHmm         = re.search(p_phantomeHmm,value)
             match_phageEnzymeHmm      = re.search(p_phageEnzymeHmm,value)
             match_keggVirusHmm        = re.search(p_keggVirusHmm,value)
@@ -534,6 +548,8 @@ for i in range(0,argCount):
                 REFSEQ_GENE_HMM = True
             if match_pvogsHmm:
                 PVOGS_HMM = True 
+            if match_vogsHmm:
+                VOGS_HMM = True 
             if match_phantomeHmm:
                 PHANTOME_HMM = True
             if match_phageEnzymeHmm:
@@ -577,7 +593,7 @@ if NCBI_VIRUS_PROTEIN_BLAST or REFSEQ_PROTEIN_BLAST or NR_BLAST:
     RUN_BLAST         = True
     RUN_HMM_SEARCH    = True
     RUN_PROTEIN_BLAST = True
-if PVOGS_BLAST or PHANTOME_BLAST or PHAGE_ENZYME_BLAST or KEGG_VIRUS_BLAST:
+if PVOGS_BLAST or VOGS_BLAST or PHANTOME_BLAST or PHAGE_ENZYME_BLAST or KEGG_VIRUS_BLAST:
     RUN_BLAST         = True
     RUN_HMM_SEARCH    = True
     RUN_PROTEIN_BLAST = True
@@ -599,7 +615,7 @@ if REFSEQ_GENE_HMM:
     RUN_PROFILE_SEARCH = True 
 if REFSEQ_PROTEIN_HMM or NR_HMM:
     RUN_PROFILE_SEARCH = True
-if PVOGS_HMM or PHANTOME_HMM or PHAGE_ENZYME_HMM or KEGG_VIRUS_HMM:
+if PVOGS_HMM or VOGS_HMM or PHANTOME_HMM or PHAGE_ENZYME_HMM or KEGG_VIRUS_HMM:
     RUN_PROFILE_SEARCH = True
 if PFAM_HMM or SMART_HMM or SWISSPROT_HMM or UNIPROT_HMM:
     RUN_PROFILE_SEARCH = True
@@ -703,6 +719,7 @@ LOGFILE_H.write("%s%s\n" % ("NCBI_VIRUS_PROTEIN_BLAST is ",NCBI_VIRUS_PROTEIN_BL
 LOGFILE_H.write("%s%s\n" % ("REFSEQ_PROTEIN_BLAST is ",REFSEQ_PROTEIN_BLAST))
 LOGFILE_H.write("%s%s\n" % ("REFSEQ_GENE_BLAST is ",REFSEQ_GENE_BLAST))
 LOGFILE_H.write("%s%s\n" % ("PVOGS_BLAST is ",PVOGS_BLAST))
+LOGFILE_H.write("%s%s\n" % ("VOGS_BLAST is ",VOGS_BLAST))
 LOGFILE_H.write("%s%s\n" % ("PHANTOME_BLAST is ",PHANTOME_BLAST))
 LOGFILE_H.write("%s%s\n" % ("PHAGE_ENZYME_BLAST is ",PHAGE_ENZYME_BLAST))
 LOGFILE_H.write("%s%s\n" % ("KEGG_VIRUS_BLAST is ",KEGG_VIRUS_BLAST))
@@ -720,6 +737,7 @@ LOGFILE_H.write("%s%s\n" % ("NCBI_VIRUS_PROTEIN_HMM is ",NCBI_VIRUS_PROTEIN_HMM)
 LOGFILE_H.write("%s%s\n" % ("REFSEQ_PROTEIN_HMM is ",REFSEQ_PROTEIN_HMM))
 LOGFILE_H.write("%s%s\n" % ("REFSEQ_GENE_HMM is ",REFSEQ_GENE_HMM))
 LOGFILE_H.write("%s%s\n" % ("PVOGS_HMM is ",PVOGS_HMM))
+LOGFILE_H.write("%s%s\n" % ("VOGS_HMM is ",VOGS_HMM))
 LOGFILE_H.write("%s%s\n" % ("PHANTOME_HMM is ",PHANTOME_HMM))
 LOGFILE_H.write("%s%s\n" % ("PHAGE_ENZYME_HMM is ",PHAGE_ENZYME_HMM))
 LOGFILE_H.write("%s%s\n" % ("KEGG_VIRUS_HMM is ",KEGG_VIRUS_HMM))
@@ -766,6 +784,7 @@ if PHATE_MESSAGES == 'True':
     print("  REFSEQ_PROTEIN_BLAST is", REFSEQ_PROTEIN_BLAST)
     print("  REFSEQ_GENE_BLAST is", REFSEQ_GENE_BLAST)
     print("  PVOGS_BLAST is", PVOGS_BLAST)
+    print("  VOGS_BLAST is", VOGS_BLAST)
     print("  PHANTOME_BLAST is", PHANTOME_BLAST)
     print("  PHAGE_ENZYME_BLAST is", PHAGE_ENZYME_BLAST)
     print("  KEGG_VIRUS_BLAST is", KEGG_VIRUS_BLAST)
@@ -781,6 +800,7 @@ if PHATE_MESSAGES == 'True':
     print("  REFSEQ_PROTEIN_HMM is", REFSEQ_PROTEIN_HMM)
     print("  REFSEQ_GENE_HMM is", REFSEQ_GENE_HMM)
     print("  PVOGS_HMM is", PVOGS_HMM)
+    print("  VOGS_HMM is", VOGS_HMM)
     print("  PHANTOME_HMM is", PHANTOME_HMM)
     print("  PHAGE_ENZYME_HMM is", PHAGE_ENZYME_HMM)
     print("  KEGG_VIRUS_HMM is", KEGG_VIRUS_HMM)
@@ -1061,9 +1081,11 @@ else:
             'geneCallDir'           : outputDir, 
             'blastOutDir'           : proteinBlastOutputDir,
             'pvogsOutDir'           : proteinBlastOutputDir,
+            'vogsOutDir'            : proteinBlastOutputDir,
             'ncbiVirusProteinBlast' : NCBI_VIRUS_PROTEIN_BLAST,
             'refseqProteinBlast'    : REFSEQ_PROTEIN_BLAST,
             'pvogsBlast'            : PVOGS_BLAST,
+            'vogsBlast'             : VOGS_BLAST,
             'phantomeBlast'         : PHANTOME_BLAST,
             'phageEnzymeBlast'      : PHAGE_ENZYME_BLAST,
             'keggVirusBlast'        : KEGG_VIRUS_BLAST,

@@ -6,7 +6,7 @@
 #
 # Programmer:  Carol Zhou
 #
-# Last Update:  05 June 2020
+# Last Update:  10 June 2020
 # 
 # Classes and Methods:
 #    multiBlast
@@ -67,6 +67,7 @@ NCBI_VIRUS_PROTEIN_BLAST_HOME = os.environ["PHATE_NCBI_VIRUS_PROTEIN_BLAST_HOME"
 REFSEQ_PROTEIN_BLAST_HOME     = os.environ["PHATE_REFSEQ_PROTEIN_BLAST_HOME"]
 REFSEQ_GENE_BLAST_HOME        = os.environ["PHATE_REFSEQ_GENE_BLAST_HOME"]
 PVOGS_BLAST_HOME              = os.environ["PHATE_PVOGS_BLAST_HOME"]
+VOGS_BLAST_HOME               = os.environ["PHATE_VOGS_BLAST_HOME"]
 PHANTOME_BLAST_HOME           = os.environ["PHATE_PHANTOME_BLAST_HOME"]
 KEGG_VIRUS_BLAST_HOME         = os.environ["PHATE_KEGG_VIRUS_BLAST_HOME"]
 SWISSPROT_BLAST_HOME          = os.environ["PHATE_SWISSPROT_BLAST_HOME"]
@@ -133,6 +134,7 @@ class multiBlast(object):
         self.geneCallDir              = ""        # needs to be set
         self.blastOutDir              = ""        # needs to be set
         self.pVOGsOutDir              = ""        # needs to be set
+        self.VOGsOutDir               = ""        # needs to be set
         self.NCBI_VIRUS_GENOME_BLAST  = False     # assume not running this blast process, unless changed by parameter set method
         self.NCBI_VIRUS_PROTEIN_BLAST = False     # ditto 
         self.NR_BLAST                 = False     # ditto 
@@ -141,6 +143,7 @@ class multiBlast(object):
         self.REFSEQ_GENE_BLAST        = False     # ditto # not yet in service
         self.PHANTOME_BLAST           = False     # ditto
         self.PVOGS_BLAST              = False     # ditto
+        self.VOGS_BLAST               = False     # ditto
         self.SWISSPROT_BLAST          = False     # ditto # not yet in service
         self.PHAGE_ENZYME_BLAST       = False     # ditto # not yet in service
 
@@ -174,6 +177,8 @@ class multiBlast(object):
                 self.setBlastOutDir(paramset['blastOutDir'])
             if 'pvogsOutDir' in list(paramset.keys()):
                 self.setPVOGsOutDir(paramset['pvogsOutDir'])
+            if 'vogsOutDir' in list(paramset.keys()):
+                self.setVOGsOutDir(paramset['vogsOutDir'])
             if 'ncbiVirusGenomeBlast' in list(paramset.keys()):
                 self.NCBI_VIRUS_GENOME_BLAST = paramset["ncbiVirusGenomeBlast"]
             if 'ncbiVirusProteinBlast' in list(paramset.keys()):
@@ -190,6 +195,8 @@ class multiBlast(object):
                 self.PHANTOME_BLAST = paramset["phantomeBlast"]
             if 'pvogsBlast' in list(paramset.keys()):
                 self.PVOGS_BLAST = paramset["pvogsBlast"]
+            if 'vogsBlast' in list(paramset.keys()):
+                self.VOGS_BLAST = paramset["vogsBlast"]
             if 'swissprotBlast' in list(paramset.keys()):
                 self.SWISSPROT_BLAST = paramset["swissprotBlast"]
             if 'phageEnzymeBlast' in list(paramset.keys()):
@@ -283,6 +290,10 @@ class multiBlast(object):
     def setPVOGsOutDir(self,pVOGsOutDir):
         self.pVOGsOutDir = pVOGsOutDir
         PVOGS_OUT_DIR = pVOGsOutDir
+
+    def setVOGsOutDir(self,VOGsOutDir):
+        self.VOGsOutDir = VOGsOutDir
+        VOGS_OUT_DIR = VOGsOutDir
 
     def getTopHits(self):
         return self.topHitList 
@@ -468,13 +479,16 @@ class multiBlast(object):
                 if float(nextHitDataSet["hitHSPs"][0]["hspPercentIdentity"]) >= float(self.identityMin):
                     MEETS_IDENTITY_CUTOFF = True
 
-                # If this is a pVOGs blast result, capture the pVOG identifiers in the annotation objecta
+                # CHECK THIS: code adapted assuming same structure of pVOGs vs. VOGs
+                # If this is a pVOGs blast result, capture the pVOG identifiers in the annotation object
                 match_pVOG = re.search('pvog',newAnnotation.source.lower())
-                if match_pVOG: 
-                    pVOGidList = re.findall('VOG\d+',newAnnotation.name)
-                    for pVOGid in pVOGidList:
-                        if pVOGid not in newAnnotation.pVOGlist: #** cez: bug fix 05 sept 2017
-                            newAnnotation.pVOGlist.append(pVOGid)
+                #match_VOG  = re.search('Vog', newAnnotation.source)
+                match_VOG  = re.search('VOG', newAnnotation.source)
+                if match_pVOG or match_VOG: 
+                    VOGidList = re.findall('VOG\d+',newAnnotation.name)
+                    for VOGid in VOGidList:
+                        if VOGid not in newAnnotation.VOGlist: 
+                            newAnnotation.VOGlist.append(VOGid)
                 newAnnotation.annotationList.append(resultString)
  
                 # Get DBXREFs, packed into annotation object's self.description field
@@ -513,7 +527,7 @@ class multiBlast(object):
                     newAnnotation.name  = columns[1] # subject
                     newAnnotation.start = columns[6] # query start
                     newAnnotation.end   = columns[7] # query end
-                    resultString = 'identity=' + rount(columns[2],2)
+                    resultString = 'identity=' + round(columns[2],2)
                     newAnnotation.annotationList.append(resultString)
                     resultString = 'alignlen=' + columns[3]
                     newAnnotation.annotationList.append(resultString)
@@ -693,6 +707,46 @@ class multiBlast(object):
                                 outfilePVOG_h.write("%c%s\n%s\n" % ('>',fasta.header,fasta.sequence)) # write the current peptide fasta,
                                 self.writePVOGsequences2file(outfilePVOG_h,pVOGlines,pVOG)                  # followed by the pVOG group
                                 outfilePVOG_h.close()
+
+            if self.VOGS_BLAST:  
+                database = VOGS_BLAST_HOME
+                dbName   = 'VOGs'
+                count = 0
+                if PHATE_PROGRESS == 'True':
+                    print("phate_blast says, Running VOGs blast:", database, dbName)
+                for fasta in fastaSet.fastaList:
+                    count += 1
+                    outfile = self.blastOutDir + self.blastFlavor + "_vog_" + str(count)
+                    self.blast1fasta(fasta,outfile,database,dbName)
+
+                if PHATE_PROGRESS == 'True':
+                    print("phate_blast says, Blasting completed.")
+                    print("phate_blast says, Collecting and saving pVOG sequences corresponding to blast hit(s)")
+
+                # Next you want to create pVOG fasta group files so user can do alignments
+                # You need only one "alignment" file per pVOG group that the fasta hit (under blast cutoffs)
+                # Capture pVOG.faa lines
+                VOGs_h = open(database,"r")
+                VOGlines = VOGs_h.read().splitlines()
+                count = 0; countA = 0
+                for fasta in fastaSet.fastaList:
+                    vogPrintedList = []  # keeps track of pVOGs that have already been printed for current fasta
+                    count += 1 
+                    countA = 0
+                    for annot in fasta.annotationList:
+                        for VOG in annot.VOGlist:  # There may be multiple annotations to inspect
+                            # Avoid redundancy in printing pVOG groups for this fasta; only once per pVOG ID that was a blast hit
+                            if VOG not in vogPrintedList:
+                                vogPrintedList.append(VOG)  # Record this pVOG identifier as "done"
+                                # create dynamic file name
+                                countA += 1 
+                                outfileVOG = self.VOGsOutDir + "vogGroup_" + str(count) + '_' + str(countA) + '.faa' 
+                                # open file and write current fasta pluse each corresponding VOG fasta
+                                outfileVOG_h = open(outfileVOG,'w')
+                                outfileVOG_h.write("%c%s\n%s\n" % ('>',fasta.header,fasta.sequence)) # write the current peptide fasta,
+                                self.writeVOGsequences2file(outfileVOG_h,VOGlines,VOG)               # followed by the VOG group
+                                outfileVOG_h.close()
+
         if CLEAN_RAW_DATA == 'True':
             self.cleanBlastOutDir()
 
@@ -715,6 +769,28 @@ class multiBlast(object):
 
             elif GET_SEQ:
                 pVOGsequence = pVOGsequence + nextLine
+
+    #*** CHECK THIS
+    #*** This method is modeled after writePVOGsequences2file, pending data is structured same as pVOGs
+    def writeVOGsequences2file(self,FILE_H,lines,VOG):
+        VOGheader = ""; VOGsequence = ""; GET_SEQ = False
+        for i in range(0,len(lines)-1):
+            nextLine = lines[i]
+            match_header = re.search('>',nextLine)
+            match_VOG    = re.search(VOG,nextLine)
+
+            if match_header:   
+                if GET_SEQ:
+                    FILE_H.write("%s\n%s\n" % (VOGheader,VOGsequence))
+                    VOGheader = ""; VOGsequence = ""
+                    GET_SEQ = False
+
+                if match_VOG:
+                    VOGheader = nextLine
+                    GET_SEQ = True
+
+            elif GET_SEQ:
+                VOGsequence = VOGsequence + nextLine
 
     def cleanBlastOutDir(self):  # Remove temporary files from BLAST_OUT_DIR
         if PHATE_PROGRESS == 'True':

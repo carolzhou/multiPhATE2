@@ -2,7 +2,7 @@
 # Module: phate_annotation.py
 # Programmer: Carol L. Ecale Zhou
 #
-# Latest update: 16 April 2020
+# Latest update: 09 June 2020
 #
 # Description: Module containing classes and methods for representing annotation results from various sources 
 #
@@ -75,7 +75,7 @@ class annotationRecord(object):
         self.source            = "unknown" # Typically RAST, LLNL, PhAnToMe, GeneMark, Glimmer, Prodigal, PHANOTATE, KEGG, NCBI, pVOGs 
         self.method            = "unknown" # Typcially RAST, PSAT, PFP, PhiRAST, JGI, SDSU, BLAST, blastp, blastn, HMM, jackhmmer 
         self.annotationType    = "unknown" # gene, mRNA, polypeptide, CDS, functional, homology, hmm
-        self.pVOGlist          = []        # list of pVOG identifiers (identified via blast hit)
+        self.VOGlist           = []        # list of pVOG or VOG identifiers (identified via blast hit)
         self.contig            = "unknown"
         self.start             = 0
         self.end               = 0
@@ -96,11 +96,11 @@ class annotationRecord(object):
         self.psatOutDir = ""   # need to set
         self.annotationString = ""      # used to construct a summary of annotation(s) for GFF output
 
-    def addPVOGid2list(self,pVOG):
-        self.pVOGlist.append(pVOG)
+    def addVOGid2list(self,VOG):
+        self.VOGlist.append(VOG)
 
     def getPVOGassociationList(self):
-        return(self.pVOGlist)
+        return(self.VOGlist)
 
     def enterGFFdata(self,gff):  # Input a dict object with key/values as specified
         if isinstance(gff,dict):
@@ -373,6 +373,23 @@ class annotationRecord(object):
                 dbxrefList.append(infoString)
         return dbxrefList  # list(s) of pVOGs database headers with common pVOGid
 
+    #*** CHECK THIS
+    #*** This method is based on pVOGs; may need to be modified pending structure of the VOG data.
+    def getVogMembers(self,database): # database should be the VOGs headers file, but fasta file will work (slowly)
+        dbxrefList = []; infoList = []; infoString = []
+        p_VOGid = re.compile('VOG\d+?a|b')
+        # self.name is the pVOGs database blast hit header
+        VOGidList = []
+        VOGidList = re.findall(p_VOGid,self.name)  # extract VOGid(s) from header
+        if VOGidList:
+            for VOGid in VOGidList:
+                infoLines = re.findall(VOGid,database) 
+                for line in infoLines:
+                    infoString += ' | ' + line
+                dbxrefList.append(infoString)
+        return dbxrefList  # list(s) of VOGs database headers with common VOGid
+
+
     # Query a taxonomy lookup table to get taxonomy information
     def getNCBItaxonomyID(self,database):   # Database maps ncbi header to taxonomy 
         ncbiTaxonList = []; giNumber = ''; accnNumber = ''
@@ -455,8 +472,14 @@ class annotationRecord(object):
             elif dbName.lower() == 'pvogs':
                 pVOGlist = self.getPvogMembers(pVOGheaderFile) 
 
+            elif dbName.lower() == 'vogs':
+                VOGlist = self.getPogMembers(VOGheaderFile) 
+
             elif dbName.lower() == 'pvogs_hmm':
                 pVOGlist = self.getPvogMembers(pVOGheaderFile) 
+
+            elif dbName.lower() == 'vogs_hmm':
+                VOGlist = self.getVogMembers(VOGheaderFile) 
 
             elif dbName.lower() == 'ncbivirusprotein':
                 pass
@@ -619,5 +642,5 @@ class annotationRecord(object):
         FILE_HANDLE.write("%s" % ("=======================\n"))
 
     def writePVOGgroups(self,FILE_HANDLE):
-        for pVOG in self.pVOGlist:
+        for pVOG in self.VOGlist:
             pass 
