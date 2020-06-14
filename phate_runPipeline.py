@@ -4,7 +4,7 @@
 #
 # Program Title:  phate_runPipeline.py ()
 #
-# Most recent update:  05 June 2020
+# Most recent update:  09 June 2020
 #
 # Description: Runs the phate annotation pipeline.  This code runs under Python 3.7, and requires
 #    dependent packages.
@@ -69,6 +69,8 @@ REFSEQ_GENE_BASE_DIR          = os.environ["PHATE_REFSEQ_GENE_BASE_DIR"]
 REFSEQ_GENE_BLAST_HOME        = os.environ["PHATE_REFSEQ_GENE_BLAST_HOME"]
 PVOGS_BASE_DIR                = os.environ["PHATE_PVOGS_BASE_DIR"]
 PVOGS_BLAST_HOME              = os.environ["PHATE_PVOGS_BLAST_HOME"]
+VOGS_BASE_DIR                 = os.environ["PHATE_VOGS_BASE_DIR"]
+VOGS_BLAST_HOME               = os.environ["PHATE_VOGS_BLAST_HOME"]
 PHANTOME_BASE_DIR             = os.environ["PHATE_PHANTOME_BASE_DIR"]
 PHANTOME_BLAST_HOME           = os.environ["PHATE_PHANTOME_BLAST_HOME"]
 PHAGE_ENZYME_BASE_DIR         = os.environ["PHATE_PHAGE_ENZYME_BASE_DIR"] 
@@ -248,6 +250,7 @@ ncbiVirusProteinBlast    = False
 refseqGeneBlast          = False
 refseqProteinBlast       = False
 pvogsBlast               = False
+vogsBlast                = False
 phantomeBlast            = False
 phageEnzymeBlast         = False
 keggVirusBlast           = False
@@ -271,6 +274,7 @@ ncbiVirusProteinHmm      = False
 refseqProteinHmm         = False
 refseqGeneHmm            = False
 pvogsHmm                 = False 
+vogsHmm                  = False 
 phantomeHmm              = False
 phageEnzymeHmm           = False
 keggVirusHmm             = False
@@ -318,6 +322,7 @@ with open(jsonFile, 'r') as jsonParameters:
     refseqProteinBlast       = parameters["refseqProteinBlast"]
     refseqGeneBlast          = parameters["refseqGeneBlast"]
     pvogsBlast               = parameters["pvogsBlast"]
+    vogsBlast                = parameters["vogsBlast"]
     phantomeBlast            = parameters["phantomeBlast"]
     phageEnzymeBlast         = parameters["phageEnzymeBlast"]
     keggVirusBlast           = parameters["keggVirusBlast"]
@@ -341,6 +346,7 @@ with open(jsonFile, 'r') as jsonParameters:
     refseqProteinHmm         = parameters["refseqProteinHmm"]
     refseqGeneHmm            = parameters["refseqGeneHmm"]
     pvogsHmm                 = parameters["pvogsHmm"]
+    vogsHmm                  = parameters["vogsHmm"]
     phantomeHmm              = parameters["phantomeHmm"]
     phageEnzymeHmm           = parameters["phageEnzymeHmm"]
     keggVirusHmm             = parameters["keggVirusHmm"]
@@ -428,6 +434,7 @@ if PHATE_MESSAGES == 'True':
     print("refseqProteinBlast is", refseqProteinBlast)
     print("refseqGeneBlast is", refseqGeneBlast)
     print("pvogsBlast is", pvogsBlast)
+    print("vogsBlast is", vogsBlast)
     print("phantomeBlast is", phantomeBlast)
     print("phageEnzymeBlast is", phageEnzymeBlast)
     print("keggVirusBlast is", keggVirusBlast)
@@ -451,6 +458,7 @@ if PHATE_MESSAGES == 'True':
     print("refseqProteinHmm is", refseqProteinHmm)
     print("refseqGeneHmm is", refseqGeneHmm)
     print("pvogsHmm is", pvogsHmm)
+    print("vogsHmm is", vogsHmm)
     print("phantomeHmm is", phantomeHmm)
     print("phageEnzymeHmm is", phageEnzymeHmm)
     print("pfamHmm is", pfamHmm)
@@ -496,6 +504,7 @@ RUNLOG.write("%s%s\n" % ("   ncbiVirusProteinBlast is ",ncbiVirusProteinBlast))
 RUNLOG.write("%s%s\n" % ("   refseqProteinBlast is ",refseqProteinBlast))
 RUNLOG.write("%s%s\n" % ("   refseqGeneBlast is ",refseqGeneBlast))
 RUNLOG.write("%s%s\n" % ("   pvogsBlast is ",pvogsBlast))
+RUNLOG.write("%s%s\n" % ("   vogsBlast is ",vogsBlast))
 RUNLOG.write("%s%s\n" % ("   phantomeBlast is ",phantomeBlast))
 RUNLOG.write("%s%s\n" % ("   phageEnzymeBlast is ",phageEnzymeBlast))
 RUNLOG.write("%s%s\n" % ("   keggVirusBlast is ",keggVirusBlast))
@@ -510,6 +519,7 @@ RUNLOG.write("%s%s\n" % ("   ncbiVirusProteinHmm is ",ncbiVirusProteinHmm))
 RUNLOG.write("%s%s\n" % ("   refseqProteinHmm is ",refseqProteinHmm))
 RUNLOG.write("%s%s\n" % ("   refseqGeneHmm is ",refseqGeneHmm))
 RUNLOG.write("%s%s\n" % ("   pvogsHmm is ",pvogsHmm))
+RUNLOG.write("%s%s\n" % ("   vogsHmm is ",vogsHmm))
 RUNLOG.write("%s%s\n" % ("   phantomeHmm is ",phantomeHmm))
 RUNLOG.write("%s%s\n" % ("   phageEnzymeHmm is ",phageEnzymeHmm))
 RUNLOG.write("%s%s\n" % ("   keggVirusHmm is ",keggVirusHmm))
@@ -656,6 +666,8 @@ if refseqGeneBlast:
     blastDatabaseParameterString += '_refseqGene'
 if pvogsBlast:
     blastDatabaseParameterString += '_pvogs'
+if vogsBlast:
+    blastDatabaseParameterString += '_Vogs'
 if phantomeBlast:
     blastDatabaseParameterString += '_phantome'
 if phageEnzymeBlast:
@@ -703,6 +715,8 @@ if refseqGeneHmm:
     profileDatabaseParameterString += '_refseqGeneHmm'
 if pvogsHmm:
     profileDatabaseParameterString += '_pvogsHmm'
+if vogsHmm:
+    profileDatabaseParameterString += '_VogsHmm'
 if phantomeHmm:
     profileDatabaseParameterString += '_phantomeHmm'
 if phageEnzymeHmm:
