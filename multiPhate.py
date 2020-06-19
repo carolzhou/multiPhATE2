@@ -291,6 +291,7 @@ os.environ["PHATE_PVOGS_BASE_DIR"]                  = DATABASE_DIR_DEFAULT + "pV
 os.environ["PHATE_PVOGS_BLAST_HOME"]                = os.environ["PHATE_PVOGS_BASE_DIR"] + "pVOGs.faa"
 os.environ["PHATE_VOGS_BASE_DIR"]                   = DATABASE_DIR_DEFAULT + "VOGs/"
 os.environ["PHATE_VOGS_BLAST_HOME"]                 = os.environ["PHATE_VOGS_BASE_DIR"] + "VOGs.faa"
+os.environ["PHATE_VOGS_ANNOTATION_FILE"]            = os.environ["PHATE_VOGS_BASE_DIR"] + "vog.annotations.tsv"
 os.environ["PHATE_PHANTOME_BASE_DIR"]               = DATABASE_DIR_DEFAULT + "Phantome/"
 os.environ["PHATE_PHANTOME_BLAST_HOME"]             = os.environ["PHATE_PHANTOME_BASE_DIR"] + "Phantome_Phage_genes.faa"
 os.environ["PHATE_PHAGE_ENZYME_BASE_DIR"]           = DATABASE_DIR_DEFAULT + "PhageEnzyme/" # not yet in service
@@ -1338,7 +1339,6 @@ for cLine in cLines:
     elif match_vogsDBpath:
         if match_vogsDBpath.group(1) != '':
             os.environ["PHATE_VOGS_BLAST_HOME"] = match_vogsDBpath.group(1)
-            #os.environ["PHATE_VOGS_HMM_HOME"]   = match_vogsHmmDBpath.group(1)
 
     elif match_phantomeDBpath:
         if match_phantomeDBpath.group(1) != '':

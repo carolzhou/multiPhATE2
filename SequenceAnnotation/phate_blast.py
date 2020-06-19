@@ -6,7 +6,7 @@
 #
 # Programmer:  Carol Zhou
 #
-# Last Update:  10 June 2020
+# Last Update:  17 June 2020
 # 
 # Classes and Methods:
 #    multiBlast
@@ -81,6 +81,8 @@ CUSTOM_GENOME_BLAST_HOME      = os.environ["PHATE_CUSTOM_GENOME_BLAST_HOME"]
 CUSTOM_GENE_BLAST_HOME        = os.environ["PHATE_CUSTOM_GENE_BLAST_HOME"]
 CUSTOM_PROTEIN_BLAST_HOME     = os.environ["PHATE_CUSTOM_PROTEIN_BLAST_HOME"]
 
+VOGS_ANNOTATION_FILE          = os.environ["PHATE_VOGS_ANNOTATION_FILE"]
+
 # Blast parameters
 MIN_BLASTP_IDENTITY           = os.environ["PHATE_MIN_BLASTP_IDENTITY"]   # Sets a lower limit
 MIN_BLASTN_IDENTITY           = os.environ["PHATE_MIN_BLASTN_IDENTITY"]   # Sets a lower limit
@@ -105,6 +107,7 @@ PHATE_PROGRESS                = os.environ["PHATE_PHATE_PROGRESS"]
 GENE_CALL_DIR            = ""  # set by set method, via parameter list
 BLAST_OUT_DIR            = ""  # set by set method, via parameter list
 PVOGS_OUT_DIR            = ""  # set by set method, via parameter list
+VOGS_OUT_DIR             = ""  # set by set method, via parameter list
 
 #DEBUG  = True 
 DEBUG  = False 
@@ -464,15 +467,16 @@ class multiBlast(object):
 
                 # Store new blast annotation
                 newAnnotation = copy.deepcopy(annotation)
-                newAnnotation.source = blastDatabase
-                newAnnotation.method = self.blastFlavor
+                newAnnotation.source         = blastDatabase
+                newAnnotation.method         = self.blastFlavor
                 newAnnotation.annotationType = "homology"
-                newAnnotation.name  = nextHitDataSet["hitDefline"]               # subject
-                newAnnotation.start = nextHitDataSet["hitHSPs"][0]["queryStart"] # query start
-                newAnnotation.end   = nextHitDataSet["hitHSPs"][0]["queryEnd"]   # query end
-                resultString = 'identity=' + str(round(nextHitDataSet["hitHSPs"][0]["hspPercentIdentity"],2)) 
+                newAnnotation.category       = "sequence"
+                newAnnotation.name           = nextHitDataSet["hitDefline"]               # subject header (possibly truncated)
+                newAnnotation.start          = nextHitDataSet["hitHSPs"][0]["queryStart"] # query start
+                newAnnotation.end            = nextHitDataSet["hitHSPs"][0]["queryEnd"]   # query end
+                resultString                 = 'identity=' + str(round(nextHitDataSet["hitHSPs"][0]["hspPercentIdentity"],2)) 
                 newAnnotation.annotationList.append(resultString)
-                resultString = 'alignlen=' + str(nextHitDataSet["hitHSPs"][0]["hspAlignLen"]) 
+                resultString                 = 'alignlen=' + str(nextHitDataSet["hitHSPs"][0]["hspAlignLen"]) 
                 newAnnotation.annotationList.append(resultString)
                 resultString = 'evalue='   + str(nextHitDataSet["hitHSPs"][0]["hspEvalue"]) 
                 MEETS_IDENTITY_CUTOFF = False
@@ -482,12 +486,12 @@ class multiBlast(object):
                 # CHECK THIS: code adapted assuming same structure of pVOGs vs. VOGs
                 # If this is a pVOGs blast result, capture the pVOG identifiers in the annotation object
                 match_pVOG = re.search('pvog',newAnnotation.source.lower())
-                #match_VOG  = re.search('Vog', newAnnotation.source)
                 match_VOG  = re.search('VOG', newAnnotation.source)
                 if match_pVOG or match_VOG: 
-                    VOGidList = re.findall('VOG\d+',newAnnotation.name)
+                    # VOG hit header has VOGid(s) + proteinID; pVOG hit header has VOGid(s) + proteinID + description
+                    VOGidList = re.findall('VOG\d+',newAnnotation.name)  # name holds to hit's header, which has func dscr for pVOG
                     for VOGid in VOGidList:
-                        if VOGid not in newAnnotation.VOGlist: 
+                        if VOGid not in newAnnotation.VOGlist:  # ensure list is non-redundant
                             newAnnotation.VOGlist.append(VOGid)
                 newAnnotation.annotationList.append(resultString)
  
@@ -695,7 +699,7 @@ class multiBlast(object):
                     count += 1 
                     countA = 0
                     for annot in fasta.annotationList:
-                        for pVOG in annot.pVOGlist:  # There may be multiple annotations to inspect
+                        for pVOG in annot.VOGlist:  # There may be multiple annotations to inspect
                             # Avoid redundancy in printing pVOG groups for this fasta; only once per pVOG ID that was a blast hit
                             if pVOG not in pvogPrintedList:
                                 pvogPrintedList.append(pVOG)  # Record this pVOG identifier as "done"

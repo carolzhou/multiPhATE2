@@ -3,7 +3,7 @@
 #
 # Module:  phate_profile.py
 #
-# Most Recent Update: 11 April 2020
+# Most Recent Update: 18 June 2020
 #
 # This class performs hmm searches of hmm profiles or alignments against 
 # various protein- or phage-related hmm profile databases.  The terminology may
@@ -60,6 +60,9 @@ NR_PROFILE_DB_HOME                   = os.environ["PHATE_NR_HMM_HOME"]
 # database of pVOG headers for searching and sequences for writing fasta files (pre-alignment)
 PVOG_HEADERS                         = os.environ["PHATE_PVOGS_BASE_DIR"] + "pVOGs.headers.lst"
 PVOG_SEQUENCES                       = os.environ["PHATE_PVOGS_BASE_DIR"] + "pVOGs.faa"
+VOG_HEADERS                          = os.environ["PHATE_VOGS_BASE_DIR"]  + "VOGs.headers.lst"
+VOG_SEQUENCES                        = os.environ["PHATE_VOGS_BLAST_HOME"]
+VOG_ANNOTATIONS                      = os.environ["PHATE_VOGS_BASE_DIR"]  + "vog.annotations.tsv"
 
 # Verbosity and output/error capture
 CLEAN_RAW_DATA                       = os.environ["PHATE_CLEAN_RAW_DATA"]
@@ -91,6 +94,7 @@ class multiProfile(object):
         self.geneProfileOutDir          = ""        # needs to be set
         self.proteinProfileOutDir       = ""        # needs to be set
         self.pVOGsOutDir                = ""        # needs to be set
+        self.VOGsOutDir                 = ""        # needs to be set
         self.topHitCount                = MAX_SEQ_HITS 
         self.hmmscan                    = False     # If True, run hmmscan
         self.outputFormat               = TBL
@@ -98,6 +102,7 @@ class multiProfile(object):
         self.REFSEQ_PROTEIN_PROFILE     = False     #
         self.REFSEQ_GENE_PROFILE        = False     #  
         self.PVOGS_PROFILE              = False     # 
+        self.VOGS_PROFILE               = False     # 
         self.PHANTOME_PROFILE           = False     # 
         self.PHAGE_ENZYME_PROFILE       = False     # 
         self.KEGG_VIRUS_PROFILE         = False     # 
@@ -126,6 +131,8 @@ class multiProfile(object):
                 self.proteinProfileOutDir = paramset['proteinProfileOutDir']
             if 'pVOGsOutDir' in list(paramset.keys()):
                 self.pVOGsOutDir = paramset['pVOGsOutDir']
+            if 'VOGsOutDir' in list(paramset.keys()):
+                self.VOGsOutDir = paramset['VOGsOutDir']
             if 'hmmscan' in list(paramset.keys()):  # Only hmmscan, for now
                 self.hmmscan = paramset['hmmscan'] 
                 if self.hmmscan == True:
@@ -141,6 +148,8 @@ class multiProfile(object):
                 self.REFSEQ_GENE_PROFILE = paramset["refseqGeneHmm"]
             if 'pvogsHmm' in list(paramset.keys()):
                 self.PVOGS_PROFILE = paramset["pvogsHmm"]
+            if 'vogsHmm' in list(paramset.keys()):
+                self.VOGS_PROFILE = paramset["vogsHmm"]
             if 'phantomeHmm' in list(paramset.keys()):
                 self.PHANTOME_PROFILE = paramset["phantomeHmm"]
             if 'phageEnzymeHm' in list(paramset.keys()):
@@ -189,8 +198,58 @@ class multiProfile(object):
 
     ##### PERFORM HMM SEARCH ON PROFILE DATABASE - SINGLE SEQUENCE
 
+    def getDescription4pvog(self,pvogID):
+        description = ""; words = []
+        headers_h = open(PVOG_HEADERS,'r')
+        hLines = headers_h.read().splitlines()
+        for hLine in hLines:
+            match_pvog = re.search(pvogID,hLine)
+            if match_pvog:
+                words = hLine.split(' ')
+                description = ' '.join(words[1:])
+                break
+        headers_h.close()
+        return description
+
+    def getDescription4vog(self,vogID):
+        functionalDescription = "unknown"; functionalCategory = ""
+        functionalCategories  = []; categoryString = "" 
+        # patterns for identifying function categories
+        p_Xr = re.compile('Xr')
+        p_Xs = re.compile('Xs')
+        p_Xh = re.compile('Xh')
+        p_Xu = re.compile('Xu')
+        # Search annotations file for VOG description
+        vogAnnotations_h = open(VOG_ANNOTATIONS,'r')
+        vLines = vogAnnotations_h.read().splitlines()
+        for vLine in vLines:
+            (VOGid,protCount,sppCount,funcCat,funcDescr) = vLine.split('\t')
+            match_Xr = re.search(p_Xr,vLine)
+            match_Xs = re.search(p_Xs,vLine)
+            match_Xh = re.search(p_Xh,vLine)
+            match_Xu = re.search(p_Xu,vLine)
+            if vogID == VOGid:
+                if match_Xr:
+                    functionalCategories.append('Virus replication')
+                if funcCat == 'Xs':
+                    functionalCategories.append('Virus structure')
+                if funcCat == 'Xh':
+                    functionalCategories.append('Virus protein w/benefit for host')
+                if funcCat == 'Xp':
+                    functionalCategories.append('Virus protein w/benefit for virus')
+                if funcCat == 'Xu':
+                    functionalCategories.append('Function unknown')
+                for f in functionalCategories:
+                    categoryString += f + ':'
+                functionalDescription = categoryString + funcDescr
+                break
+        vogAnnotations_h.close()
+        return functionalDescription
+
     def profile1fasta(self,fasta,outfile,database,dbName): # fasta is a phate_fastaSequence.fasta object
         command = ''
+        match_pvog = re.search('pvog',dbName.lower())
+        match_vog  = re.search('vog', dbName.lower())
 
         # Write fasta sequence to temporary file
         fastaFile  = self.proteinProfileOutDir + "temp.fasta"
@@ -286,34 +345,41 @@ class multiProfile(object):
                 else: # extract data fields and remove preceding or trailing whitespace
                     hitCount += 1
                     fields = sLine.split()  # split line on white space
-                    targetName        = fields[0];   targetName = targetName.rstrip() 
+                    targetName        = fields[0];   targetName      = targetName.rstrip() 
                     targetAccession   = fields[1];   targetAccession = targetAccession.rstrip()
-                    queryName         = fields[2];   queryName = queryName.rstrip()
-                    queryAccession    = fields[3];   queryAccession = queryAccession.rstrip()
-                    seqEvalue         = fields[4];   seqEvalue = seqEvalue.lstrip()
-                    seqScore          = fields[5];   seqScore = seqScore.lstrip()
-                    seqBias           = fields[6];   seqBias = seqBias.lstrip()
-                    dom1evalue        = fields[7];   dom1evalue = dom1evalue.lstrip()
-                    dom1score         = fields[8];   dom1score = dom1score.lstrip()
-                    dom1bias          = fields[9];   dom1bias = dom1bias.lstrip()
-                    dom1exp           = fields[10];  dom1exp = dom1exp.lstrip()
-                    dom1reg           = fields[11];  dom1reg = dom1reg.lstrip()
-                    dom1clu           = fields[12];  dom1clu = dom1clu.lstrip()
-                    dom1ov            = fields[13];  dom1ov = dom1ov.lstrip()
-                    dom1env           = fields[14];  dom1env = dom1env.lstrip()
-                    dom1dom           = fields[15];  dom1dom = dom1dom.lstrip()
-                    dom1rep           = fields[16];  dom1rep = dom1rep.lstrip()
-                    dom1inc           = fields[17];  dom1inc = dom1inc.lstrip()
-                    #targetDescription = fields[18];  targetDescription = targetDescription.rstrip()
-                    targetDescription = ' '.join(fields[18:]);  targetDescription = targetDescription.rstrip()
-
-                    vogIDs = ''; pVOGlist = []
-                    if re.search("pvog",database.lower()):
-                        # Collect pVOG identifiers for this hmm/profile search hit; fasta header of target may have >= 1 pVOG identifier
-                        pVOGlist = re.findall('VOG\d+', targetName)
-                        if pVOGlist:
-                            for pVOG in pVOGlist:
-                                vogIDs += pVOG + ' '
+                    queryName         = fields[2];   queryName       = queryName.rstrip()
+                    queryAccession    = fields[3];   queryAccession  = queryAccession.rstrip()
+                    seqEvalue         = fields[4];   seqEvalue       = seqEvalue.lstrip()
+                    seqScore          = fields[5];   seqScore        = seqScore.lstrip()
+                    seqBias           = fields[6];   seqBias         = seqBias.lstrip()
+                    dom1evalue        = fields[7];   dom1evalue      = dom1evalue.lstrip()
+                    dom1score         = fields[8];   dom1score       = dom1score.lstrip()
+                    dom1bias          = fields[9];   dom1bias        = dom1bias.lstrip()
+                    dom1exp           = fields[10];  dom1exp         = dom1exp.lstrip()
+                    dom1reg           = fields[11];  dom1reg         = dom1reg.lstrip()
+                    dom1clu           = fields[12];  dom1clu         = dom1clu.lstrip()
+                    dom1ov            = fields[13];  dom1ov          = dom1ov.lstrip()
+                    dom1env           = fields[14];  dom1env         = dom1env.lstrip()
+                    dom1dom           = fields[15];  dom1dom         = dom1dom.lstrip()
+                    dom1rep           = fields[16];  dom1rep         = dom1rep.lstrip()
+                    dom1inc           = fields[17];  dom1inc         = dom1inc.lstrip()
+                    # Target description is not found in the profile search output.
+                    # Needs to be queried from the annotation file, for VOGs, and
+                    # from the headers file, for pVOGs.
+                    targetDescription = '' 
+                    if match_pvog:
+                        targetDescription = self.getDescription4pvog(targetName)
+                    elif match_vog:
+                        targetDescription = self.getDescription4vog(targetName)
+                    else:
+                        print("phate_profiles says, ERROR: database not recognized: ",dbName)
+                    vogIDs = ''; VOGlist = []
+                    if re.search("vog",database.lower()):
+                        # Collect VOG identifiers for this hmm/profile search hit; fasta header of target may have >= 1 VOG identifier
+                        VOGlist = re.findall('VOG\d+', targetName)
+                        if VOGlist:
+                            for VOG in VOGlist:
+                                vogIDs += VOG + ' '
                             vogIDs.rstrip()
                      
                     # Create new hitDataSet object and store data (note: some data may not be stored)
@@ -415,20 +481,20 @@ class multiProfile(object):
                     newAnnotation.method         = self.profileProgram
                     newAnnotation.annotationType = "profile search"
                     newAnnotation.name           = hit["hitSequenceName"] # subject
-                    newAnnotation.description    = hit["hitDescription"]  # Note: this field appears to be blank for hmmscan
                     newAnnotation.start          = '1' # query start
                     newAnnotation.end            = 'N' # query end
-                    newAnnotation.category       = "sequence"
+                    newAnnotation.category       = "hmm"
+                    newAnnotation.description    = hit["hitDescription"]  # Note: this field appears to be blank for hmmscan
 
-                    # Extract pVOG identifier(s) from hit's header (if pVOG database)
-                    pVOGlist = []
-                    pVOGlist = hit["hitVOG"].split(' ')
-                    for pVOG in pVOGlist: 
-                        newAnnotation.pVOGlist.append(pVOG)
+                    # Extract VOG identifier(s) from hit's header (if VOG or VOG database)
+                    VOGlist = []
+                    VOGlist = hit["hitVOG"].split(' ')
+                    for VOG in VOGlist: 
+                        newAnnotation.VOGlist.append(VOG)
 
                     # Collapse all domain hits as into an annotation list for this sequence/global hit
                     for domain in hit["hitDomainList"]:
-                        #resultString  = pVOGstring                           + '|'
+                        #resultString  = VOGstring                           + '|'
                         resultString  = "domainNo:"    + domain["number"]    + '|'
                         resultString += "score:"       + domain["score"]     + '|'
                         resultString += "c-E:"         + domain["c-Evalue"]  + '|'
@@ -441,6 +507,11 @@ class multiProfile(object):
                         resultString += "envTo:"       + domain["envTo"]     + '|'
                         resultString += "acc:"         + domain["acc"]       + '|'
                         newAnnotation.annotationList.append(resultString)
+
+                    # For VOG description, get annotation from file
+                    if newAnnotation.VOGlist:
+                        if dbName.lower() == 'vogs' or dbName.lower() == 'vog':
+                           newAnnotation.link2databaseIdentifiers(database,dbName)
 
                     # Add this completed annotation to growing list for this fasta
                     fasta.annotationList.append(newAnnotation)
@@ -597,7 +668,7 @@ class multiProfile(object):
                     count += 1 
                     countA = 0
                     for annot in fasta.annotationList:
-                        for pVOG in annot.pVOGlist:  # There may be multiple annotations to inspect
+                        for pVOG in annot.VOGlist:  # There may be multiple annotations to inspect
                             match_good = re.search('VOG',pVOG)
                             if match_good:
                                 # Avoid redundancy in printing pVOG groups for this fasta; only once per pVOG ID that was an hmm hit
@@ -609,36 +680,83 @@ class multiProfile(object):
                                     # open file and write current fasta pluse each corresponding pVOG fasta
                                     outfilePVOG_h = open(outfilePVOG,'w')
                                     outfilePVOG_h.write("%c%s\n%s\n" % ('>',fasta.header,fasta.sequence)) # write the current peptide fasta,
-                                    self.writePVOGsequences2file(outfilePVOG_h,pVOGlines,pVOG)                  # followed by the pVOG group
+                                    self.writeVOGsequences2file(outfilePVOG_h,pVOGlines,pVOG)                  # followed by the pVOG group
                                     outfilePVOG_h.close()
                             else:
                                 if PHATE_WARNINGS == 'True':
                                     print("phate_profiles says, WARNING: unexpected pVOG identifier:", pVOG)        
+
+            if self.VOGS_PROFILE:  
+                database = VOGS_PROFILE_DB_HOME 
+                VOGseqDB = VOG_SEQUENCES
+                dbName   = 'VOGsHmm'
+                count = 0
+                if PHATE_PROGRESS == 'True':
+                    print("phate_profile says: Running VOGs hmm/profile search:", database, dbName)
+                for fasta in fastaSet.fastaList:
+                    count += 1
+                    outfile = self.proteinProfileOutDir + self.profileProgram + "_vogHmm_" + str(count)
+                    self.profile1fasta(fasta,outfile,database,dbName)
+
+                if PHATE_PROGRESS == 'True':
+                    print("phate_profile says: VOGs hmm/profile search complete.")
+                    print("phate_profile says: Collecting and saving VOG sequences corresponding to hmm/profile hit(s)")
+
+                # Next you want to create VOG fasta group files so user can do alignments
+                # You need only one "alignment" file per VOG group that the fasta hit (under blast cutoffs)
+                # Capture VOG.faa lines
+                #VOGs_h = open(database,"r")
+                VOGs_h = open(VOGseqDB,"r")
+                VOGlines = VOGs_h.read().splitlines()
+                VOGs_h.close()
+                count = 0; countA = 0
+                for fasta in fastaSet.fastaList:
+                    vogPrintedList = []  # keeps track of pVOGs that have already been printed for current fasta
+                    count += 1 
+                    countA = 0
+                    for annot in fasta.annotationList:
+                        for VOG in annot.VOGlist:  # There may be multiple annotations to inspect
+                            match_good = re.search('VOG',VOG)
+                            if match_good:
+                                # Avoid redundancy in printing VOG groups for this fasta; only once per pVOG ID that was an hmm hit
+                                if VOG not in vogPrintedList:
+                                    vogPrintedList.append(VOG)  # Record this VOG identifier as "done"
+                                    # create dynamic file name
+                                    countA += 1 
+                                    outfileVOG = self.VOGsOutDir + "profile_vogGroup_" + str(count) + '_' + str(countA) + '.faa' 
+                                    # open file and write current fasta plus each corresponding VOG fasta
+                                    outfileVOG_h = open(outfileVOG,'w')
+                                    outfileVOG_h.write("%c%s\n%s\n" % ('>',fasta.header,fasta.sequence)) # write the current peptide fasta,
+                                    self.writeVOGsequences2file(outfileVOG_h,VOGlines,VOG)                  # followed by the VOG group
+                                    outfileVOG_h.close()
+                            else:
+                                if PHATE_WARNINGS == 'True':
+                                    print("phate_profiles says, WARNING: unexpected VOG identifier:", VOG)        
 
         if CLEAN_RAW_DATA == 'True':
             if PHATE_PROGRESS == 'True':
                 print("phate_profile says: Removing raw data files.")
             self.cleanProfileOutDir()
 
-    def writePVOGsequences2file(self,FILE_H,lines,pVOG):
-        pVOGheader = ""; pVOGsequence = ""; GET_SEQ = False
+    def writeVOGsequences2file(self,FILE_H,lines,VOG):
+        VOGheader = ""; VOGsequence = ""; GET_SEQ = False
         for i in range(0,len(lines)-1):
             nextLine = lines[i]
             match_header = re.search('>',nextLine)
-            match_pVOG = re.search(pVOG,nextLine)
+            match_VOG = re.search(VOG,nextLine)
 
             if match_header:   
                 if GET_SEQ:
-                    FILE_H.write("%s\n%s\n" % (pVOGheader,pVOGsequence))
-                    pVOGheader = ""; pVOGsequence = ""
+                    FILE_H.write("%s\n%s\n" % (VOGheader,VOGsequence))
+                    VOGheader = ""; VOGsequence = ""
                     GET_SEQ = False
 
-                if match_pVOG:
-                    pVOGheader = nextLine
+                if match_VOG:
+                    VOGheader = nextLine
                     GET_SEQ = True
 
             elif GET_SEQ:
-                pVOGsequence = pVOGsequence + nextLine
+                VOGsequence = VOGsequence + nextLine
 
     def cleanProfileOutDir(self):  # Remove temporary files from HMM_OUT_DIR
         #command = "ls " + HMM_OUT_DIR  #*** FIX: list only files, not directories too

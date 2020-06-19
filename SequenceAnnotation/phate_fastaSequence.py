@@ -3,7 +3,7 @@
 #
 # Programmer: Carol L. Ecale Zhou
 #
-# Most recent update: 10 April 2020
+# Most recent update: 16 June 2020
 # 
 # Module containing classes and methods for representing a multi-fasta sequence and associated methods
 # Classes and methods: 

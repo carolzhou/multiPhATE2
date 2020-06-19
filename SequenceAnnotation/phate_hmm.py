@@ -8,7 +8,7 @@
 # Programmer's Notes: This code now runs jackhmmer and phmmer; lightly tested; needs further testing.
 #
 # Programmer:  C Zhou
-# Most recent update:  16 April 2020
+# Most recent update:  18 June 2020
 # 
 # Classes and Methods:
 #
@@ -44,6 +44,8 @@ NCBI_VIRUS_PROTEIN_HMM_HOME   = os.environ["PHATE_NCBI_VIRUS_PROTEIN_BLAST_HOME"
 REFSEQ_PROTEIN_HMM_HOME       = os.environ["PHATE_REFSEQ_PROTEIN_BLAST_HOME"]
 REFSEQ_GENE_HMM_HOME          = os.environ["PHATE_REFSEQ_GENE_BLAST_HOME"]
 PVOGS_HMM_HOME                = os.environ["PHATE_PVOGS_BLAST_HOME"]
+VOGS_HMM_HOME                 = os.environ["PHATE_VOGS_BLAST_HOME"]
+VOGS_ANNOTATION_FILE          = os.environ["PHATE_VOGS_ANNOTATION_FILE"]
 PHANTOME_HMM_HOME             = os.environ["PHATE_PHANTOME_BLAST_HOME"]
 PHAGE_ENZYME_HMM_HOME         = os.environ["PHATE_PHAGE_ENZYME_BLAST_HOME"]
 KEGG_VIRUS_HMM_HOME           = os.environ["PHATE_KEGG_VIRUS_BLAST_HOME"]
@@ -66,7 +68,9 @@ PHATE_OUT                     = os.environ["PHATE_PHATE_OUT"]
 GENE_CALL_DIR            = ""  # set by set method, via parameter list
 HMM_OUT_DIR              = ""  # set by set method, via parameter list
 PVOGS_OUT_DIR            = ""  # set by set method, via parameter list
-PVOGS_FASTA_DB_NAME      = "pVOGs.fasta"   #*** CHECK THIS
+PVOGS_FASTA_DB_NAME      = "pVOGs.faa"  #*** CHECK HOW THIS IS SET 
+VOGS_OUT_DIR             = ""  # set by set method, via parameter list
+VOGS_FASTA_DB_NAME       = "vog.proteins.tagged.all.fa"  #*** CHECK HOW THIS IS SET 
 HMM_RAW_OUT_FILENAME     = "hmm_raw.out"   # for capturing raw output from hmm search codes (eg, alignments)
 
 HIT_COUNT_MAX  = 50  # Put a limit on the number of hits that should be processed; let's not go over this
@@ -95,12 +99,14 @@ class multiHMM(object):
         self.proteinHmmOutDir         = ""        # needs to be set
         self.outputFormat             = TBL       # default format for jackhmmer output
         self.pVOGsOutDir              = ""        # needs to be set
+        self.VOGsOutDir               = ""        # needs to be set
         self.hmmRawOutfile            = ""        # needs to be set
         self.topHitCount              = MAX_SEQ_HITS 
         self.NCBI_VIRUS_PROTEIN_HMM   = False     # Booleans control whether hmm search will be done against a given fasta blast database 
         self.REFSEQ_PROTEIN_HMM       = False     #
         self.REFSEQ_GENE_HMM          = False     #  
         self.PVOGS_HMM                = False     # 
+        self.VOGS_HMM                 = False     # 
         self.PHANTOME_HMM             = False     # 
         self.PHAGE_ENZYME_HMM         = False     # 
         self.KEGG_VIRUS_HMM           = False     # 
@@ -133,7 +139,11 @@ class multiHMM(object):
                 self.proteinHmmOutDir = paramset['proteinHmmOutDir']
             if 'pVOGsOutDir' in list(paramset.keys()):
                 self.pVOGsOutDir = paramset['pVOGsOutDir']
-            # Booleans to control execution  #*** Only pvogsHmm is currently in service
+            if 'VOGsOutDir' in list(paramset.keys()):
+                self.VOGsOutDir = paramset['VOGsOutDir']
+            # Booleans to control execution  #*** Only pvogsHmm and vogsHmm are currently in service
+            # This module performs hmm search against sequence databases--hence the blast/sequence databases are referenced
+            # Values are True or False, and True indicates that the database shall be used.
             if 'ncbiVirusProteinBlast' in list(paramset.keys()):
                 self.NCBI_VIRUS_PROTEIN_HMM = paramset["ncbiVirusProteinBlast"]
             if 'refseqProteinBlast' in list(paramset.keys()):
@@ -142,6 +152,8 @@ class multiHMM(object):
                 self.REFSEQ_GENE_HMM = paramset["refseqGeneBlast"]
             if 'pvogsBlast' in list(paramset.keys()):
                 self.PVOGS_HMM = paramset["pvogsBlast"]
+            if 'vogsBlast' in list(paramset.keys()):
+                self.VOGS_HMM = paramset["vogsBlast"]
             if 'phantomeBlast' in list(paramset.keys()):
                 self.PHANTOME_HMM = paramset["phantomeBlast"]
             if 'phageEnzymeBlast' in list(paramset.keys()):
@@ -188,7 +200,7 @@ class multiHMM(object):
 
     def setGeneCallDir(self,geneCallDir):
         self.geneCallDir = geneCallDir
-        GENE_CALL_DIR = geneCallDir
+        GENE_CALL_DIR    = geneCallDir
 
     def setHmmOutDir(self,hmmOutDir):
         self.hmmOutDir      = hmmOutDir
@@ -197,7 +209,11 @@ class multiHMM(object):
 
     def setPVOGsOutDir(self,pVOGsOutDir):
         self.pVOGsOutDir = pVOGsOutDir
-        PVOGS_OUT_DIR = pVOGsOutDir
+        PVOGS_OUT_DIR    = pVOGsOutDir
+
+    def setVOGsOutDir(self,VOGsOutDir):
+        self.VOGsOutDir = VOGsOutDir
+        VOGS_OUT_DIR    = VOGsOutDir
 
     def getTopHits(self):
         return self.topHitList 
@@ -314,32 +330,32 @@ class multiHMM(object):
                 else: # extract data fields and remove preceding or trailing whitespace
                     hitCount += 1
                     fields = sLine.split()  # split line on white space
-                    targetName        = fields[0];   targetName = targetName.rstrip() 
+                    targetName        = fields[0];   targetName      = targetName.rstrip() 
                     targetAccession   = fields[1];   targetAccession = targetAccession.rstrip()
-                    queryName         = fields[2];   queryName = queryName.rstrip()
-                    queryAccession    = fields[3];   queryAccession = queryAccession.rstrip()
-                    seqEvalue         = fields[4];   seqEvalue = seqEvalue.lstrip()
-                    seqScore          = fields[5];   seqScore = seqScore.lstrip()
-                    seqBias           = fields[6];   seqBias = seqBias.lstrip()
-                    dom1evalue        = fields[7];   dom1evalue = dom1evalue.lstrip()
-                    dom1score         = fields[8];   dom1score = dom1score.lstrip()
-                    dom1bias          = fields[9];   dom1bias = dom1bias.lstrip()
-                    dom1exp           = fields[10];  dom1exp = dom1exp.lstrip()
-                    dom1reg           = fields[11];  dom1reg = dom1reg.lstrip()
-                    dom1clu           = fields[12];  dom1clu = dom1clu.lstrip()
-                    dom1ov            = fields[13];  dom1ov = dom1ov.lstrip()
-                    dom1env           = fields[14];  dom1env = dom1env.lstrip()
-                    dom1dom           = fields[15];  dom1dom = dom1dom.lstrip()
-                    dom1rep           = fields[16];  dom1rep = dom1rep.lstrip()
-                    dom1inc           = fields[17];  dom1inc = dom1inc.lstrip()
+                    queryName         = fields[2];   queryName       = queryName.rstrip()
+                    queryAccession    = fields[3];   queryAccession  = queryAccession.rstrip()
+                    seqEvalue         = fields[4];   seqEvalue       = seqEvalue.lstrip()
+                    seqScore          = fields[5];   seqScore        = seqScore.lstrip()
+                    seqBias           = fields[6];   seqBias         = seqBias.lstrip()
+                    dom1evalue        = fields[7];   dom1evalue      = dom1evalue.lstrip()
+                    dom1score         = fields[8];   dom1score       = dom1score.lstrip()
+                    dom1bias          = fields[9];   dom1bias        = dom1bias.lstrip()
+                    dom1exp           = fields[10];  dom1exp         = dom1exp.lstrip()
+                    dom1reg           = fields[11];  dom1reg         = dom1reg.lstrip()
+                    dom1clu           = fields[12];  dom1clu         = dom1clu.lstrip()
+                    dom1ov            = fields[13];  dom1ov          = dom1ov.lstrip()
+                    dom1env           = fields[14];  dom1env         = dom1env.lstrip()
+                    dom1dom           = fields[15];  dom1dom         = dom1dom.lstrip()
+                    dom1rep           = fields[16];  dom1rep         = dom1rep.lstrip()
+                    dom1inc           = fields[17];  dom1inc         = dom1inc.lstrip()
                     #targetDescription = fields[18];  targetDescription = targetDescription.rstrip()
                     targetDescription = ' '.join(fields[18:]);  targetDescription = targetDescription.rstrip()
                         
                     # Collect pVOG identifiers for this hmm search hit; fasta header of target may have >= 1 pVOG identifier
-                    vogIDs = ''; pVOGlist = []
-                    pVOGlist = re.findall('VOG\d+', targetName)
-                    if pVOGlist:
-                        for pVOG in pVOGlist:
+                    vogIDs = ''; VOGlist = []
+                    VOGlist = re.findall('VOG\d+', targetName)
+                    if VOGlist:
+                        for pVOG in VOGlist:
                             vogIDs += pVOG + ' '
                         vogIDs.rstrip()
                      
@@ -381,28 +397,28 @@ class multiHMM(object):
                     continue
                 else:  # extract data fields and remove preceding or trailing whitespace
                     fields = dLine.split()
-                    targetName        = fields[0];  targetName = targetName.rstrip()
-                    targetAccession   = fields[1];  targetAccession = targetAccession.rstrip()
-                    targetLength      = fields[2];  targetLength = targetLength.lstrip()
-                    queryName         = fields[3];  queryName = queryName.rstrip()
-                    queryAccession    = fields[4];  queryAccession = queryAccession.rstrip()
-                    queryLength       = fields[5];  queryLength = queryLength.lstrip()
-                    fullSeqEvalue     = fields[6];  fullSeqEvalue = fullSeqEvalue.lstrip()
-                    fullSeqScore      = fields[7];  fullSeqScore = fullSeqScore.lstrip()
-                    fullSeqBias       = fields[8];  fullSeqBias = fullSeqBias.lstrip()
-                    domainNumber      = fields[9];  domainNumber = domainNumber.lstrip()
-                    domOf             = fields[10]; domOf = domOf.lstrip()
-                    cEvalue           = fields[11]; cEvalue = cEvalue.lstrip()
-                    iEvalue           = fields[12]; iEvalue = iEvalue.lstrip()
-                    score             = fields[13]; score = score.lstrip()
-                    bias              = fields[14]; bias = bias.lstrip()
-                    hmmFrom           = fields[15]; hmmFrom = hmmFrom.lstrip()
-                    hmmTo             = fields[16]; hmmTo = hmmTo.lstrip()
-                    alignFrom         = fields[17]; alignFrom = alignFrom.lstrip()
-                    alignTo           = fields[18]; alignTo = alignTo.lstrip()
-                    envFrom           = fields[19]; envFrom = envFrom.lstrip()
-                    envTo             = fields[20]; envTo = envTo.lstrip()
-                    acc               = fields[21]; acc = acc.lstrip()
+                    targetName        = fields[0];  targetName        = targetName.rstrip()
+                    targetAccession   = fields[1];  targetAccession   = targetAccession.rstrip()
+                    targetLength      = fields[2];  targetLength      = targetLength.lstrip()
+                    queryName         = fields[3];  queryName         = queryName.rstrip()
+                    queryAccession    = fields[4];  queryAccession    = queryAccession.rstrip()
+                    queryLength       = fields[5];  queryLength       = queryLength.lstrip()
+                    fullSeqEvalue     = fields[6];  fullSeqEvalue     = fullSeqEvalue.lstrip()
+                    fullSeqScore      = fields[7];  fullSeqScore      = fullSeqScore.lstrip()
+                    fullSeqBias       = fields[8];  fullSeqBias       = fullSeqBias.lstrip()
+                    domainNumber      = fields[9];  domainNumber      = domainNumber.lstrip()
+                    domOf             = fields[10]; domOf             = domOf.lstrip()
+                    cEvalue           = fields[11]; cEvalue           = cEvalue.lstrip()
+                    iEvalue           = fields[12]; iEvalue           = iEvalue.lstrip()
+                    score             = fields[13]; score             = score.lstrip()
+                    bias              = fields[14]; bias              = bias.lstrip()
+                    hmmFrom           = fields[15]; hmmFrom           = hmmFrom.lstrip()
+                    hmmTo             = fields[16]; hmmTo             = hmmTo.lstrip()
+                    alignFrom         = fields[17]; alignFrom         = alignFrom.lstrip()
+                    alignTo           = fields[18]; alignTo           = alignTo.lstrip()
+                    envFrom           = fields[19]; envFrom           = envFrom.lstrip()
+                    envTo             = fields[20]; envTo             = envTo.lstrip()
+                    acc               = fields[21]; acc               = acc.lstrip()
                     targetDescription = fields[22]; targetDescription = targetDescription.rstrip()
                     
                     # Create new domDataSet object and store data 
@@ -448,10 +464,15 @@ class multiHMM(object):
                     newAnnotation.category       = "sequence"
 
                     # Extract pVOG identifier(s) from hit's header (if pVOG database)
-                    pVOGlist = [] 
-                    pVOGlist = hit["hitVOG"].split(' ')
-                    for pVOG in pVOGlist: 
-                        newAnnotation.pVOGlist.append(pVOG)
+                    VOGlist = [] 
+                    VOGlist = hit["hitVOG"].split(' ')
+                    for pVOG in VOGlist: 
+                        newAnnotation.VOGlist.append(pVOG)
+                    
+                    # Fill in description, if it's empty (ie, VOG hits have empty description)
+                    if VOGlist:
+                        if dbName.lower() == 'vogs' or dbName.lower() == 'vog':
+                            newAnnotation.link2databaseIdentifiers(database,dbName)
 
                     # Collapse all domain hits into an annotation list for this sequence/global hit
                     for domain in hit["hitDomainList"]:
@@ -617,7 +638,7 @@ class multiHMM(object):
                         count += 1 
                         countA = 0
                         for annot in fasta.annotationList:
-                            for pVOG in annot.pVOGlist:  # There may be multiple annotations to inspect
+                            for pVOG in annot.VOGlist:  # There may be multiple annotations to inspect
                                 match_good = re.search('VOG',pVOG)
                                 if match_good:
                                     # Avoid redundancy in printing pVOG groups for this fasta; only once per pVOG ID that was an hmm hit
@@ -629,33 +650,78 @@ class multiHMM(object):
                                         # open file and write current fasta pluse each corresponding pVOG fasta
                                         outfilePVOG_h = open(outfilePVOG,'w')
                                         outfilePVOG_h.write("%c%s\n%s\n" % ('>',fasta.header,fasta.sequence)) # write the current peptide fasta,
-                                        self.writePVOGsequences2file(outfilePVOG_h,pVOGlines,pVOG)            # ...followed by the pVOG group
+                                        self.writeVOGsequences2file(outfilePVOG_h,pVOGlines,pVOG)            # ...followed by the pVOG group
                                         outfilePVOG_h.close()
                                 else:
                                     if PHATE_WARNINGS == 'True':
                                         print("phate_hmm says, WARNING: unexpected pVOG identifier:", pVOG)        
+
+            if self.VOGS_HMM:  
+                database = VOGS_HMM_HOME # same database as blast uses
+                dbName   = 'VOGs'
+                count = 0
+                if PHATE_PROGRESS == 'True':
+                    print("phate_hmm says, Running VOGs hmm search:", database, dbName)
+                for fasta in fastaSet.fastaList:
+                    count += 1
+                    outfile = self.proteinHmmOutDir + self.hmmProgram + "_vog_" + str(count)
+                    self.hmm1fasta(fasta,outfile,database,dbName)
+
+                if PHATE_PROGRESS == 'True':
+                    print("phate_hmm says, VOGs hmm search complete.")
+                    print("phate_hmm says, Collecting and saving VOG sequences corresponding to hmm hit(s)")
+
+                if self.jackhmmerSearch: # Create VOG fasta group files so user can do alignments
+                    # You need only one "alignment" file per VOG group that the fasta hit (under blast cutoffs)
+                    # Capture VOG.faa lines
+                    VOGs_h = open(database,"r")
+                    VOGlines = VOGs_h.read().splitlines()
+                    count = 0; countA = 0
+                    for fasta in fastaSet.fastaList:
+                        vogPrintedList = []  # keeps track of pVOGs that have already been printed for current fasta
+                        count += 1 
+                        countA = 0
+                        for annot in fasta.annotationList:
+                            for VOG in annot.VOGlist:  # There may be multiple annotations to inspect
+                                match_good = re.search('VOG',VOG)
+                                if match_good:
+                                    # Avoid redundancy in printing VOG groups for this fasta; only once per VOG ID that was an hmm hit
+                                    if VOG not in vogPrintedList:
+                                        vogPrintedList.append(VOG)  # Record this VOG identifier as "done"
+                                        # create dynamic file name
+                                        countA += 1 
+                                        outfileVOG = self.VOGsOutDir + "hmm_vogGroup_" + str(count) + '_' + str(countA) + '.faa' 
+                                        # open file and write current fasta pluse each corresponding VOG fasta
+                                        outfileVOG_h = open(outfileVOG,'w')
+                                        outfileVOG_h.write("%c%s\n%s\n" % ('>',fasta.header,fasta.sequence)) # write the current peptide fasta,
+                                        self.writeVOGsequences2file(outfileVOG_h,VOGlines,VOG)               # ...followed by the VOG group
+                                        outfileVOG_h.close()
+                                else:
+                                    if PHATE_WARNINGS == 'True':
+                                        print("phate_hmm says, WARNING: unexpected VOG identifier:", VOG)        
+
         if CLEAN_RAW_DATA == 'True':
             self.cleanHmmOutDir('protein')
 
-    def writePVOGsequences2file(self,FILE_H,lines,pVOG):
-        pVOGheader = ""; pVOGsequence = ""; GET_SEQ = False
+    def writeVOGsequences2file(self,FILE_H,lines,VOG):
+        VOGheader = ""; VOGsequence = ""; GET_SEQ = False
         for i in range(0,len(lines)-1):
             nextLine = lines[i]
             match_header = re.search('>',nextLine)
-            match_pVOG = re.search(pVOG,nextLine)
+            match_VOG    = re.search(VOG,nextLine)
 
             if match_header:   
                 if GET_SEQ:
-                    FILE_H.write("%s\n%s\n" % (pVOGheader,pVOGsequence))
-                    pVOGheader = ""; pVOGsequence = ""
+                    FILE_H.write("%s\n%s\n" % (VOGheader,VOGsequence))
+                    VOGheader = ""; VOGsequence = ""
                     GET_SEQ = False
 
-                if match_pVOG:
-                    pVOGheader = nextLine
+                if match_VOG:
+                    VOGheader = nextLine
                     GET_SEQ = True
 
             elif GET_SEQ:
-                pVOGsequence = pVOGsequence + nextLine
+                VOGsequence = VOGsequence + nextLine
 
     def cleanHmmOutDir(self,seqType):  # Remove temporary files from HMM_OUT_DIR
         if PHATE_PROGRESS == 'True':
@@ -690,6 +756,7 @@ class multiHMM(object):
         print("   geneCallDir:           ", self.geneCallDir)
         print("   hmmOutDir:             ", self.hmmOutDir)
         print("   pVOGsOutDir:           ", self.pVOGsOutDir)
+        print("   VOGsOutDir:            ", self.VOGsOutDir)
         print("   NCBI_VIRUS_PROTEIN_HMM:", self.NCBI_VIRUS_PROTEIN_HMM)
         print("   NR_HMM:                ", self.NR_HMM)
         print("   KEGG_VIRUS_HMM:        ", self.KEGG_VIRUS_HMM)
@@ -697,6 +764,7 @@ class multiHMM(object):
         print("   REFSEQ_GENE_HMM:       ", self.REFSEQ_GENE_HMM)
         print("   PHANTOME_HMM:          ", self.PHANTOME_HMM)
         print("   PVOGS_HMM:             ", self.PVOGS_HMM)
+        print("   VOGS_HMM:              ", self.VOGS_HMM)
         print("   SWISSPROT_HMM:         ", self.SWISSPROT_HMM)
         print("   PFAM_HMM:              ", self.PFAM_HMM)
         print("   UNIPROT_HMM:           ", self.UNIPROT_HMM)
@@ -708,6 +776,7 @@ class multiHMM(object):
         fileHandle.write("%s\n" % ("  geneCallDir: ",self.geneCallDir))
         fileHandle.write("%s\n" % ("  hmmOutDir: ",self.hmmOutDir))
         fileHandle.write("%s\n" % ("  pVOGsOutDir: ",self.pVOGsOutDir))
+        fileHandle.write("%s\n" % ("  VOGsOutDir: ",self.VOGsOutDir))
         fileHandle.write("%s\n" % ("  NCBI_VIRUS_PROTEIN_HMM: ",self.NCBI_VIRUS_PROTEIN_HMM))
         fileHandle.write("%s\n" % ("  NR_HMM: ",self.NR_HMM))
         fileHandle.write("%s\n" % ("  KEGG_VIRUS_HMM: ",self.KEGG_VIRUS_HMM))
@@ -715,6 +784,7 @@ class multiHMM(object):
         fileHandle.write("%s\n" % ("  REFSEQ_GENE_HMM: ",self.REFSEQ_GENE_HMM))
         fileHandle.write("%s\n" % ("  PHANTOME_HMM: ",self.PHANTOME_HMM))
         fileHandle.write("%s\n" % ("  PVOGS_HMM: ",self.PVOGS_HMM))
+        fileHandle.write("%s\n" % ("  VOGS_HMM: ",self.VOGS_HMM))
         fileHandle.write("%s\n" % ("  SWISSPROT_HMM: ",self.SWISSPROT_HMM))
         fileHandle.write("%s\n" % ("  PFAM_HMM: ",self.PFAM_HMM))
         fileHandle.write("%s\n" % ("  UNIPROT_HMM: ",self.UNIPROT_HMM))

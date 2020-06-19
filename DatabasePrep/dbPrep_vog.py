@@ -100,17 +100,17 @@ class VOGs(object):
         vogOutFile_h.close()
         print("dbPrep_vog says, Finally...after this much time: ",executionTime)
         # Protein sequences
-        print("dbPrep_vog says, Adding protein sequences to fasta objects, from file", self.VOGproteinFastaFile)
-        vogInFile_h  = open(self.VOGproteinFastaFile,"r")
-        print("Opening self.VOGproteinFastaOutFile for write:",self.VOGproteinFastaOutFile)
-        vogOutFile_h = open(self.VOGproteinFastaOutFile,"w")
-        startTime = datetime.datetime.now()
-        self.writeVOGtaggedFastaFile(vogInFile_h,vogOutFile_h,"protein")
-        endTime = datetime.datetime.now()
-        executionTime = endTime - startTime
-        vogInFile_h.close()
-        vogOutFile_h.close()
-        print("dbPrep_vog says, That took a while too: ",executionTime)
+        #print("dbPrep_vog says, Adding protein sequences to fasta objects, from file", self.VOGproteinFastaFile)
+        #vogInFile_h  = open(self.VOGproteinFastaFile,"r")
+        #print("Opening self.VOGproteinFastaOutFile for write:",self.VOGproteinFastaOutFile)
+        #vogOutFile_h = open(self.VOGproteinFastaOutFile,"w")
+        #startTime = datetime.datetime.now()
+        #self.writeVOGtaggedFastaFile(vogInFile_h,vogOutFile_h,"protein")
+        #endTime = datetime.datetime.now()
+        #executionTime = endTime - startTime
+        #vogInFile_h.close()
+        #vogOutFile_h.close()
+        #print("dbPrep_vog says, That took a while too: ",executionTime)
 
         return
 

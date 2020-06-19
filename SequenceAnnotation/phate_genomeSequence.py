@@ -3,7 +3,7 @@
 #
 # Programmer: Carol L. Ecale Zhou
 #
-# Most recent update: 10 April 2020
+# Most recent update: 16 June 2020
 # 
 # Module comprising data structures for organizing genome information
 # Note:  EMBOSS messes with fasta headers; therefore, I am putting minimal info in the header and using only '/'
@@ -486,8 +486,8 @@ class genome(object):
     def printGenomeData2file_GFF(self,FILE_HANDLE):
         FILE_HANDLE.write("%s\n" % (GFF_COMMENT))
         if PHATE_MESSAGES == 'True':
-            print("There are", len(self.geneSet.fastaList), "genes, and", len(self.proteinSet.fastaList), "proteins")
-            print("Writing data to GFF file")
+            print("phate_genomeSequence says, There are", len(self.geneSet.fastaList), "genes, and", len(self.proteinSet.fastaList), "proteins")
+            print("phate_genomeSequence says, Writing data to GFF file")
 
         #*** NOTE: The following code assumes that the list of proteins corresponds precisely to
         #*** the list of genes.  Oh, for the want of a pointer!!!

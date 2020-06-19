@@ -10,7 +10,7 @@
 #
 # Programmer: CEZhou
 #
-# Latest Update: 09 June 2020
+# Latest Update: 15 June 2020
 # Version 1.5
 #
 ################################################################
@@ -529,7 +529,7 @@ for i in range(0,argCount):
             match_refseqProteinHmm    = re.search(p_refseqProteinHmm,value)
             match_refseqGeneHmm       = re.search(p_refseqGeneHmm,value)
             match_pvogsHmm            = re.search(p_pvogsHmm,value)
-            match_vogsHmm             = re.search(p_pvogsHmm,value)
+            match_vogsHmm             = re.search(p_vogsHmm,value)
             match_phantomeHmm         = re.search(p_phantomeHmm,value)
             match_phageEnzymeHmm      = re.search(p_phageEnzymeHmm,value)
             match_keggVirusHmm        = re.search(p_keggVirusHmm,value)
@@ -1111,9 +1111,6 @@ else:
             print("phate_sequenceAnnotation_main says, Protein blast complete.")
         LOGFILE_H.write("%s%s\n" % ("Protein blast complete at ", datetime.datetime.now()))
 
-        # Write out pVOGs sequences to enable alignments
-        ###*** YIKES-- SOMETHING MISSING HERE ???
-
     else:
         if PHATE_PROGRESS == 'True':
             print("phate_sequenceAnnotation_main says, Skipping protein blast")
@@ -1151,7 +1148,7 @@ else:
             os.mkdir(proteinHmmOutputDir)
 
         # Prepare for protein hmm search
-        # HMM search uses jackhmmer (or other, in future?) against fasta blast databases
+        # HMM search uses jackhmmer or phmmer against fasta blast databases
         myParamSet = {
             'hmmProgram'            : '', 
             'phmmerSearch'          : PHMMER_SEARCH,
@@ -1161,11 +1158,13 @@ else:
             'geneHmmOutDir'         : geneHmmOutputDir,
             'proteinHmmOutDir'      : proteinHmmOutputDir,
             'pVOGsOutDir'           : proteinHmmOutputDir,
+            'VOGsOutDir'            : proteinHmmOutputDir,
             'ncbiVirusGenomeBlast'  : NCBI_VIRUS_GENOME_BLAST,
             'ncbiVirusProteinBlast' : NCBI_VIRUS_PROTEIN_BLAST,
             'refseqProteinBlast'    : REFSEQ_PROTEIN_BLAST,
             'refseqGeneBlast'       : REFSEQ_GENE_BLAST,
             'pvogsBlast'            : PVOGS_BLAST,
+            'vogsBlast'             : VOGS_BLAST,
             'phantomeBlast'         : PHANTOME_BLAST,
             'phageEnzymeBlast'      : PHAGE_ENZYME_BLAST,
             'keggVirusBlast'        : KEGG_VIRUS_BLAST,
@@ -1231,6 +1230,7 @@ else:
         # Create profile output directory for protein profile search and pVOG groups
         proteinProfileOutputDir = profileOutputDir + 'Protein/'
         pVOGsOutputDir          = profileOutputDir + 'Protein/'
+        VOGsOutputDir           = profileOutputDir + 'Protein/'
         try:
             os.stat(proteinProfileOutputDir)
         except:
@@ -1250,10 +1250,12 @@ else:
             'geneProfileOutDir'    : geneProfileOutputDir,
             'proteinProfileOutDir' : proteinProfileOutputDir,
             'pVOGsOutDir'          : pVOGsOutputDir,
+            'VOGsOutDir'           : VOGsOutputDir,
             'hmmscan'              : hmmscan,
             'ncbiVirusProteinHmm'  : NCBI_VIRUS_PROTEIN_HMM,
             'refseqProteinHmm'     : REFSEQ_PROTEIN_HMM,
             'pvogsHmm'             : PVOGS_HMM,
+            'vogsHmm'              : VOGS_HMM,
             'phantomeHmm'          : PHANTOME_HMM,
             'phageEnzymeHmm'       : PHAGE_ENZYME_HMM,
             'keggVirusHmm'         : KEGG_VIRUS_HMM,
