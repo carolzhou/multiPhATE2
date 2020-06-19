@@ -15,6 +15,7 @@ THIS CODE IS COVERED BY THE BSD LICENSE. SEE INCLUDED FILE BSD-3.pdf FOR DETAILS
 5) PhATE now captures the raw hmm search output (ie, alignments).
 6) multiPhATE now runs CompareGeneProfiles, a code that identifies gene similarities among genomes.
 7) A genomics module computes gene and protein homology groups among all genomes input to the pipeline
+8) PhATE now includes the VOG sequences and hmms, processed by blastp, hmm search, and profile search.
 
 #### ABOUT THE MULTI-PHATE PIPELINE DRIVER
 
@@ -26,7 +27,7 @@ PhATE is a fully automated computational pipeline for identifying and annotating
 
 #### ABOUT COMPARE-GENE-PROFILES and the GENOMICS MODULE
 
-CompareGeneProfiles performs binary blast (NxN) of the genes from each genome against the genes from every other genome provided by the user. The code then identifies for each gene its mutual and non-mutual best hits against corresponding genes from each of the other genomes, and reports if no corresponding hit is found. For each binary genome-to-genome comparison, hits are ordered with respect to the query (reference, or first) genome. The Genomics module inputs the binary blast files from CompareGeneProfiles and computes genes and proteins that correspond across all the input genomes with respect to the reference genome. Ultimately, homology groups comprising each reference gene (or protein) and its corresponding genes, plus its homologs and their corresponding genes. Homology groups are output as fasta files and annotation files.
+CompareGeneProfiles performs binary blast (NxN) of the genes from each genome against the genes from every other genome provided by the user. The code then identifies for each gene its mutual and non-mutual best hits against corresponding genes from each of the other genomes, and reports if no corresponding hit is found. For each binary genome-to-genome comparison, hits are ordered with respect to the query (reference, or first) genome. The Genomics module inputs the binary blast results files from CompareGeneProfiles and computes genes and proteins that correspond across all the input genomes with respect to the reference genome. Ultimately, homology groups comprising each reference gene (or protein) and its corresponding genes, plus its homologs and their corresponding genes. Homology groups are output as fasta files and annotation files.
 
 #### HOW TO SET UP MULTI-PHATE ON YOUR LOCAL MACHINE
 
@@ -79,12 +80,9 @@ Set to 'true' each blast or hmm process that you want to be run. Note that you m
 For each database that you have in-house, specify the full path/filename. Note that you may need to prepare in advance all blast databases by running the "makeblastdb" utility (see instructions with blast+ code for how to do that). MultiPhate will only run with blast+; it does not support legacy blast. For instructions where to download the databases, see the SUPPORTING DATABASES section below. Note that KEGG is available by license. Note also that in some cases additional files are required. In this case, place the additional file(s) in the same directory as the associated blast database. For example, place the NCBI accession2taxid file in the same directory as your NCBI virus genome file (see below). If you are downloading datasets that you anticipate using specifically with multiPhATE, then it is suggested, for convenience, that you save them in the Databases/ folder in the multiPhATE distribution, but any database can be located anywhere on your local system; you need only indicate in the multiPhate.config file the full path/filename for each database. Remember, the pVOGs and Phantome data sets are included in the multiPhATE distribution in the Databases/ folder, but you will need to run makeblastdb to render the datasets blast-able (`$ makeblastdb -help`). If you will be running hmmscan, then you will need to format the pVOG database accordingly: 
 
 ```
-$ cat VOG\*.hmm > pVOGsHmmProfilesDB.hmm
-
+$ cat pVOG\*.hmm > pVOGsHmmProfilesDB.hmm
 $ mv pVOGsHMMprofilesDB.hmm ../.
-
 $ cd ..
-
 $ hmmpress pVOGsHmmProfilesDB.hmm
 ```
 
@@ -124,13 +122,13 @@ KEGG associated files - T40000.pep, T40000.nuc, vg_enzyme.list, vg_genome.list, 
 Phantome protein fasta sequences - http://www.phantome.org/Downloads/phage_proteins_nnnnnnnnn.fasta. (A version of Phantome is included in the multiPhATE distribution.)
 
 pVOGs prepared database (pVOGs.faa) - included in PhATE distribution. This data set was derived by C. Zhou from the pVOGs fasta database. For use in PhATE, the sequence fasta headers have been modified to include the pVOG identifiers (all groups to which each sequence belongs). This re-formatting facilitates pVOG group identification and construction of the alignment-ready fasta files. Codes for reconstructing this modified data set are included in the PhATE distribution. Note that the pVOGs are not mutually exclusive, meaning that a sequence may have membership in more than one VOG group. The codes included in the phate distribution will combine identifiers that belong to a given sequence and list all the VOG identifiers in the fasta header. In this way, the pVOG fasta database used in PhATE is also non-redundant. See documentation in DatabasePrep/dbPrep_createPvogFastaFile.py for instructions how to update your local pVOGs data set for use in PhATE, but you can start with the pVOGs.faa file included in the PhATE distribution. Combine the pVOG fasta sequences into a single file and format for hmmscan profile search as follows:
-
 ```
-$ cat VOG\*.hmm > pVOGsHmmProfilesDB.hmm
+$ cat pVOG\*.hmm > pVOGsHmmProfilesDB.hmm
 $ mv pVOGsHMMprofilesDB.hmm ../.
 $ cd ..
 $ hmmpress pVOGsHmmProfilesDB.hmm
 ```
+VOGs - download at http://fileshare.csb.univie.ac.at/vog/vog98/. Prepare for hmm profile searching in the same manner as pVOGs (see #6 above). Caution: this database is large. If you get error messages to the effect that there are too many lines to concatenate, then try using the dbPrep_consolidateVOGs.py script in the DatabasePrep/ folder. Then format using hmmpress as above.
 
 For simplicity in configuring the locations of dependent databases in the multiPhate.config file, it is suggested that the above databases be placed in a directory structure as follows: 
 
@@ -147,6 +145,7 @@ Databases/
 		Gene/ 
 	Swissprot/ 
 	pVOGs/
+        VOGs/
 ```
 
 You must specify in your multiPhate.config file the locations of the data sets that you will be using. Although it is recommended that you place your databases in the above directory structure, they can reside anywhere locally on disk, but in any case you must specify the full directory path/filename to a given resource in your multiPhate.config file.
@@ -209,7 +208,7 @@ Repeat for each of biopython, emboss, blast, glimmer, prodigal, hmmer, trnascan-
 
 Note that genemarks and phanotate are not available as conda packages, so these programs, as well as the dependent databases, all need to be acquired/installed manually in any case.
 
-#### PHATE PIPELINE OUTPUT FILES 
+#### MultiPHATE OUTPUT FILES 
 
 In the user-specified output directory (eg, myGenomeDir/), under PipelineOutput/, the following files will be written:
 
@@ -225,8 +224,6 @@ phate_sequenceAnnotation_main.out - tabbed integrated annotation results (also w
 
 BLAST/ directory - raw blast results for genome (under Genome/) and proteins (under Protein/) (if CLEAN_RAW_DATA switch in multiPhate.config file is 'false')
 
-pVOG groupings comprising alignment-ready fasta files (under BLAST/Protein/) based on best blast hits
-
 HMM/ directory - raw hmm search results for protein sequences (under Protein/) (if CLEAN_RAW_DATA switch in phate_runPipeline.py is 'False') This includes the hmm-formatted outputs (tbl and dom) and the raw alignments (std), which are voluminous.
 
 pVOG grouping comprising alignment-ready fasta files (under HMM/Protein/) based on best hmm hits
@@ -234,6 +231,10 @@ pVOG grouping comprising alignment-ready fasta files (under HMM/Protein/) based 
 log files capturing details of the processing and time stamps
 
 The auto-generated myGenomeName_phate.config file, to record exactly how you configured the pipeline for the current run (genome).
+
+CGP/ directory - 
+
+GENOMICS/ directory - 
 
 #### INSTALLATION AND SET-UP CHECKLIST
 
