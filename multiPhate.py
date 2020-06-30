@@ -5,7 +5,7 @@
 # Program Title:  multiPhate2.py (/multiPhate2/)
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last Update:  09 June 2020
+# Last Update:  30 June 2020
 #
 # Description: Script multiPhate.py runs an annotation pipeline (phate_runPipeline.py) over any
 #    number of genomes specified in the user's input configuration file (multPhate.config). It then
@@ -42,6 +42,18 @@ import sys, os, re, string, copy, time, datetime
 import subprocess
 import json
 from multiprocessing import Pool
+
+# Because grep works differently in Python 3.x, and works differently on Mac OSX, need to set this environment
+# variable so that grep works correctly in SequenceAnnotation/phate_annotation.py:
+# Set MAC_OSX either to True or False by commenting in/out accordingly:
+#MAC_OSX = True
+MAC_OSX = False
+
+MAC_OSX_STRING = ""
+if MAC_OSX:
+    MAC_OSX_STRING = 'True'
+else:
+    MAC_OSX_STRING = 'False'
 
 # Parallelism is now controlled in the user's configuration file, input to multiPhATE. 
 # Below are the default values for parameters hpc, threads, and blastThreads.
@@ -242,6 +254,8 @@ HIT_COUNT_MAX               = 100 #
 # have on your compute cluster (e.g, NR), and for software packages, such as EMBOSS or gene finders that you may
 # already have installed on your system. Parameters that differ from defaults will be re-assigned based on information
 # provided in the users' multiPhate.config file.
+
+os.environ["PHATE_MAC_OSX"]                 = MAC_OSX_STRING
 
 PIPELINE_INPUT_DIR                          = PIPELINE_INPUT_DIR_DEFAULT   # Default
 PIPELINE_OUTPUT_DIR                         = PIPELINE_OUTPUT_DIR_DEFAULT  # Default

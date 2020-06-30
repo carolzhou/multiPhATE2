@@ -2,7 +2,7 @@
 # Module: phate_annotation.py
 # Programmer: Carol L. Ecale Zhou
 #
-# Latest update: 17 June 2020
+# Latest update: 30 June 2020
 #
 # Description: Module containing classes and methods for representing annotation results from various sources 
 #
@@ -35,11 +35,18 @@
 # THIS CODE IS COVERED BY THE BSD LICENSE. SEE INCLUDED FILE BSD.PDF FOR DETAILS.
 
 import re, os, subprocess
+import platform
 
 #DEBUG = True
 DEBUG = False
 
 p_comment = re.compile('^#')
+
+PHATE_MAC_OSX       = os.environ["PHATE_MAC_OSX"]
+if PHATE_MAC_OSX == 'True':
+    MAC_OSX = True
+else:
+    MAC_OSX = False
 
 KEGG_VIRUS_BASE_DIR = os.environ["PHATE_KEGG_VIRUS_BASE_DIR"]
 NCBI_VIRUS_BASE_DIR = os.environ["PHATE_NCBI_VIRUS_BASE_DIR"]
@@ -425,36 +432,65 @@ class annotationRecord(object):
 
     # Query a taxonomy lookup table to get taxonomy information
     def getNCBItaxonomyID(self,database):   # Database maps ncbi header to taxonomy 
-        ncbiTaxonList = []; giNumber = ''; accnNumber = ''
+        if DEBUG:
+            print("phate_annotation says, DEBUG: getNCBItaxonomyID is searching taxID for ",self.name)
+        # First, determine what operating system this code is running on.
+        command = "platform.system()"  #*** THIS DOES NOT WORK IN CODE, BUT DOES ON COMMAND LINE; WHY???
+        proc = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
+        result, err = proc.communicate()
+        #result = os.system(command)
+        resultStr = str(result,'utf-8')
+        if DEBUG:
+            print("phate_annotation says, DEBUG: OS is",resultStr)  #*** RETURNS '' !!! WHY?
+
+        # The database is the nucl_gb.accession2taxid, and the format of each line is as follows:
+        # accn<\t>accn.version<\t>taxid<\t>gi
+        accession = ''; accessionVersion = ''; taxID = ''; giNumber = ''
         ncbiTaxonList = []
-        p_version = re.compile('(\w+_\d+)\.\d+')
-        p_taxID   = re.compile('[\d\w\_]\s+[\d\w\_\.]+\s+([\d]+)\s+[\d]+')
+
+        # The name field contains the fasta header of a hit sequence
+        # Current formatting is as follows:
+        # >accn.version<\s>Text description of genome
+        # Ex: >NC_001798.2 Human herpesvirus 2 strain HG52, complete genome 
+        # self.name is the fasta header sans '>'
+        words = []; accession = ""; description = ""
+        # taxID is in the 3rd column, and is one or more digits
+        p_taxID = re.compile('^[\d\w_]+\t[\d\w_]+\t([\d]+)\t[\d]+')
+
         if self.name != '' and self.name != 'none':
-            fields = self.name.split('|')  # Hit's fasta header has several fields, delimited w/'|'
-            if len(fields) > 4:
-                giNumber    = fields[1]
-                accnNumber  = fields[3]
-                description = fields[4]
-                self.description = description
-                searchTermString = accnNumber
-                match_version = re.search(p_version,searchTermString)
-                if match_version:
-                    searchTerm = match_version.group(1) 
-                else:
-                    searchTerm = searchTermString
-                command = 'grep \"' + searchTerm + '\" ' + database
-                proc = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
-                out, err = proc.communicate()
-                if out != '':
-                    match_taxID = re.search(p_taxID,out)
-                    taxonomyID = match_taxID.group(1)
-                    taxonomyString = 'NCBItaxID=' + taxonomyID
-                    ncbiTaxonList.append(taxonomyString)
-                    ncbiTaxonLink = NCBI_TAXON_LINK + taxonomyID
-                    ncbiTaxonList.append(ncbiTaxonLink)
+            # Extract accession and sequence description from header string
+            words = self.name.split(' ')
+            accession = words[0]
+            description = ' '.join(words[1:])
+            # Find line in database corresponding to this accession
+            if MAC_OSX:
+                #*** THIS COMMAND WORKS ON MAC OSX; I DON'T KNOW IF IT WILL WORK ON UNIX
+                #*** LC_ALL=C might crash on non-OSX systems.
+                command = 'LC_ALL="C" grep -a \"' + accession + '\" ' + database
+            else:
+                command = 'grep -a \"' + accession + '\" ' + database
+            proc = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
+            out, err = proc.communicate()
+            if DEBUG:
+                print("phate_annotation says, DEBUG: out is",out)
+            # Apparently, grep reads as binary... so need to convert result
+            newOut = out.decode('utf8')
+            if DEBUG:
+                print("phate_annotation says, DEBUG: newOut is",newOut)
+            if newOut != '':
+                (accn,accn_v,taxID,gi) = newOut.split('\t')
+                taxonomyString = 'NCBItaxID=' + taxID
+                ncbiTaxonList.append(taxonomyString)
+                ncbiTaxonLink = NCBI_TAXON_LINK + taxID
+                ncbiTaxonList.append(ncbiTaxonLink)
             else:
                 if PHATE_WARNINGS == 'True':
-                    print("phate_annotation says, WARNING: NCBI hit header has improper format or is missing:", self.name)
+                    print("phate_annotation says, WARNING: Unable to find database entry for accession:", accession)
+        else:
+            if PHATE_WARNINGS == 'True':
+                print("phate_annotation says, WARNING: NCBI hit header has improper format or is missing:", self.name)
+        if DEBUG:
+            print("phate_annotation says, DEBUG: Returning ncbiTaxonList:",ncbiTaxonList)
         return ncbiTaxonList
 
     def link2databaseIdentifiers(self,database,dbName):
@@ -598,33 +634,36 @@ class annotationRecord(object):
             annot = '(gene) ' + self.start + '/' + self.end + '/' + self.strand + ' ' + self.method 
             annotationList.append(annot)
         elif self.annotationType.lower() == 'functional':
-            annot = '(function) ' + self.method + ' ' + self.description
+            annot = '(function - ' + self.method + ') ' + self.description
             annotationList.append(annot)
         elif self.annotationType.lower() == 'homology':
             homologName = self.name
             newName = re.sub(';','',homologName)  # Remove embedded ';' because GFF uses this delimiter
             description = self.description
             newDescription = re.sub(';','',description)
-            annot = '(homology) ' + self.method + ' ' + newName + ' ' + newDescription
+            annot = '(homology - ' + self.method + ') ' + newName + ' ' + newDescription
             annotationList.append(annot)
         elif self.annotationType.lower() == 'hmm search':
-            annot = '(hmm search) ' + self.method + ' ' + self.name + ' ' + self.description
+            annot = '(hmm search - ' + self.method + ') ' + self.name + ' ' + self.description
             annotationList.append(annot)
         elif self.annotationType.lower() == 'profile search':
             # Note: descriptions for many pVOG group members can be voluminous; best to report name (pVOGid) only
-            annot = '(profile search) ' + self.method + ' ' + self.name + ' ' + self.description  
+            annot = '(profile search - ' + self.method + ') ' + self.name + ' ' + self.description  
             annotationList.append(annot)
         elif self.annotationType.lower() == 'cds':
-            annot = '(cds)' + self.method + ' ' + self.description
+            annot = '(cds - ' + self.method + ') ' + self.description
             annotationList.append(annot)
         elif self.annotationType.lower() == 'mrna':
-            annot = '(mrna)' + self.method + ' ' + self.description
+            annot = '(mrna - ' + self.method + ') ' + self.description
+            annotationList.append(annot)
+        elif self.annotationType.lower() == 'trna':
+            annot = '(trna - ' + self.method + ') ' + self.description
             annotationList.append(annot)
         elif self.annotationType.lower() == 'polypeptide':
-            annot = '(polypeptide) ' + self.method + ' ' + self.description
+            annot = '(polypeptide - ' + self.method + ') ' + self.description
             annotationList.append(annot)
         else:
-            annot = '(unk type) ' + self.method + ' ' + self.description
+            annot = '(unk type - ' + self.method + ') ' + self.description
             annotationList.append(annot)
         if len(annotationList) > 0:
             for i in range(0, len(annotationList)):
