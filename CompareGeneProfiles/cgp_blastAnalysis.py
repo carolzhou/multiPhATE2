@@ -1,7 +1,7 @@
 #############################################
 # Module: blastAnalysis.py
 # Programmer:  Carol L. Ecale Zhou
-# Date of last update:  16 May 2020
+# Date of last update:  06 July 2020
 #
 # Module comprising data structures and methods for blasting the genes and proteins
 #    of two genome objects and comparing the gene profiles and the nt and aa levels.
@@ -336,6 +336,7 @@ class homology(object):  # holds comparative information between 2 gene/protein 
             annotations = []  # reset
             seqLength1[seq.header] = len(seq.sequence)
             seqContig1[seq.header] = seq.parentSequence
+
         for seq in seqList2.fastaList:
             aList = list(seq.annotationList)
             for annot in aList:
@@ -352,18 +353,15 @@ class homology(object):  # holds comparative information between 2 gene/protein 
         quickSingular2 = []
         quickLoner2    = [] 
 
-        # Capture mutual Best Hits for Genome 1   #*** CONTINUE HERE
+        # Capture mutual Best Hits for Genome 1   
         for hit in self.mutualBestHits["set1"]:  
             (qLocusTag,qStrand,qStart,qEnd,junk) = hit.queryHeader.split('/') #*** should split to list then pull data by index
             (sLocusTag,sStrand,sStart,sEnd,junk) = hit.subjectHeader.split('/')
-            try:
+            qAnnotations = ""; sAnnotations = ""
+            if hit.queryHeader in seqAnnot1.keys():
                 qAnnotations = seqAnnot1[hit.queryHeader]
+            if hit.subjectHeader in seqAnnot2.keys():
                 sAnnotations = seqAnnot2[hit.subjectHeader]
-            except:
-                print("cgp_blastAnalysis says, WARNING: error in retrieving qAnnotations or sAnnotations")
-                print("  hit.queryHeader is",hit.queryHeader)
-                print("  hit.subjectHeader is",hit.subjectHeader)
-                continue 
             g1segment    = int(hit.queryEnd)   - int(hit.queryStart) + 1
             g2segment    = int(hit.subjectEnd) - int(hit.subjectStart) + 1
             g1length     = seqLength1[hit.queryHeader]
@@ -379,15 +377,11 @@ class homology(object):  # holds comparative information between 2 gene/protein 
         for hit in self.singularHits["set1"]:
             (qLocusTag,qStrand,qStart,qEnd,junk) = hit.queryHeader.split('/')
             (sLocusTag,sStrand,sStart,sEnd,junk) = hit.subjectHeader.split('/')
-            try:
+            qAnnotations = ""; sAnnotations = ""
+            if hit.queryHeader in seqAnnot1.keys():
                 qAnnotations = seqAnnot1[hit.queryHeader]
+            if hit.subjectHeader in seqAnnot2.keys():
                 sAnnotations = seqAnnot2[hit.subjectHeader]
-            except:
-                if PHATE_WARNINGS:
-                    print("cgp_blastAnalysis says, WARNING: error in retrieving qAnnotations or sAnnotations")
-                    print("  hit.queryHeader is",hit.queryHeader)
-                    print("  hit.subjectHeader is",hit.subjectHeader)
-                continue 
             g1segment    = int(hit.queryEnd) - int(hit.queryStart) + 1
             g2segment    = int(hit.subjectEnd) - int(hit.subjectStart) + 1
             g1length     = seqLength1[hit.queryHeader]
@@ -421,15 +415,11 @@ class homology(object):  # holds comparative information between 2 gene/protein 
 
         # Capture singular hits for genome2
         for hit in self.singularHits["set2"]:
-            try:
+            qAnnotations = ""; sAnnotations = ""
+            if hit.queryHeader in seqAnnot1.keys():
                 qAnnotations = seqAnnot1[hit.queryHeader]
+            if hit.subjectHeader in seqAnnot2.keys():
                 sAnnotations = seqAnnot2[hit.subjectHeader]
-            except:
-                if PHATE_WARNINGS:
-                    print("cgp_blastAnalysis says, WARNING: error in retrieving qAnnotations or sAnnotations")
-                    print("  hit.queryHeader is",hit.queryHeader)
-                    print("  hit.subjectHeader is",hit.subjectHeader)
-                continue 
             g1segment    = int(hit.subjectEnd) - int(hit.subjectStart) + 1
             g2segment    = int(hit.queryEnd)   - int(hit.queryStart) + 1
             g1length     = seqLength1[hit.subjectHeader]

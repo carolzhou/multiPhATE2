@@ -218,6 +218,7 @@ class multiProfile(object):
         p_Xr = re.compile('Xr')
         p_Xs = re.compile('Xs')
         p_Xh = re.compile('Xh')
+        p_Xp = re.compile('Xp')  
         p_Xu = re.compile('Xu')
         # Search annotations file for VOG description
         vogAnnotations_h = open(VOG_ANNOTATIONS,'r')
@@ -227,17 +228,18 @@ class multiProfile(object):
             match_Xr = re.search(p_Xr,vLine)
             match_Xs = re.search(p_Xs,vLine)
             match_Xh = re.search(p_Xh,vLine)
+            match_Xp = re.search(p_Xp,vLine)
             match_Xu = re.search(p_Xu,vLine)
             if vogID == VOGid:
                 if match_Xr:
                     functionalCategories.append('Virus replication')
-                if funcCat == 'Xs':
+                if match_Xs:
                     functionalCategories.append('Virus structure')
-                if funcCat == 'Xh':
+                if match_Xh:
                     functionalCategories.append('Virus protein w/benefit for host')
-                if funcCat == 'Xp':
+                if match_Xp:
                     functionalCategories.append('Virus protein w/benefit for virus')
-                if funcCat == 'Xu':
+                if match_Xu:
                     functionalCategories.append('Function unknown')
                 for f in functionalCategories:
                     categoryString += f + ':'
