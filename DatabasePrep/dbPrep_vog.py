@@ -4,7 +4,7 @@
 #
 # Description:  Handles data and processing for VOG data type
 #
-# Last update:  11 June 2020
+# Last update:  17 July 2020
 #
 # Programmer:  C. E. Zhou
 #
@@ -15,6 +15,9 @@
 
 #DEBUG = True
 DEBUG = False 
+
+DO_GENE    = True
+DO_PROTEIN = True
 
 import re
 import os
@@ -46,8 +49,8 @@ class VOGs(object):
 
     def __init__(self):
         self.databaseName           = "VOGs"
-        self.downloadDate           = "June 2020"
-        self.version                = "vog98"
+        self.downloadDate           = "July 2020"
+        self.version                = "vog99"
         self.VOGmapFile             = ""           # vog.members.tsv
         self.VOGannotationFile      = ""           # vog.annotations.tsv
         self.VOGgeneFastaFile       = ""           # vog.genes.all.fa
@@ -87,30 +90,34 @@ class VOGs(object):
         print("dbPrep_vog says, Whew! That took a long time: ",executionTime)
 
         # Identify sequences from files, modify headers, and write to new files.
+
         # Gene sequences
-        print("dbPrep_vog says, Adding gene sequences to fasta objects, from file", self.VOGgeneFastaFile)
-        print("dbPrep_vog says, Again, this may take a while...")
-        vogInFile_h  = open(self.VOGgeneFastaFile,"r")
-        vogOutFile_h = open(self.VOGgeneFastaOutFile,"w")
-        startTime = datetime.datetime.now()
-        self.writeVOGtaggedFastaFile(vogInFile_h,vogOutFile_h,"gene") 
-        endTime = datetime.datetime.now()
-        executionTime = endTime - startTime
-        vogInFile_h.close()
-        vogOutFile_h.close()
-        print("dbPrep_vog says, Finally...after this much time: ",executionTime)
+        if DO_GENE:
+            print("dbPrep_vog says, Adding gene sequences to fasta objects, from file", self.VOGgeneFastaFile)
+            print("dbPrep_vog says, Again, this may take a while...")
+            vogInFile_h  = open(self.VOGgeneFastaFile,"r")
+            vogOutFile_h = open(self.VOGgeneFastaOutFile,"w")
+            startTime = datetime.datetime.now()
+            self.writeVOGtaggedFastaFile(vogInFile_h,vogOutFile_h,"gene") 
+            endTime = datetime.datetime.now()
+            executionTime = endTime - startTime
+            vogInFile_h.close()
+            vogOutFile_h.close()
+            print("dbPrep_vog says, Finally...after this much time: ",executionTime)
+
         # Protein sequences
-        #print("dbPrep_vog says, Adding protein sequences to fasta objects, from file", self.VOGproteinFastaFile)
-        #vogInFile_h  = open(self.VOGproteinFastaFile,"r")
-        #print("Opening self.VOGproteinFastaOutFile for write:",self.VOGproteinFastaOutFile)
-        #vogOutFile_h = open(self.VOGproteinFastaOutFile,"w")
-        #startTime = datetime.datetime.now()
-        #self.writeVOGtaggedFastaFile(vogInFile_h,vogOutFile_h,"protein")
-        #endTime = datetime.datetime.now()
-        #executionTime = endTime - startTime
-        #vogInFile_h.close()
-        #vogOutFile_h.close()
-        #print("dbPrep_vog says, That took a while too: ",executionTime)
+        if DO_PROTEIN:
+            print("dbPrep_vog says, Adding protein sequences to fasta objects, from file", self.VOGproteinFastaFile)
+            vogInFile_h  = open(self.VOGproteinFastaFile,"r")
+            print("Opening self.VOGproteinFastaOutFile for write:",self.VOGproteinFastaOutFile)
+            vogOutFile_h = open(self.VOGproteinFastaOutFile,"w")
+            startTime = datetime.datetime.now()
+            self.writeVOGtaggedFastaFile(vogInFile_h,vogOutFile_h,"protein")
+            endTime = datetime.datetime.now()
+            executionTime = endTime - startTime
+            vogInFile_h.close()
+            vogOutFile_h.close()
+            print("dbPrep_vog says, That took a while too: ",executionTime)
 
         return
 
