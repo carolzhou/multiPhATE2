@@ -1,3 +1,27 @@
-Pre-processing of the VOG gene and protein sequences results not only in tagging the sequence headers with VOG identifiers, but also elimination of sequences from the download file that are NOT mapped to VOG identifiers (about 20% of them).
+* Pre-processing of the VOG gene and protein sequences using dbPrep_getDBs.py results not only in tagging the sequence headers with VOG identifiers, but also elimination of sequences from the download file that are NOT mapped to VOG identifiers (about 20% of them). The VOG database is updated on a regular basis. As of this writing, version 99 is the most recent. Version can be modified at the top of script dbPrep_getDBs.py.
 
+* The pVOG database has not been updated since 2016. Therefore it is unncessary to re-run the pVOG scripts for updating this data set for multiPhATE.
 
+* Because the Refseq Gene database is human centric, the VOG gene database is now to be considered a substitute for Refseq Gene. The dbPrep_getDBs.py script no longer downloads Refseq Gene.
+
+* For VOG processing:
+Based on the organization of the VOG data, it is necessary to:
+1) Tag sequences with the VOG identifier(s); annotate hits with the VOG description (not the sequence description)
+dbPrep_getDBs.py is the main script
+dbPrep_getDBs.py        calls   dbPrep_vogTagFastas.py
+dbPrep_vogTagFastas.py  imports dbPrep_vog
+dbPrep_vog.py           imports dbPrep_fastaSequence
+dbPrep_fastaSequence.py imports dbPrep_annotation
+
+* For pVOG processing:
+Based on the organization of the pVOGs data, it is necessary to:
+1) Tag sequences with the VOG identifier(s); 2) Capture the sequence fastas and descriptions from NR (there are no VOG descriptions for the pVOGs).
+dbPrep_createPvogFastaFile.py is the main script
+dbPrep_createPvogFastaFile.py imports:
+	dbPrep_annotation
+	dbPrep_fastaSequence
+	dbPrep_pVOG
+dbPrep_consolidate.py - consolidates the hmm files; this functionality has been moved into dbPrep_getDBs.py
+dbPrep_getLast3percent.py - queries remaining sequences from the NR database
+
+* It is important to realize that the VOG identifiers between VOGs and pVOGs do not correspond.
