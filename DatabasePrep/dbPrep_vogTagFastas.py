@@ -11,14 +11,14 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Most recent update: 17 July 2020 
+# Most recent update: 10 July 2020 
 #
 ###########################################################################
 
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
 # THIS CODE IS COVERED BY THE BSD LICENSE. SEE INCLUDED FILE BSD.PDF FOR DETAILS.
 
-import os, sys, re, copy, subprocess
+import os, re, copy, subprocess
 import dbPrep_vog
 
 # CONFIGURABLE
@@ -26,22 +26,15 @@ DATABASE_NAME = "VOGs"
 DOWNLOAD_DATE = "July 2020"
 VERSION       = "vog99"
 
-##### MAIN ################################################################
-
-if len(sys.argv) != 2:
-    print ("Usage: python dbPrep_vogTagFastas.py VOGsDir")
-    exit(0)
-VOG_DIR = sys.argv[1]
-
 # FILES
 VOG_DIR = "../Databases/VOGs/"  # Run this code within the /DatabasePrep/ folder
-#VOG_BLASTDB_DIR            = os.path.join(VOG_DIR,"BlastDBs/")
+VOG_BLASTDB_DIR            = os.path.join(VOG_DIR,"BlastDBs/")
 VOG_MAP_FILE               = os.path.join(VOG_DIR,"vog.members.tsv")
 VOG_ANNOTATION_FILE        = os.path.join(VOG_DIR,"vog.annotations.tsv")
 VOG_GENE_FASTA_FILE        = os.path.join(VOG_DIR,"vog.genes.all.fa")
 VOG_PROTEIN_FASTA_FILE     = os.path.join(VOG_DIR,"vog.proteins.all.fa")
-VOG_GENE_FASTA_OUT_FILE    = os.path.join(VOG_DIR,"vog.genes.tagged.all.fa")
-VOG_PROTEIN_FASTA_OUT_FILE = os.path.join(VOG_DIR,"vog.proteins.tagged.all.fa")
+VOG_GENE_FASTA_OUT_FILE    = os.path.join(VOG_BlastDBs_DIR,"vog.genes.tagged.all.fa")
+VOG_PROTEIN_FASTA_OUT_FILE = os.path.join(VOG_BlastDBs_DIR,"vog.proteins.tagged.all.fa")
 
 paramSet = {
     "databaseName"           : DATABASE_NAME,
@@ -55,14 +48,11 @@ paramSet = {
     "VOGproteinFastaOutFile" : VOG_PROTEIN_FASTA_OUT_FILE,
 }
 
+##### MAIN ################################################################
+
 # Create VOGs object, load data from files, create vog-tagged fasta files.
 print("dbPrep_vogTagFastas says, Tagging gene and protein fasta sequences with VOG identifiers.")
-cwd = os.getcwd()
-
 myVog = dbPrep_vog.VOGs()
 myVog.tagVogFastas(paramSet)
 
 print("dbPrep_vogTagFastas says, VOG-tagging is complete.")
-os.chdir(cwd)
-
-##### END ################################################################

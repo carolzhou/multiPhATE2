@@ -12,7 +12,7 @@
 #
 # Summary:  This script facilitates the downloading of databases to be used with multiPhATE.
 #
-# Most recent update:  17 July 2020
+# Most recent update:  16 July 2020
 #
 ##############################################################################
 
@@ -127,8 +127,8 @@ if not os.path.exists(nrDir):
     os.mkdir(nrDir)
 if not os.path.exists(refseqDir):
     os.mkdir(refseqDir)
-#if not os.path.exists(refseqGeneDir):  # Skipping Refseq Gene (at least for now)
-#    os.mkdir(refseqGeneDir)
+if not os.path.exists(refseqGeneDir):
+    os.mkdir(refseqGeneDir)
 if not os.path.exists(refseqProteinDir):
     os.mkdir(refseqProteinDir)
 if not os.path.exists(swissprotDir):
@@ -219,9 +219,7 @@ elif re.search('N|n|no|No|NO',refseq_protein):
 else:
     print ("That was not a correct response; please run this script again to download the database.")
 
-##### REFSEQ GENE  # Refseq Gene is no longer downloadable via update_blastdb.pl
-# Refseq Gene is human centric. I am replacing it with VOG Gene.
-"""
+##### REFSEQ GENE
 print ("Refseq Gene database: ('y'/'n')")
 refseq_gene = input()
 if re.search('Y|y|yes|Yes|YES',refseq_gene):
@@ -231,7 +229,7 @@ elif re.search('N|n|no|No|NO',refseq_gene):
     print ("Ok, we'll skip that one")
 else:
     print ("That was not a correct response; please run this script again to download the database.")
-"""
+
 ##### SWISSPROT
 print ("Swissprot database: ('y'/'n')")
 swissprot = input()
@@ -247,7 +245,7 @@ else:
 print ("VOGs database: ('y'/'n')")
 vogs = input()
 if re.search('Y|y|yes|Yes|YES',vogs):
-    print ("Great, let's download the VOGs database. This includes gene and protein sequences.")
+    print ("Great, let's download the VOGs database")
     VOGS = True
 elif re.search('N|n|no|No|NO',vogs):
     print ("Ok, we'll skip that one")
@@ -315,37 +313,37 @@ else:
     print ("That was not a correct response; please run this script again to format the PHANTOME database.")
 
 ###################################################################################################
-if (NCBI_VIRUS_GENOME or NCBI_VIRUS_PROTEIN or REFSEQ_PROTEIN or SWISSPROT or VOGS or VOG_HMMS or PVOG_HMMS or NR or PVOGS or PHANTOME):
+if (NCBI_VIRUS_GENOME or NCBI_VIRUS_PROTEIN or REFSEQ_PROTEIN or REFSEQ_GENE or SWISSPROT or VOGS or VOG_HMMS or PVOG_HMMS or NR or PVOGS or PHANTOME):
 
-    if (NCBI_VIRUS_GENOME or NCBI_VIRUS_PROTEIN or REFSEQ_PROTEIN or SWISSPROT or VOGS or VOG_HMMS or PVOG_HMMS or NR):
-        print ("Ok, this is what we are going to download: ")
-        #if not BLAST:
-        #    print ("BLAST plus")
-        if NCBI_VIRUS_GENOME:
-            print ("NCBI Virus Genome database")
-        if NCBI_VIRUS_PROTEIN:
-            print ("NCBI Virus Protein database")
-        if REFSEQ_PROTEIN:
-            print ("Refseq Protein database")
-        if SWISSPROT:
-            print ("Swissprot database")
-        if VOGS:
-            print ("VOGS database")
-        if VOG_HMMS:
-            print ("VOG hmms database")
-        if PVOG_HMMS:
-            print ("PVOG hmms database")
-        if NR:
-            print ("NR database")
+    print ("Ok, this is what we are going to download. ")
+    #if not BLAST:
+    #    print ("BLAST plus")
+    if NCBI_VIRUS_GENOME:
+        print ("NCBI Virus Genome database")
+    if NCBI_VIRUS_PROTEIN:
+        print ("NCBI Virus Protein database")
+    if REFSEQ_GENE:
+        print ("Refseq Gene database")
+    if REFSEQ_PROTEIN:
+        print ("Refseq Protein database")
+    if SWISSPROT:
+        print ("Swissprot database")
+    if VOGS:
+        print ("VOGS database")
+    if VOG_HMMS:
+        print ("VOG hmms database")
+    if PVOG_HMMS:
+        print ("PVOG hmms database")
+    if NR:
+        print ("NR database")
 
-    if (PVOGS or PHANTOME):
-        print ("This is what we are going to format:")
-        if PVOGS:
-            print ("PVOGS")
-        if PHANTOME:
-            print ("PHANTOME")
+    print ("And this is what we are going to format:")
+    if PVOGS:
+        print ("PVOGS")
+    if PHANTOME:
+        print ("PHANTOME")
 
-    print ("\nType 'go' to proceed, or 'stop' to reconsider. ")
+    print ("Type 'go' to proceed, or 'stop' to reconsider. ")
     print ("(You can always run this script again.) ")
     decision = input()
     if (re.search('go|Go|GO',decision)):
@@ -543,8 +541,6 @@ if NCBI_VIRUS_PROTEIN:
         os.system(command)
         command = "rm fileList.out"
         os.system(command)
-        command = "rm ls.out"
-        os.system(command)
     except:
         print ("Problem removing ",ncbiVirusProteins," or fileList.out file.")
 
@@ -589,14 +585,6 @@ if REFSEQ_PROTEIN:
         ls_h.close()
     except Exception:
         print ("Error encountered in unpacking files")
-
-    # Clean up direcgtory
-    try:
-        print ("Cleaning up directory")
-        command = "rm ls.out"
-        os.system(command)
-    except:
-        print ("WARNING: Could not remove unneeded file.")
 
     os.chdir(cwd)
 
@@ -704,45 +692,46 @@ if VOGS:
     CATEGORIES  = False
     try:
         print ("Downloading and unzipping VOGS database files.")
+
         try:
             command = 'wget -O ' + vogMembers_filename + ' "' + VOG_DOWNLOAD_URL + vogMembers_filename + '"' 
-            #success = os.system(command)
+            success = os.system(command)
             command = 'gunzip ' + vogMembers_filename
-            #success = os.system(command)
+            success = os.system(command)
             MEMBERS = True
         except:
             print ("WARNING: Download of vog members file unsuccessful")
 
         try:
             command = 'wget -O ' + vogAnnotations_filename + ' "' + VOG_DOWNLOAD_URL + vogAnnotations_filename + '"'
-            #success = os.system(command)
+            success = os.system(command)
             command = 'gunzip ' + vogAnnotations_filename
-            #success = os.system(command)
+            success = os.system(command)
             ANNOTATIONS = True
         except:
             print ("WARNING: Download of vog annotations file unsuccessful")
 
         try:
             command = 'wget -O ' + vogGenes_filename + ' "' + VOG_DOWNLOAD_URL + vogGenes_filename + '"'
-            #success = os.system(command)
+            success = os.system(command)
             command = 'gunzip ' + vogGenes_filename
-            #success = os.system(command)
+            success = os.system(command)
             GENES = True
         except:
             print ("WARNING: Download of vog genes fasta file unsuccessful")
 
         try:
             command = 'wget -O ' + vogProteins_filename + ' "' + VOG_DOWNLOAD_URL + vogProteins_filename + '"'
-            #success = os.system(command)
+            success = os.system(command)
             command = 'gunzip ' + vogProteins_filename
-            #success = os.system(command)
+            success = os.system(command)
             PROTEINS = True
         except:
             print ("WARNING: Download of vog proteins fasta file unsuccessful")
 
         try:
             command = 'wget -O ' + vogFunctionalCategories_filename + ' "' + VOG_DOWNLOAD_URL + vogFunctionalCategories_filename + '"'
-            #success = os.system(command)
+            success = os.system(command)
             CATEGORIES = True
         except:
             print ("WARNING: Download of vog members file unsuccessful")
@@ -757,38 +746,27 @@ if VOGS:
 
     # Next, reformat sequence headers with VOG identifiers
     OK2FORMAT4BLAST = False
-    os.chdir(cwd)
     if OK2FORMAT4VOG:
         try:
-            # The dbPrep_vogTagFastas.py code will tag gene and protein sequence headers
             print ("Reformatting sequence headers with VOG identifiers.")
             print ("This may take a long time (perhap 8 hours).")
             try:
-                command = "python dbPrep_vogTagFastas.py " + VOGsDir 
+                command = "python ./dbPrep_vogTagFastas.py"
                 #result = os.system(command)
                 OK2FORMAT4BLAST = True
             except:
-                command = "python3 dbPrep_vogTagFastas.py " + VOGsDir
+                command = "python3 ./dbPrep_vogTagFastas.py"
                 #result = os.system(command)
                 OK2FORMAT4BLAST = True
         except:
             print ("WARNING: Reformatting of sequence headers unsuccessful.")
-    os.chdir(VOGsDir)
 
     # Last, format the sequences for blast
     if OK2FORMAT4BLAST:
         try:
-            print ("Formatting VOGs protein database for blast.")
-            command = blastPath + "makeblastdb -dbtype prot -in vog.proteins.tagged.all.fa"
-            success = os.system(command)
-            print ("done")
-        except BlastError:
-            print ("Command " + command + " failed; please check the location of your blast executables")
-
-        try:
-            print ("Formatting VOGs gene database for blast.")
-            command = blastPath + "makeblastdb -dbtype nucl -in vog.genes.tagged.all.fa"
-            success = os.system(command)
+            print ("Formatting VOGs database for blast.")
+            command = blastPath + "makeblastdb -dbtype prot -in VOGs.faa"
+            #success = os.system(command)
             print ("done")
         except BlastError:
             print ("Command " + command + " failed; please check the location of your blast executables")
@@ -926,17 +904,6 @@ if PVOG_HMMS:
             print ("Directory cleanup completed.")
         except:
             print ("WARNING: Something went wrong cleaning up the VOG HMM directory.")
-
-        os.chdir(pVOGhmmsDir)
-
-        # Clean up directory
-        try:
-            print ("Removing file(s) no longer needed.")
-            command = "rm AllvogHMMprofiles.tar"
-            os.system(command)
-            print ("Cleanup successful.")
-        except:
-            print ("WARNING: Could not clean up pVOGhmms dir")
 
     os.chdir(cwd)
 

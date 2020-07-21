@@ -4,7 +4,7 @@
 #
 # Description:  Handles data and processing for VOG data type
 #
-# Last update:  17 July 2020
+# Last update:  10 July 2020
 #
 # Programmer:  C. E. Zhou
 #
@@ -49,8 +49,8 @@ class VOGs(object):
 
     def __init__(self):
         self.databaseName           = "VOGs"
-        self.downloadDate           = "July 2020"
-        self.version                = "vog99"
+        self.downloadDate           = "June 2020"
+        self.version                = "vog98"
         self.VOGmapFile             = ""           # vog.members.tsv
         self.VOGannotationFile      = ""           # vog.annotations.tsv
         self.VOGgeneFastaFile       = ""           # vog.genes.all.fa

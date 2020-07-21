@@ -1,0 +1,3 @@
+Pre-processing of the VOG gene and protein sequences results not only in tagging the sequence headers with VOG identifiers, but also elimination of sequences from the download file that are NOT mapped to VOG identifiers (about 20% of them).
+
+
