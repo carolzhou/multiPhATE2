@@ -1,6 +1,8 @@
 #############################################################
 # Module: phate_fastaSequence.py
 # Programmer: Carol L. Ecale Zhou
+#
+# Date of last update:  21 July 2020
 # 
 # Module containing classes and methods for representing a multi-fasta sequence and associated methods
 # Classes and methods: 

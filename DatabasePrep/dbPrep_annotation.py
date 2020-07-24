@@ -2,10 +2,7 @@
 # Module: dbPrep_annotation.py
 # Programmer: Carol L. Ecale Zhou
 #
-# Data of last update:  October 2016 - code being modified from CGP code base
-#    03 January 2017 - modified output report in method printAnnotationRecord()
-#    05 January 2017 - adding code to pull dbxrefs from local database instances
-#    17 July 2018 - adapted for use in building pVOGs fasta database
+# Data of last update: 21 July 2020 
 #
 # Module containing classes and methods for representing annotation results from various sources 
 # Classes and methods: 

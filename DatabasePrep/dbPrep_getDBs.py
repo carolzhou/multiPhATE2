@@ -7,14 +7,16 @@
 # programmer:  C. E. Zhou
 #
 # Programmer's Notes:
-# 1) Move this script to the /DatabasePrep/ folder. Adjust accordingly.
-# 2) update_blastdb.pl --showall <to see which databases are available>
+# 1) update_blastdb.pl --showall <to see which databases are available>
 #
 # Summary:  This script facilitates the downloading of databases to be used with multiPhATE.
 #
-# Most recent update:  16 July 2020
+# Most recent update:  23 July 2020
 #
 ##############################################################################
+
+# This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
+# THIS CODE IS COVERED BY THE BSD LICENSE. SEE INCLUDED FILE BSD.pdf FOR DETAILS.
 
 import os, sys, re, time, datetime
 from ftplib import FTP
@@ -23,7 +25,20 @@ from pathlib import Path
 ##############################################################################
 # CONSTANTS, BOOLEANS
 
-VOG_VERSION      = "99"
+# Run interactive for user to input which data sets they want to install
+INTERACTIVE = False
+# Run remote to pre-set download instructions and skip user input
+REMOTE      = True
+# Set verbost to true for remote processing if server is killing idle processes.
+# Verbose will write progress to console, keeping user process non-idle.
+VERBOSE     = True
+if VERBOSE:
+    os.environ["dbPrep_VERBOSE"] = 'True'
+else:
+    os.environ["dbPrep_VERBOSE"] = 'False'
+
+# The following URLs etc may be modified as things change.
+VOG_VERSION      = "99"  # Most recent version as of this writing; modify as appropriate
 VOG_DOWNLOAD_URL = "http://fileshare.csb.univie.ac.at/vog/vog" + VOG_VERSION + "/"
 ftpAddr  = "ftp.ncbi.nlm.nih.gov"
 httpAddr = "https://ftp.ncbi.nlm.nih.gov/genomes/Viruses/"
@@ -39,8 +54,11 @@ accn2taxid_httpAddr = "ftp://ftp.ncbi.nih.gov/pub/taxonomy/accession2taxid"
 accn2taxid_file     = "nucl_gb.accession2taxid"
 accn2taxid_file_gz  = accn2taxid_file + ".gz"
 accn2taxid_fileAddr = os.path.join(accn2taxid_httpAddr,accn2taxid_file_gz)
+# PVOG data are available at the authors' home page and at NCBI. Choose one or the other:
 #pvogHmm_httpAddr    = "http://dmk-brain.ecn.uiowa.edu/pVOGs/downloads/All/AllvogHMMprofiles.tar.gz"
+#pvogAccns_httpAddr  = "http://dmk-brain.ecn.uiowa.edu/pVOGs/downloads/All/AllFalmilyProteinList.tsv"
 pvogHmm_httpAddr    = "https://ftp.ncbi.nlm.nih.gov/pub/kristensen/pVOGs/downloads/All/AllvogHMMprofiles.tar.gz"
+pvogAccns_httpAddr  = "https://ftp.ncbi.nlm.nih.gov/pub/kristensen/pVOGs/downloads/All/AllFamilyProteinList.tsv"
 
 BLAST               = False
 NCBI_VIRUS_GENOME   = False
@@ -73,9 +91,9 @@ cwd                 = '' # current working direcgtory
 emailAddr           = '' # user's email address for ftp login
 
 # Set up database directories
-cwd                    = os.getcwd()
+cwd                    = os.getcwd()  # current working directory
 # Get directory one level up; this is where the Databases directory will go
-baseDir                = Path(__file__).resolve().parents[1]
+baseDir                = Path(__file__).resolve().parents[1]  # calculate dir one dir up from cwd
 dbDir                  = os.path.join(baseDir,        "Databases/") 
 ncbiDir                = os.path.join(dbDir,          "NCBI/")
 ncbiGenomeDir          = os.path.join(ncbiDir,        "Virus_Genome/")
@@ -111,6 +129,7 @@ vogProteins                      = "vog.proteins.tagged.all.fa"
 ncbiVirusGenomes                 = "ncbiVirusGenomes.fasta"
 ncbiVirusProteins                = "ncbiVirusProteins.faa"
 
+# Create database directories, if they don't already exist
 if not os.path.exists(dbDir):
     os.mkdir(dbDir)
 if not os.path.exists(ncbiDir):
@@ -127,8 +146,6 @@ if not os.path.exists(nrDir):
     os.mkdir(nrDir)
 if not os.path.exists(refseqDir):
     os.mkdir(refseqDir)
-if not os.path.exists(refseqGeneDir):
-    os.mkdir(refseqGeneDir)
 if not os.path.exists(refseqProteinDir):
     os.mkdir(refseqProteinDir)
 if not os.path.exists(swissprotDir):
@@ -144,229 +161,244 @@ if not os.path.exists(VOGsDir):
 if not os.path.exists(VOGhmmsDir):
     os.mkdir(VOGhmmsDir)
 
-##############################################################################
-# First, determine if user needs to download BLAST+.
+# Pre-set download instructions; skip user input
+if REMOTE:
+    BLAST               = True 
+    NCBI_VIRUS_GENOME   = True 
+    NCBI_VIRUS_PROTEIN  = True 
+    REFSEQ_PROTEIN      = True
+    SWISSPROT           = True
+    NR                  = True
+    PHANTOME            = False 
+    PVOGS               = False 
+    PVOG_HMMS           = True
+    VOGS                = True
+    VOG_HMMS            = True
 
-print ("Let's download the databases you will need to run multiPhATE")
-print ("First, you need blast+ in order to install several of the databases")
-print ("Please confirm that you have downloaded and installed blast+: type 'y' (yes) or 'n' (no)")
-blast = input()
-if re.search('Y|y|Yes|yes|YES', blast):
-    BLAST = True 
-    print ("That's great! Now tell me where your blast executables are located.") 
-    print ("If you installed them within your Conda environment, then you should find")
-    print ("them in a path something like, \"/Users/myName/miniconda3/envs/multiPhate/bin/\"")
-    print ("That directory should contain executables: blastn, blastp, blastx, and makeblastdb")
-    print ("Please input the fully qualified path to blast+ : ")
-    #blastPath = input()
-elif re.search('N|n|No|no|NO', blast):
-    BLAST = False 
-    print ("Please consult the README file for how to acquire and install BLAST+.") 
-    print ("Note: The easiest way to install BLAST+ is within a Conda environment.")
-    print ("Without blast+, we can still download some of the databases.")
-    print ("Shall we continue? please respond 'y' or 'n': ")
-    toContinue = input()
-    if re.search('Y','y','yes','Yes','YES', toContinue):
-        pass 
+# Determine download instructions via user input
+elif INTERACTIVE:
+    ##############################################################################
+    # First, determine if user needs to download BLAST+.
+    time.sleep(1)
+    print ("Welcome to dbPrep_getDBs.py, a code for downloading data sets used by multiPhATE.")
+    time.sleep(1)
+    print ("We will be downloading data sets one at a time. You will select the data sets")
+    ime.sleep(1)
+    print ("   that you want to download. You don't need to download all of them at once--you ")
+    time.sleep(1)
+    print ("   may download any or all of the them now, and you can return later to this program to ")
+    time.sleep(1)
+    print ("   download any data sets that you skip this time around.")
+    time.sleep(1)
+    print ("Let's get started.")
+    time.sleep(1)
+    print ("First, you need blast+ in order to install several of the databases")
+    time.sleep(1)
+    print ("This code does not support legacy blast. :-( ")
+    time.sleep(1)
+    print ("Please confirm that you have downloaded and installed blast+: type 'y' (yes) or 'n' (no)")
+    blast = input()
+    if re.search('Y|y|Yes|yes|YES', blast):
+        BLAST = True 
+        print ("That's great! If you installed blast+ globally, or if you installed it in your")
+        time.sleep(1)
+        print ("   conda environment, and are running this code in that environment, then we can access")
+        time.sleep(1)
+        print ("   it. But if not, then you will need to input the location of your blast+ program")
+        time.sleep(1)
+        print ("   on your computer. If so, please input the fully qualified path to blast+.")
+        time.sleep(1)
+        print ("   otherwise, just hit return:")
+        blastPath = input()
+    elif re.search('N|n|No|no|NO', blast):
+        BLAST = False 
+        print ("Please consult the README file for how to acquire and install BLAST+.") 
+        time.sleep(1)
+        print ("Note: The easiest way to install BLAST+ is within a Conda environment.")
+        time.sleep(1)
+        print ("Without blast+, we can still download some of the databases.")
+        time.sleep(1)
+        print ("Shall we continue? please respond 'y' or 'n': ")
+        toContinue = input()
+        if re.search('N|n|No|no|NO', toContinue):
+            print ("Bye") 
+            exit()
     else:
-        print ("Bye")
+        print ("That was not a correct response; please try again")
         exit()
-else:
-    print ("That was not a correct response; please try again")
-    exit()
 
-##############################################################################
-# Next, determine which databases to download
+    ##############################################################################
+    # Next, determine which databases to download
 
-print ("Please indicate which databases you would like to download...")
-print ("For each, type 'y' or 'n'")
+    print ("Please indicate which databases you would like to download...")
+    print ("For each, type 'y' or 'n'")
 
-##### NCBI Virus Genome database is downloaded via ftp 
-print ("NCBI Virus Genome database: ('y'/'n')")
-ncbi_virus_genome = input()
-if re.search('Y|y|yes|Yes|YES',ncbi_virus_genome):
-    print ("Great, let's download NCBI Virus Genome")
-    NCBI_VIRUS_GENOME = True
-elif re.search('N|n|no|No|NO',ncbi_virus_genome):
-    print ("Ok, we'll skip that one")
-else:
-    print ("That was not a correct response; please run this script again to download the database.")
-
-##### NCBI Virus Protein database is downloaded via ftp 
-print ("NCBI Virus Protein database: ('y'/'n')")
-ncbi_virus_protein = input()
-if re.search('Y|y|yes|Yes|YES',ncbi_virus_protein):
-    print ("Great, let's download NCBI Virus Protein")
-    NCBI_VIRUS_PROTEIN = True
-elif re.search('N|n|no|No|NO',ncbi_virus_protein):
-    print ("Ok, we'll skip that one")
-else:
-    print ("That was not a correct response; please run this script again to download the database.")
-
-#### If downloading via FTP, get user's email address for login
-#if NCBI_VIRUS_GENOME or NCBI_VIRUS_PROTEIN:
-#    print ("Please enter your email address for ftp anonymous login: ")
-#    emailAddr = input()
-
-##### REFSEQ PROTEIN
-print ("Refseq Protein database: ('y'/'n')")
-refseq_protein = input()
-if re.search('Y|y|yes|Yes|YES',refseq_protein):
-    print ("Great, let's download the Refseq Protein database")
-    REFSEQ_PROTEIN = True
-elif re.search('N|n|no|No|NO',refseq_protein):
-    print ("Ok, we'll skip that one")
-else:
-    print ("That was not a correct response; please run this script again to download the database.")
-
-##### REFSEQ GENE
-print ("Refseq Gene database: ('y'/'n')")
-refseq_gene = input()
-if re.search('Y|y|yes|Yes|YES',refseq_gene):
-    print ("Great, let's download the Refseq Gene database")
-    REFSEQ_GENE = True
-elif re.search('N|n|no|No|NO',refseq_gene):
-    print ("Ok, we'll skip that one")
-else:
-    print ("That was not a correct response; please run this script again to download the database.")
-
-##### SWISSPROT
-print ("Swissprot database: ('y'/'n')")
-swissprot = input()
-if re.search('Y|y|yes|Yes|YES',swissprot):
-    print ("Great, let's download the Swissprot database")
-    SWISSPROT = True
-elif re.search('N|n|no|No|NO',swissprot):
-    print ("Ok, we'll skip that one")
-else:
-    print ("That was not a correct response; please run this script again to download the database.")
-
-##### VOGS
-print ("VOGs database: ('y'/'n')")
-vogs = input()
-if re.search('Y|y|yes|Yes|YES',vogs):
-    print ("Great, let's download the VOGs database")
-    VOGS = True
-elif re.search('N|n|no|No|NO',vogs):
-    print ("Ok, we'll skip that one")
-else:
-    print ("That was not a correct response; please run this script again to download the database.")
-
-##### VOG HMMS
-print ("VOGhmms database: ('y'/'n')")
-voghmms = input()
-if re.search('Y|y|yes|Yes|YES',voghmms):
-    print ("Great, let's download the VOG HMMs database")
-    VOG_HMMS = True
-elif re.search('N|n|no|No|NO',voghmms):
-    print ("Ok, we'll skip that one")
-else:
-    print ("That was not a correct response; please run this script again to download the database.")
-
-##### PVOG HMMS
-print ("PVOGhmms database: ('y'/'n')")
-pvoghmms = input()
-if re.search('Y|y|yes|Yes|YES',pvoghmms):
-    print ("Great, let's download the PVOG HMMs database")
-    PVOG_HMMS = True
-elif re.search('N|n|no|No|NO',pvoghmms):
-    print ("Ok, we'll skip that one")
-else:
-    print ("That was not a correct response; please run this script again to download the database.")
-
-##### NR
-print ("Caution: the NR database is extremely large. ")
-print ("If you already have it on disk, you are advised not to download here. ")
-print ("Downloading NR will take a long time. ")
-print ("NR database: ('y'/'n')")
-nr = input()
-if re.search('Y|y|yes|Yes|YES',nr):
-    print ("Great, let's download NCBI Virus Genome")
-    NR = True
-elif re.search('N|n|no|No|NO',nr):
-    print ("Ok, we'll skip that one")
-else:
-    print ("That was not a correct response; please run this script again to download the database.")
-
-##### PVOGS
-print ("The PVOGS sequence database is included in the multiPhATE distribution.")
-print ("Shall we format the PVOGS database for blast? 'y'/'n'")
-pvogs = input()
-if re.search('Y|y|yes|Yes|YES',pvogs):
-    print ("Great, we will do the PVOGS formatting")
-    PVOGS = True
-elif re.search('N|n|no|No|NO',pvogs):
-    print ("Ok, we'll skip that")
-else:
-    print ("That was not a correct response; please run this script again to format the PVOGS database.")
-
-##### PHANTOME
-print ("The PHANTOME sequence database is included in the multiPhATE distribution.")
-print ("Shall we format the PHANTOME database for blast? 'y'/'n'")
-phantome = input()
-if re.search('Y|y|yes|Yes|YES',phantome):
-    print ("Great, we will do the PHANTOME formatting")
-    PHANTOME = True
-elif re.search('N|n|no|No|NO',phantome):
-    print ("Ok, we'll skip that")
-else:
-    print ("That was not a correct response; please run this script again to format the PHANTOME database.")
-
-###################################################################################################
-if (NCBI_VIRUS_GENOME or NCBI_VIRUS_PROTEIN or REFSEQ_PROTEIN or REFSEQ_GENE or SWISSPROT or VOGS or VOG_HMMS or PVOG_HMMS or NR or PVOGS or PHANTOME):
-
-    print ("Ok, this is what we are going to download. ")
-    #if not BLAST:
-    #    print ("BLAST plus")
-    if NCBI_VIRUS_GENOME:
-        print ("NCBI Virus Genome database")
-    if NCBI_VIRUS_PROTEIN:
-        print ("NCBI Virus Protein database")
-    if REFSEQ_GENE:
-        print ("Refseq Gene database")
-    if REFSEQ_PROTEIN:
-        print ("Refseq Protein database")
-    if SWISSPROT:
-        print ("Swissprot database")
-    if VOGS:
-        print ("VOGS database")
-    if VOG_HMMS:
-        print ("VOG hmms database")
-    if PVOG_HMMS:
-        print ("PVOG hmms database")
-    if NR:
-        print ("NR database")
-
-    print ("And this is what we are going to format:")
-    if PVOGS:
-        print ("PVOGS")
-    if PHANTOME:
-        print ("PHANTOME")
-
-    print ("Type 'go' to proceed, or 'stop' to reconsider. ")
-    print ("(You can always run this script again.) ")
-    decision = input()
-    if (re.search('go|Go|GO',decision)):
-        print ("Ok, let's get started with downloading.")
-        print ("Databases will be installed into the Databases/ folder within multiPhATE")
+    ##### NCBI Virus Genome database is downloaded via ftp 
+    time.sleep(1)
+    print ("NCBI Virus Genome database: ('y'/'n')")
+    ncbi_virus_genome = input()
+    if re.search('Y|y|yes|Yes|YES',ncbi_virus_genome):
+        print ("Great, let's download NCBI Virus Genome")
+        NCBI_VIRUS_GENOME = True
+    elif re.search('N|n|no|No|NO',ncbi_virus_genome):
+        print ("Ok, we'll skip that one")
     else:
-        print ("Ok, maybe some other time. Bye!")
+        print ("That was not a correct response; please run this script again to download the database.")
+
+    ##### NCBI Virus Protein database is downloaded via ftp 
+    time.sleep(1)
+    print ("NCBI Virus Protein database: ('y'/'n')")
+    ncbi_virus_protein = input()
+    if re.search('Y|y|yes|Yes|YES',ncbi_virus_protein):
+        print ("Great, let's download NCBI Virus Protein")
+        NCBI_VIRUS_PROTEIN = True
+    elif re.search('N|n|no|No|NO',ncbi_virus_protein):
+        print ("Ok, we'll skip that one")
+    else:
+        print ("That was not a correct response; please run this script again to download the database.")
+
+    ##### REFSEQ PROTEIN
+    time.sleep(1)
+    if BLAST:
+        print ("Refseq Protein database: ('y'/'n')")
+        refseq_protein = input()
+        if re.search('Y|y|yes|Yes|YES',refseq_protein):
+            print ("Great, let's download the Refseq Protein database")
+            REFSEQ_PROTEIN = True
+        elif re.search('N|n|no|No|NO',refseq_protein):
+            print ("Ok, we'll skip that one")
+        else:
+            print ("That was not a correct response; please run this script again to download the database.")
+
+    ##### SWISSPROT
+    time.sleep(1)
+    if BLAST:
+        print ("Swissprot database: ('y'/'n')")
+        swissprot = input()
+        if re.search('Y|y|yes|Yes|YES',swissprot):
+            print ("Great, let's download the Swissprot database")
+            SWISSPROT = True
+        elif re.search('N|n|no|No|NO',swissprot):
+            print ("Ok, we'll skip that one")
+        else:
+            print ("That was not a correct response; please run this script again to download the database.")
+
+    ##### VOGS
+    time.sleep(1)
+    print ("VOGs database: ('y'/'n')")
+    vogs = input()
+    if re.search('Y|y|yes|Yes|YES',vogs):
+        print ("Great, let's download the VOGs database. This includes gene and protein sequences.")
+        VOGS = True
+    elif re.search('N|n|no|No|NO',vogs):
+        print ("Ok, we'll skip that one")
+    else:
+        print ("That was not a correct response; please run this script again to download the database.")
+
+    ##### VOG HMMS
+    time.sleep(1)
+    print ("VOGhmms database: ('y'/'n')")
+    voghmms = input()
+    if re.search('Y|y|yes|Yes|YES',voghmms):
+        print ("Great, let's download the VOG HMMs database")
+        VOG_HMMS = True
+    elif re.search('N|n|no|No|NO',voghmms):
+        print ("Ok, we'll skip that one")
+    else:
+        print ("That was not a correct response; please run this script again to download the database.")
+
+    ##### PVOG HMMS
+    time.sleep(1)
+    print ("PVOGhmms database: ('y'/'n')")
+    pvoghmms = input()
+    if re.search('Y|y|yes|Yes|YES',pvoghmms):
+        print ("Great, let's download the PVOG HMMs database")
+        PVOG_HMMS = True
+    elif re.search('N|n|no|No|NO',pvoghmms):
+        print ("Ok, we'll skip that one")
+    else:
+        print ("That was not a correct response; please run this script again to download the database.")
+
+    ##### NR
+    time.sleep(1)
+    if BLAST:
+        print ("Caution: the NR database is extremely large. ")
+        print ("If you already have it on disk, you are advised not to download here. ")
+        print ("Downloading NR will take a long time. ")
+        print ("NR database: ('y'/'n')")
+        nr = input()
+        if re.search('Y|y|yes|Yes|YES',nr):
+            print ("Great, let's download NCBI Virus Genome")
+            NR = True
+        elif re.search('N|n|no|No|NO',nr):
+            print ("Ok, we'll skip that one")
+        else:
+            print ("That was not a correct response; please run this script again to download the database.")
+
+    ##### PHANTOME
+    time.sleep(1)
+    print ("The PHANTOME sequence database is included in the multiPhATE distribution.")
+    print ("Shall we format the PHANTOME database for blast? 'y'/'n'")
+    phantome = input()
+    if re.search('Y|y|yes|Yes|YES',phantome):
+        print ("Great, we will do the PHANTOME formatting")
+        PHANTOME = True
+    elif re.search('N|n|no|No|NO',phantome):
+        print ("Ok, we'll skip that")
+    else:
+        print ("That was not a correct response; please run this script again to format the PHANTOME database.")
+
+    ###################################################################################################
+    if (NCBI_VIRUS_GENOME or NCBI_VIRUS_PROTEIN or REFSEQ_PROTEIN or SWISSPROT or VOGS or VOG_HMMS or PVOG_HMMS or NR or PVOGS or PHANTOME):
+
+        if (NCBI_VIRUS_GENOME or NCBI_VIRUS_PROTEIN or REFSEQ_PROTEIN or SWISSPROT or VOGS or VOG_HMMS or PVOG_HMMS or NR):
+            time.sleep(1)
+            print ("Ok, this is what we are going to download: ")
+            #if not BLAST:
+            #    print ("BLAST plus")
+            if NCBI_VIRUS_GENOME:
+                print ("NCBI Virus Genome database")
+            if NCBI_VIRUS_PROTEIN:
+                print ("NCBI Virus Protein database")
+            if REFSEQ_PROTEIN:
+                print ("Refseq Protein database")
+            if SWISSPROT:
+                print ("Swissprot database")
+            if VOGS:
+                print ("VOGS database")
+            if VOG_HMMS:
+                print ("VOG hmms database")
+            if PVOG_HMMS:
+                print ("PVOG hmms database")
+            if NR:
+                print ("NR database")
+
+        if (PVOGS or PHANTOME):
+            time.sleep(1)
+            print ("This is what we are going to format:")
+            if PVOGS:
+                print ("PVOGS")
+            if PHANTOME:
+                print ("PHANTOME")
+
+        time.sleep(1)
+        print ("\nType 'go' to proceed, or 'stop' to reconsider. ")
+        print ("(You can always run this script again.) ")
+        decision = input()
+        time.sleep(1)
+        if (re.search('go|Go|GO',decision)):
+            print ("Ok, let's get started with downloading.")
+            print ("Databases will be installed into the Databases/ folder within multiPhATE")
+        else:
+            print ("Ok, maybe some other time. Bye!")
+            exit()
+    else:
+        print ("You have selected no downloads or databases to format. Have a happy day! :-)")
         exit()
-else:
-    print ("You have selected no downloads or databases to format. Have a happy day! :-)")
-    exit()
 
 ##############################################################################
-# Install BLAST+
-
-# Install blast+ for user; NOT YET IN SERVICE
-#if not BLAST:
-#    command1 = "wget \"ftp//ftp.ncbi.nih.gov/blast/executables/blast+/${BLAST_VERSION}/ncbi- blast-${BLAST_VERSION}+-x64-linux.tar.gzi\""
-#    command2 = "tar -zxf ncbi-blast-${BLAST_VERSION}+-x64-linux.tar.gz"
-#    command3 = "cd ncbi-blast-${BLAST_VERSION}+/bin"
-#    command4 = "pwd"
-
 ##############################################################################
+
 # Install NCBI_VIRUS_GENOME
 
 if NCBI_VIRUS_GENOME:
@@ -541,6 +573,8 @@ if NCBI_VIRUS_PROTEIN:
         os.system(command)
         command = "rm fileList.out"
         os.system(command)
+        command = "rm ls.out"
+        os.system(command)
     except:
         print ("Problem removing ",ncbiVirusProteins," or fileList.out file.")
 
@@ -586,39 +620,18 @@ if REFSEQ_PROTEIN:
     except Exception:
         print ("Error encountered in unpacking files")
 
+    # Clean up direcgtory
+    try:
+        print ("Cleaning up directory")
+        command = "rm ls.out"
+        os.system(command)
+        command = "rm *tar.gz*"
+        os.system(command)
+    except:
+        print ("WARNING: Could not remove unneeded files.")
+
     os.chdir(cwd)
 
-##############################################################################
-# Install REFSEQ GENE database
-#*** REFSEQ GENE is no longer downloadable using update_blastdb.pl
-#*** NEED TO FIND A SUBSTITUTE COMPRISING VIRUS OR PHAGE GENES
-"""
-if REFSEQ_GENE:
-    os.chdir(refseqGeneDir)
-    try:
-        print ("Downloading NCBI Refseq Gene database.")
-        print ("This may take a while...")
-        command = blastPath + "update_blastdb.pl" + ' ' + "refseqgene"
-        success = os.system(command)
-        print ("NCBI Refseq Gene database download complete.")
-    except BlastError:
-        print ("Command " + command + " failed; please check the location of your blast executables")
-
-    print ("Unpacking files...")
-    try:
-        command = "ls > ls.out"
-        success = os.system(command)
-        ls_h = open("ls.out",'r')
-        files = ls_h.read().splitlines()
-        for filename in files:
-            if not re.search('md5', filename):
-                command = "gunzip -c " + filename + " | tar xopf -"
-                success = os.system(command)
-        ls_h.close()
-    except Exception:
-        print ("Error encountered in unpacking files")
-    os.chdir(cwd)
-"""
 ##############################################################################
 # Install SWISSPROT database
 
@@ -647,6 +660,14 @@ if SWISSPROT:
     except Exception:
         print ("Error encountered in unpacking files")
 
+    # Remove unneeded files
+    try:
+        print ("Removing unneeded files.")
+        command = "rm *tar.gz*"
+        success = os.system(command)
+    except:
+        print ("WARNING: Could not remove unneeded files.")
+
     os.chdir(cwd)
 
 ##############################################################################
@@ -657,26 +678,19 @@ if NR:
     try:
         print ("Downloading NR database.")
         print ("This may take a long time...")
-        command = blastPath + "update_blastdb.pl" + ' ' + "nr"
+        command = blastPath + "update_blastdb.pl --decompress nr"
         success = os.system(command)
         print ("NR database download complete.")
     except BlastError:
         print ("Command " + command + " failed; please check the location of your blast executables")
 
-    print ("Unpacking files...")
+    # Clean up
     try:
-        command = "ls > ls.out"
+        print ("Cleaning up directory.")
+        command = "rm *tar.gz*"
         success = os.system(command)
-        ls_h = open("ls.out",'r')
-        files = ls_h.read().splitlines()
-        for filename in files:
-            if not re.search('md5', filename):
-                command = "gunzip -c " + filename + " | tar xopf -"
-                success = os.system(command)
-        ls_h.close()
-    except Exception:
-        print ("Error encountered in unpacking files")
-
+    except:
+        print ("WARNING: Could not remove unneeded files.")
     os.chdir(cwd)
 
 ##############################################################################
@@ -692,7 +706,6 @@ if VOGS:
     CATEGORIES  = False
     try:
         print ("Downloading and unzipping VOGS database files.")
-
         try:
             command = 'wget -O ' + vogMembers_filename + ' "' + VOG_DOWNLOAD_URL + vogMembers_filename + '"' 
             success = os.system(command)
@@ -746,27 +759,38 @@ if VOGS:
 
     # Next, reformat sequence headers with VOG identifiers
     OK2FORMAT4BLAST = False
+    os.chdir(cwd)
     if OK2FORMAT4VOG:
         try:
+            # The dbPrep_vogTagFastas.py code will tag gene and protein sequence headers
             print ("Reformatting sequence headers with VOG identifiers.")
             print ("This may take a long time (perhap 8 hours).")
             try:
-                command = "python ./dbPrep_vogTagFastas.py"
-                #result = os.system(command)
+                command = "python3 dbPrep_vogTagFastas.py " + VOGsDir 
+                result = os.system(command)
                 OK2FORMAT4BLAST = True
             except:
-                command = "python3 ./dbPrep_vogTagFastas.py"
-                #result = os.system(command)
+                command = "python dbPrep_vogTagFastas.py " + VOGsDir
+                result = os.system(command)
                 OK2FORMAT4BLAST = True
         except:
             print ("WARNING: Reformatting of sequence headers unsuccessful.")
+    os.chdir(VOGsDir)
 
     # Last, format the sequences for blast
     if OK2FORMAT4BLAST:
         try:
-            print ("Formatting VOGs database for blast.")
-            command = blastPath + "makeblastdb -dbtype prot -in VOGs.faa"
-            #success = os.system(command)
+            print ("Formatting VOGs protein database for blast.")
+            command = blastPath + "makeblastdb -dbtype prot -in vog.proteins.tagged.all.fa"
+            success = os.system(command)
+            print ("done")
+        except BlastError:
+            print ("Command " + command + " failed; please check the location of your blast executables")
+
+        try:
+            print ("Formatting VOGs gene database for blast.")
+            command = blastPath + "makeblastdb -dbtype nucl -in vog.genes.tagged.all.fa"
+            success = os.system(command)
             print ("done")
         except BlastError:
             print ("Command " + command + " failed; please check the location of your blast executables")
@@ -904,6 +928,17 @@ if PVOG_HMMS:
             print ("Directory cleanup completed.")
         except:
             print ("WARNING: Something went wrong cleaning up the VOG HMM directory.")
+
+        os.chdir(pVOGhmmsDir)
+
+        # Clean up directory
+        try:
+            print ("Removing file(s) no longer needed.")
+            command = "rm AllvogHMMprofiles.tar"
+            os.system(command)
+            print ("Cleanup successful.")
+        except:
+            print ("WARNING: Could not clean up pVOGhmms dir")
 
     os.chdir(cwd)
 

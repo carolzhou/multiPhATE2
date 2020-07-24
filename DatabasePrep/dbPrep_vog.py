@@ -4,7 +4,7 @@
 #
 # Description:  Handles data and processing for VOG data type
 #
-# Last update:  10 July 2020
+# Last update:  23 July 2020
 #
 # Programmer:  C. E. Zhou
 #
@@ -13,19 +13,24 @@
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
 # THIS CODE IS COVERED BY THE BSD LICENSE. SEE INCLUDED FILE BSD.PDF FOR DETAILS.
 
-#DEBUG = True
-DEBUG = False 
-
-DO_GENE    = True
-DO_PROTEIN = True
-
-import re
 import os
+import re
 import copy
 import subprocess
 import timeit
 import datetime
 import dbPrep_fastaSequence
+
+#DEBUG = True
+DEBUG = False 
+
+VERBOSE = False
+if "dbPrep_VERBOSE" in os.environ.keys():
+    if os.environ["dbPrep_VERBOSE"] == 'True':
+        VERBOSE = True
+
+DO_GENE    = True
+DO_PROTEIN = True
 
 fastaObj = dbPrep_fastaSequence.fasta()
 
@@ -49,8 +54,8 @@ class VOGs(object):
 
     def __init__(self):
         self.databaseName           = "VOGs"
-        self.downloadDate           = "June 2020"
-        self.version                = "vog98"
+        self.downloadDate           = "July 2020"  # default; master script should set this
+        self.version                = "vog99"      # default; master script should set this
         self.VOGmapFile             = ""           # vog.members.tsv
         self.VOGannotationFile      = ""           # vog.annotations.tsv
         self.VOGgeneFastaFile       = ""           # vog.genes.all.fa
@@ -108,6 +113,7 @@ class VOGs(object):
         # Protein sequences
         if DO_PROTEIN:
             print("dbPrep_vog says, Adding protein sequences to fasta objects, from file", self.VOGproteinFastaFile)
+            print("dbPrep_vog says, Yeah, this one is really slow too...")
             vogInFile_h  = open(self.VOGproteinFastaFile,"r")
             print("Opening self.VOGproteinFastaOutFile for write:",self.VOGproteinFastaOutFile)
             vogOutFile_h = open(self.VOGproteinFastaOutFile,"w")
@@ -128,6 +134,8 @@ class VOGs(object):
                     if fasta.header == accn:
                         vogString = vog.VOGid + '|'
                         fasta.customHeader += vogString
+                        if VERBOSE:
+                            print("dbPrep_vog says, Tagging ",fasta.customHeader)
         return
 
     def insertAccns(self):
@@ -137,11 +145,15 @@ class VOGs(object):
             for accn in vog.accnList:
                 if accn not in accnList:
                     accnList.append(accn)
+                    if VERBOSE:
+                        print("dbPrep_vog says, Appending accession ",accn)
         # For each accession, create a fasta object and add it to the fasta set
         for accn in accnList:
             newFasta = copy.deepcopy(fastaObj)
             newFasta.header = accn
             self.fastaSet.fastaList.append(newFasta)
+        if VERBOSE:
+            print("dbPrep_vog says, Fasta list has been created.")
         return
 
     def readParameters(self,kvargs):
@@ -166,6 +178,9 @@ class VOGs(object):
         return
 
     def loadVOGs(self,vogMapFile_h):
+        if VERBOSE:
+            print("dbPrep_vog says, Loading VOGs.")
+        vogCount = 0
         p_comment = re.compile("^#")
         VOGID_COL = 0; ACCN_COL = 4
         vogID = ""; accnListString = ""; accnList = []
@@ -174,6 +189,11 @@ class VOGs(object):
         for fLine in fLines:
             match_comment = re.search(p_comment,fLine)
             if not match_comment:
+                vogCount += 1
+                if VERBOSE:
+                    if vogCount >= 1000:
+                        print("dbPrep_vog says, Still working...") 
+                        vogCount = 0
                 fields = fLine.split('\t')
                 vogID  = fields[VOGID_COL]
                 accnListString = fields[ACCN_COL]
@@ -193,34 +213,33 @@ class VOGs(object):
         VOGID_COL = 0; ANNOT_COL = 4
         vogID = ""; annot = ""
         annotHash = {}  # key=vogID, value=annotation
-        count = 0
+        annotCount = 0
 
         # First, create a hash for easy annotation lookup
         aLines = annotFile_h.read().splitlines()
         for aLine in aLines:
             match_comment = re.search(p_comment,aLine)
             if not match_comment:
-                count += 1
+                annotCount += 1
                 fields = aLine.split('\t')
                 vogID = fields[VOGID_COL]
                 annot = fields[ANNOT_COL]
                 annotHash[vogID] = annot
-        #print(annotHash)
 
         # Next, walk through the self.vogList, adding in the annotations
-        count = 0
+        annotCount = 0
         print("dbPrep_vog says, Walking through self.VOGlist. There are this many VOGs:",len(self.VOGlist))
         for vogObj in self.VOGlist:
             annot = annotHash[vogObj.VOGid]
             vogObj.VOGannotation = annot
             if annot != "":
-                count += 1
+                annotCount += 1
         print("dbPrep_vog says, In all there are this many VOGs:",len(self.VOGlist))
-        print("dbPrep_vog says, This many VOGs were found to have annotation:",count)
+        print("dbPrep_vog says, This many VOGs were found to have annotation:",annotCount)
         return
 
     def writeVOGtaggedFastaFile(self,vogInFile_h,vogOutFile_h,seqType):  # seqType is 'gene' or 'protein'
-        count    = 0
+        headerCount    = 0
         header   = ""
         sequence = ""
         FIRST    = True
@@ -228,13 +247,17 @@ class VOGs(object):
         iLines = vogInFile_h.read().splitlines()
         for iLine in iLines:
             match_header   = re.search(p_header,iLine)
-            #match_sequence = re.search(p_sequence,iLine)
             if match_header:
                 (junk,matchHeader) = iLine.split('>')
                 if not FIRST: # Process previous fasta sequence
                     for fasta in self.fastaSet.fastaList:
                         if fasta.header == matchHeader:
                             newHeader = '>' + fasta.customHeader + fasta.header
+                            headerCount += 1
+                            if VERBOSE:
+                                if headerCount >= 1000:
+                                    print ("working...")
+                                    headerCount = 0
                             vogOutFile_h.write("%s\n%s\n" % (newHeader,sequence))
                 # Reset
                 header = ""
@@ -242,6 +265,7 @@ class VOGs(object):
                 FIRST = False
             else:
                 sequence += iLine
+
         # Process last sequence
         for fasta in self.fastaSet.fastaList:
             if fasta.header == header:
@@ -257,6 +281,8 @@ class VOGs(object):
         return len(self.VOGlist)
 
     def getAccessionCount(self):
+        if VERBOSE:
+            print("dbPrep_vog says, Counting accessions")
         accessionCount = 0
         for VOG in self.VOGlist:
             accessionCount += len(VOG.accessionList)
