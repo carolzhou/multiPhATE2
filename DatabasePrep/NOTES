@@ -1,3 +1,5 @@
+NOTES REGARDING DATABASE DOWNLOADS AND PRE-PROCESSING FOR MULTIPHATE2
+
 * Pre-processing of the VOG gene and protein sequences using dbPrep_getDBs.py results not only in tagging the sequence headers with VOG identifiers, but also elimination of sequences from the download file that are NOT mapped to VOG identifiers (about 20% of them). The VOG database is updated on a regular basis. As of this writing, version 99 is the most recent. Version can be modified at the top of script dbPrep_getDBs.py.
 
 * The pVOG database has not been updated since 2016. Therefore it is unncessary to re-run the pVOG scripts for updating this data set for multiPhATE.
@@ -6,7 +8,7 @@
 
 * For VOG processing:
 Based on the organization of the VOG data, it is necessary to:
-1) Tag sequences with the VOG identifier(s); annotate hits with the VOG description (not the sequence description)
+1) Tag sequences with the VOG identifier(s); this is performed by dbPrep_getDBs.py. 2) multiPhATE2 annotates hits with the VOG description (not the sequence description), since the VOG authors have annotated each VOG group.
 dbPrep_getDBs.py is the main script
 dbPrep_getDBs.py        calls   dbPrep_vogTagFastas.py
 dbPrep_vogTagFastas.py  imports dbPrep_vog
@@ -15,7 +17,7 @@ dbPrep_fastaSequence.py imports dbPrep_annotation
 
 * For pVOG processing:
 Based on the organization of the pVOGs data, it is necessary to:
-1) Tag sequences with the VOG identifier(s); 2) Capture the sequence fastas and descriptions from NR (there are no VOG descriptions for the pVOGs).
+1) Tag sequences with the VOG identifier(s); this is performed by dbPrep_getDBs.py. 2) multiPhATE2 captures the sequence fastas and descriptions from NR and uses these for annotation because there are no VOG annotation descriptions for the pVOGs.
 dbPrep_createPvogFastaFile.py is the main script
 dbPrep_createPvogFastaFile.py imports:
 	dbPrep_annotation
@@ -25,3 +27,6 @@ dbPrep_consolidate.py - consolidates the hmm files; this functionality has been 
 dbPrep_getLast3percent.py - queries remaining sequences from the NR database
 
 * It is important to realize that the VOG identifiers between VOGs and pVOGs do not correspond.
+
+* When running dbPrep_getDBs.py on a remote server, it may be that the VOG processing may compute a longer time than the server can tolerate:  the server may signal a time-out and cut the user's connection. To work around this problem, the user may modifiy booleans at the top of the dbPrep_getDBs.py code, setting the REMOTE and VERBOSE booleans to True. In this way, dbPrep_getDBs.py will frequently print status messages to the console, which will keep the user's connection active, and (hopefully) avoid the connection being disconnected by the server. But the user must also pre-select all data sets that they want to be downloaded, as the REMOTE option side-steps the interactive interface that queries the user's wants.
+
