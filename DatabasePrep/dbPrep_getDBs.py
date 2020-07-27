@@ -11,7 +11,7 @@
 #
 # Summary:  This script facilitates the downloading of databases to be used with multiPhATE.
 #
-# Most recent update:  23 July 2020
+# Most recent update:  26 July 2020
 #
 ##############################################################################
 
@@ -19,7 +19,7 @@
 # THIS CODE IS COVERED BY THE BSD LICENSE. SEE INCLUDED FILE BSD.pdf FOR DETAILS.
 
 import os, sys, re, time, datetime
-from ftplib import FTP
+#from ftplib import FTP
 from pathlib import Path
 
 ##############################################################################
@@ -28,18 +28,38 @@ from pathlib import Path
 # Run interactive for user to input which data sets they want to install
 INTERACTIVE = False
 # Run remote to pre-set download instructions and skip user input
-REMOTE      = True
+REMOTE = True
 # Set verbost to true for remote processing if server is killing idle processes.
-# Verbose will write progress to console, keeping user process non-idle.
-VERBOSE     = True
+# Verbose will write voluminous progress to console, keeping user process non-idle during long computations.
+VERBOSE = False 
+
+CODE_BASE = "dbPrep_getDBs"
+CODE_NAME = CODE_BASE + ".py"
+
+# OPEN LOG FILES
+# Open Log file
+logFile = './' + CODE_BASE + '.log'
+LOG_H = open(logFile,'a')
+
+# Begin logging
+myTime = datetime.datetime.now()
+LOG_H.write("%s%s%s\n" % (CODE_NAME," begin processing at ",myTime))
+LOG_H.flush()
+
+# Set environment variable to subordinate code knows to print progress messages
 if VERBOSE:
     os.environ["dbPrep_VERBOSE"] = 'True'
 else:
     os.environ["dbPrep_VERBOSE"] = 'False'
 
-# The following URLs etc may be modified as things change.
+##### DATABASES: URLs and Files
+# The following URLs etc may be modified as things change on 3rd party web sites.
+
+# VOG Databases 
 VOG_VERSION      = "99"  # Most recent version as of this writing; modify as appropriate
 VOG_DOWNLOAD_URL = "http://fileshare.csb.univie.ac.at/vog/vog" + VOG_VERSION + "/"
+
+# NCBI Databases
 ftpAddr  = "ftp.ncbi.nlm.nih.gov"
 httpAddr = "https://ftp.ncbi.nlm.nih.gov/genomes/Viruses/"
 virGenomeFile       = "all.fna"
@@ -54,16 +74,31 @@ accn2taxid_httpAddr = "ftp://ftp.ncbi.nih.gov/pub/taxonomy/accession2taxid"
 accn2taxid_file     = "nucl_gb.accession2taxid"
 accn2taxid_file_gz  = accn2taxid_file + ".gz"
 accn2taxid_fileAddr = os.path.join(accn2taxid_httpAddr,accn2taxid_file_gz)
+
+# PVOG Database
 # PVOG data are available at the authors' home page and at NCBI. Choose one or the other:
 #pvogHmm_httpAddr    = "http://dmk-brain.ecn.uiowa.edu/pVOGs/downloads/All/AllvogHMMprofiles.tar.gz"
 #pvogAccns_httpAddr  = "http://dmk-brain.ecn.uiowa.edu/pVOGs/downloads/All/AllFalmilyProteinList.tsv"
 pvogHmm_httpAddr    = "https://ftp.ncbi.nlm.nih.gov/pub/kristensen/pVOGs/downloads/All/AllvogHMMprofiles.tar.gz"
 pvogAccns_httpAddr  = "https://ftp.ncbi.nlm.nih.gov/pub/kristensen/pVOGs/downloads/All/AllFamilyProteinList.tsv"
 
+# CAZy Database http://bcb.unl.edu/dbCAN2/about.php
+dbCAN2_httpAddr     = "http://bcb.unl.edu/dbCAN2/download/Databases/"
+cazyProteins        = "CAZyDB.07312019.fa"
+cazyFamActivities   = "CAZyDB.07312019.fam-activities.txt"
+cazyFamSubfamEC     = "CAZyDB.07312019.fam.subfam.ec.txt"
+cazyFamInfo         = "FamInfo.txt.04232020.xls"
+cazyPrWithEC        = "CAZyDB.07312018.pr-with-ec.txt"
+cazyProteins_httpAddr      = os.path.join(dbCAN2_httpAddr,cazyProteins)
+cazyFamActivities_httpAddr = os.path.join(dbCAN2_httpAddr,cazyFamActivities)
+cazyFamSubfamEC_httpAddr   = os.path.join(dbCAN2_httpAddr,cazyFamSubfamEC)
+cazyFamInfo_httpAddr       = os.path.join(dbCAN2_httpAddr,cazyFamInfo)
+cazyPrWithEC_httpAddr      = os.path.join(dbCAN2_httpAddr,cazyPrWithEC)
+
+# DATABASES: Boolean control
 BLAST               = False
 NCBI_VIRUS_GENOME   = False
 NCBI_VIRUS_PROTEIN  = False
-REFSEQ_GENE         = False
 REFSEQ_PROTEIN      = False
 SWISSPROT           = False
 NR                  = False
@@ -72,6 +107,7 @@ PVOGS               = False
 PVOG_HMMS           = False
 VOGS                = False
 VOG_HMMS            = False
+CAZY                = False
 
 # VARIABLES
 blast               = ''
@@ -85,6 +121,7 @@ pvogs               = ''
 pvog_hmms           = ''
 vogs                = ''
 vog_hmms            = ''
+cazy                = ''
 decision            = ''
 blastPath           = '' # path to user's blast installation
 cwd                 = '' # current working direcgtory
@@ -111,6 +148,7 @@ pVOGhmmsDir            = os.path.join(dbDir,          "pVOGhmms/")
 VOGsDir                = os.path.join(dbDir,          "VOGs/")
 VOGsBlastDBdir         = os.path.join(VOGsDir,        "BlastDBs/")
 VOGhmmsDir             = os.path.join(dbDir,          "VOGhmms/")
+CAZyDir                = os.path.join(dbDir,          "CAZY/")
 
 # Filenames from source
 vogProteins_filename             = "vog.proteins.all.fa.gz"
@@ -124,10 +162,18 @@ pvogHmms_filename                = "pvog.hmm.tar.gz"
 pvogHmms_filename_tar            = "pvog.hmm.tar"
 
 # Filenames for processed data
-vogGenes                         = "vog.genes.tagged.all.fa"
-vogProteins                      = "vog.proteins.tagged.all.fa"
 ncbiVirusGenomes                 = "ncbiVirusGenomes.fasta"
 ncbiVirusProteins                = "ncbiVirusProteins.faa"
+refseqProteins                   = "refseq_protein"
+swissprotProteins                = "swissprot"
+nrProteins                       = "nr"
+phantomeProteins                 = "Phantome_Phage_Genes.faa"
+pvogProteins                     = "pVOGs.faa"
+pvogProteinHmms                  = "AllvogHMMprofiles/PVOGsHmmProfilesDB.hmm"
+vogGenes                         = "vog.genes.tagged.all.fa"
+vogProteins                      = "vog.proteins.tagged.all.fa"
+vogProteinHmms                   = "VOGsHmmProfilesDB.hmm"
+cazyProteins                     = "CAZy.faa"
 
 # Create database directories, if they don't already exist
 if not os.path.exists(dbDir):
@@ -160,20 +206,54 @@ if not os.path.exists(VOGsDir):
     os.mkdir(VOGsDir)
 if not os.path.exists(VOGhmmsDir):
     os.mkdir(VOGhmmsDir)
+if not os.path.exists(CAZyDir):
+    os.mkdir(CAZyDir)
+
+# Calculate database path/files for user's config file
+ncbiGenome_config       = os.path.join(ncbiGenomeDir,    ncbiVirusGenomes)
+ncbiProtein_config      = os.path.join(ncbiProteinDir,   ncbiVirusProteins)
+refseqProtein_config    = os.path.join(refseqProteinDir, refseqProteins)
+swissprotProtein_config = os.path.join(swissprotDir,     swissprotProteins)
+nr_config               = os.path.join(nrDir,            nrProteins)
+phantome_config         = os.path.join(phantomeDir,      phantomeProteins)
+pvog_config             = os.path.join(pVOGsDir,         pvogProteins)
+pvogHmm_config          = os.path.join(pVOGhmmsDir,      pvogProteinHmms)
+vogGenes_config         = os.path.join(VOGsDir,          vogGenes)
+vogProteins_config      = os.path.join(VOGsDir,          vogProteins)
+vogProteinHmms_config   = os.path.join(VOGhmmsDir,       vogProteinHmms)
+cazyProteins_config     = os.path.join(CAZyDir,          cazyProteins)
+
+# Write database path/files to file for user's benefit in constructing config file
+dataFile = './' + CODE_BASE + '.lst'
+DATA_H = open(dataFile,'w')
+DATA_H.write("%s\n" % (ncbiGenome_config))
+DATA_H.write("%s\n" % (ncbiProtein_config))
+DATA_H.write("%s\n" % (refseqProtein_config))
+DATA_H.write("%s\n" % (swissprotProtein_config))
+DATA_H.write("%s\n" % (nr_config))
+DATA_H.write("%s\n" % (phantome_config))
+DATA_H.write("%s\n" % (pvog_config))
+DATA_H.write("%s\n" % (pvogHmm_config))
+DATA_H.write("%s\n" % (vogGenes_config))
+DATA_H.write("%s\n" % (vogProteins_config))
+DATA_H.write("%s\n" % (vogProteinHmms_config))
+DATA_H.write("%s\n" % (cazyProteins_config))
+DATA_H.close()
 
 # Pre-set download instructions; skip user input
 if REMOTE:
     BLAST               = True 
-    NCBI_VIRUS_GENOME   = True 
-    NCBI_VIRUS_PROTEIN  = True 
-    REFSEQ_PROTEIN      = True
-    SWISSPROT           = True
-    NR                  = True
-    PHANTOME            = False 
-    PVOGS               = False 
-    PVOG_HMMS           = True
-    VOGS                = True
-    VOG_HMMS            = True
+    NCBI_VIRUS_GENOME   = False 
+    NCBI_VIRUS_PROTEIN  = False
+    REFSEQ_PROTEIN      = False
+    SWISSPROT           = False 
+    NR                  = False
+    PHANTOME            = False   # Provided in distribution
+    PVOGS               = False   # Provided in distribution
+    PVOG_HMMS           = False
+    VOGS                = False
+    VOG_HMMS            = False
+    CAZY                = True
 
 # Determine download instructions via user input
 elif INTERACTIVE:
@@ -335,6 +415,19 @@ elif INTERACTIVE:
         else:
             print ("That was not a correct response; please run this script again to download the database.")
 
+    ##### CAZY
+    time.sleep(1)
+    if BLAST:
+        print ("CAZy database: ('y'/'n')")
+        cazy = input()
+        if re.search('Y|y|yes|Yes|YES',swissprot):
+            print ("Great, let's download the CAZy database")
+            CAZY = True
+        elif re.search('N|n|no|No|NO',cazy):
+            print ("Ok, we'll skip that one")
+        else:
+            print ("That was not a correct response; please run this script again to download the database.")
+
     ##### PHANTOME
     time.sleep(1)
     print ("The PHANTOME sequence database is included in the multiPhATE distribution.")
@@ -349,9 +442,9 @@ elif INTERACTIVE:
         print ("That was not a correct response; please run this script again to format the PHANTOME database.")
 
     ###################################################################################################
-    if (NCBI_VIRUS_GENOME or NCBI_VIRUS_PROTEIN or REFSEQ_PROTEIN or SWISSPROT or VOGS or VOG_HMMS or PVOG_HMMS or NR or PVOGS or PHANTOME):
+    if (NCBI_VIRUS_GENOME or NCBI_VIRUS_PROTEIN or REFSEQ_PROTEIN or SWISSPROT or VOGS or VOG_HMMS or PVOG_HMMS or NR or PVOGS or CAZY or PHANTOME):
 
-        if (NCBI_VIRUS_GENOME or NCBI_VIRUS_PROTEIN or REFSEQ_PROTEIN or SWISSPROT or VOGS or VOG_HMMS or PVOG_HMMS or NR):
+        if (NCBI_VIRUS_GENOME or NCBI_VIRUS_PROTEIN or REFSEQ_PROTEIN or SWISSPROT or VOGS or VOG_HMMS or PVOG_HMMS or NR or CAZY):
             time.sleep(1)
             print ("Ok, this is what we are going to download: ")
             #if not BLAST:
@@ -372,6 +465,8 @@ elif INTERACTIVE:
                 print ("PVOG hmms database")
             if NR:
                 print ("NR database")
+            if CAZY:
+                print ("CAZy database")
 
         if (PVOGS or PHANTOME):
             time.sleep(1)
@@ -402,6 +497,8 @@ elif INTERACTIVE:
 # Install NCBI_VIRUS_GENOME
 
 if NCBI_VIRUS_GENOME:
+    myTime = datetime.datetime.now()
+    LOG_H.write("%s%s\n" % ("NCBI VIRUS GENOME download begin processing at ",myTime))
     os.chdir(ncbiGenomeDownloadDir)
 
     # Download directories containing virus genome fasta files
@@ -411,7 +508,7 @@ if NCBI_VIRUS_GENOME:
         command = "wget " + virGenome_httpAddr
         success = os.system(command)
     except:
-        print ("Command " + command + " failed.")
+        print ("WARNING: Command " + command + " failed.")
 
     # Untar the file
     try:
@@ -423,7 +520,7 @@ if NCBI_VIRUS_GENOME:
         success = os.system(command)
         print ("tar success: ",success)
     except:
-        print ("Uncompression of genome fasta file was unsuccessful.")
+        print ("WARNING: Uncompression of genome fasta file was unsuccessful.")
 
     # Read in a list of the directories
     try:
@@ -448,7 +545,7 @@ if NCBI_VIRUS_GENOME:
                 success = os.system(command)
         print ("Concatenation is complete!")
     except:
-        print ("Concatenation failed.")
+        print ("WARNING: Concatenation failed.")
 
     # Move consolidated fasta file up one directory
     try:
@@ -456,17 +553,17 @@ if NCBI_VIRUS_GENOME:
         command = "mv ./ncbiVirusGenomes.fasta ../."
         success = os.system(command)
     except:
-        print ("Cannot move ncbiVirusGenomes.fastaile to directory ",ncbiGenomeDir)
+        print ("WARNING: Cannot move ncbiVirusGenomes.fastaile to directory ",ncbiGenomeDir)
 
     # Before leaving the Download directory, remove the ncbi downloaded file
     try:
         print ("Removing the NCBI Virus Genome compressed file that we downloaded.")
         command = "rm " + virGenomeFile_tar
-        os.system(command)
+        success = os.system(command)
         command = "rm fileList.out"
-        os.system(command)
+        success = os.system(command)
     except:
-        print ("Problem removing ",ncbiVirusGenomes," or fileList.out file.")
+        print ("WARNING: Problem removing ",ncbiVirusGenomes," or fileList.out file.")
 
     os.chdir(ncbiGenomeDir)  # Change to NCBI/Virus_Genome directory
 
@@ -476,7 +573,7 @@ if NCBI_VIRUS_GENOME:
         command = "wget " + accn2taxid_fileAddr
         success = os.system(command)
     except:
-        print ("Download of the accession2taxid file failed.")
+        print ("WARNING: Download of the accession2taxid file failed.")
 
     try:
         print ("Unpacking accession2taxid.")
@@ -484,23 +581,37 @@ if NCBI_VIRUS_GENOME:
         success = os.system(command)
         print ("accn2taxid file has been unzipped.")
     except:
-        print ("Unpacking of accession2taxid failed.")
+        print ("WARNING: Unpacking of accession2taxid failed.")
 
     # Finally, format the Virus Genome database for blast
     try:
         print ("Formatting Virus Genome database for blast.")
         command = "makeblastdb -dbtype nucl -in " + ncbiVirusGenomes
-        os.system(command)
+        success = os.system(command)
         print ("Formatting complete.")
     except:
-        print ("Formatting of Virus Genome database for blast failed.")
+        print ("WARNING: Formatting of Virus Genome database for blast failed.")
+
+    # And last but not least, remove the Download directory
+    try:
+        print ("Removing the Download/ directory.")
+        command = "rmdir Download/"
+        success = os.system(command)
+    except:
+        print ("WARNING: Cound not remove the Download/ directory.")
 
     os.chdir(cwd)  # Return to home directory
+    myTime = datetime.datetime.now()
+    LOG_H.write("%s%s\n" % ("NCBI Virus Genome download finish processing at ",myTime))
 
 ##############################################################################
 # Install NCBI VIRUS PROTEIN database
 
 if NCBI_VIRUS_PROTEIN:
+
+    myTime = datetime.datetime.now()
+    LOG_H.write("%s%s\n" % ("NCBI Virus Protein download begin processing at ",myTime))
+ 
     os.chdir(ncbiProteinDownloadDir)
 
     # Download directories containing virus peptide fasta files
@@ -510,28 +621,28 @@ if NCBI_VIRUS_PROTEIN:
         command = "wget " + virProtein_httpAddr
         success = os.system(command)
     except:
-        print ("Command " + command + " failed.")
+        print ("WARNING: Command " + command + " failed.")
 
     # Uncompress the downloaded file
     try:
         print ("Uncompressing NCBI Virus Protein gz file.")
         command = "gunzip " + virProteinFile_gz
-        os.system(command)
+        success = os.system(command)
         command = "tar -xvf " + virProteinFile_tar
-        os.system(command)
+        success = os.system(command)
         print ("Virus protein data is now uncompressed.")
     except:
-        print ("Uncompression of file failed.")
+        print ("WARNING: Uncompression of file failed.")
 
     # Remove the DBV/ directory from download
     # This appears to hold peptides from raw Prokka gene-call predictions
     try:
         print ("Removing the DBV/ subdirectory, which we do not need.")
         command = "rm -r DBV/"
-        os.system(command)
+        success = os.system(command)
         print ("DBV/ has been removed.")
     except:
-        print ("DBV directory removal failed.")
+        print ("WARNING: DBV directory removal failed.")
 
     # Read in a list of the directories
     try:
@@ -556,7 +667,7 @@ if NCBI_VIRUS_PROTEIN:
                 success = os.system(command)  
         print ("Concatenation is complete!")
     except:
-        print ("Listing and concatenating files failed.")
+        print ("WARNING: Listing and concatenating files failed.")
 
     # Move consolidated fasta file up one directory
     try:
@@ -564,19 +675,19 @@ if NCBI_VIRUS_PROTEIN:
         command = "mv ./ncbiVirusProteins.faa ../."
         success = os.system(command)
     except:
-        print ("Cannot move ncbiVirusProteins.faa file to directory ",ncbiProteinDir)
+        print ("WARNING: Cannot move ncbiVirusProteins.faa file to directory ",ncbiProteinDir)
    
     # Before leaving the Download directory, remove the ncbi downloaded file
     try:
         print ("Removing the NCBI Virus Genome compressed file that we downloaded.")
         command = "rm " + virProteinFile_tar
-        os.system(command)
+        success = os.system(command)
         command = "rm fileList.out"
-        os.system(command)
+        success = os.system(command)
         command = "rm ls.out"
-        os.system(command)
+        success = os.system(command)
     except:
-        print ("Problem removing ",ncbiVirusProteins," or fileList.out file.")
+        print ("WARNING: Problem removing ",ncbiVirusProteins," or fileList.out file.")
 
     os.chdir(ncbiProteinDir)  # Change to NCBI/Virus_Protein directory
 
@@ -584,19 +695,32 @@ if NCBI_VIRUS_PROTEIN:
     try:
         print ("Formatting Virus Protein database for blast.")
         command = "makeblastdb -dbtype prot -in " + ncbiVirusProteins
-        os.system(command)
+        success = os.system(command)
         print ("Formatting complete.")
     except:
-        print ("Formatting of Virus Protein database for blast failed.")
+        print ("WARNING: Formatting of Virus Protein database for blast failed.")
+
+    # And last but not least, remove the Download directory
+    try:
+        print ("Removing the Download/ directory.")
+        command = "rmdir Download/"
+        success = os.system(command)
+    except:
+        print ("WARNING: Cound not remove the Download/ directory.")
 
     os.chdir(cwd)  # Return to home directory
+    myTime = datetime.datetime.now()
+    LOG_H.write("%s%s\n" % ("NCBI Virus Protein download finish processing at ",myTime))
 
 ##############################################################################
 # Install REFSEQ PROTEIN database
 
 if REFSEQ_PROTEIN:
-    filename_root = "refseq_protein"
+    myTime = datetime.datetime.now()
+    LOG_H.write("%s%s\n" % ("REFSEQ PROTEIN download begin processing at ",myTime))
     os.chdir(refseqProteinDir)
+ 
+    filename_root = "refseq_protein"
     try:
         print ("Downloading NCBI Refseq Protein database.")
         print ("This may take a while...")
@@ -604,7 +728,7 @@ if REFSEQ_PROTEIN:
         success = os.system(command)
         print ("NCBI Refseq Protein database download complete.")
     except BlastError:  
-        print ("Command " + command + " failed; please check the location of your blast executables")
+        print ("WARNING: Command " + command + " failed; please check the location of your blast executables")
 
     print ("Unpacking files...")
     try:
@@ -618,24 +742,29 @@ if REFSEQ_PROTEIN:
                 success = os.system(command)
         ls_h.close()
     except Exception:
-        print ("Error encountered in unpacking files")
+        print ("WARNING: Error encountered in unpacking files")
 
     # Clean up direcgtory
     try:
         print ("Cleaning up directory")
         command = "rm ls.out"
-        os.system(command)
+        success = os.system(command)
         command = "rm *tar.gz*"
-        os.system(command)
+        success = os.system(command)
     except:
         print ("WARNING: Could not remove unneeded files.")
 
     os.chdir(cwd)
+    myTime = datetime.datetime.now()
+    LOG_H.write("%s%s\n" % ("REFSEQ PROTEIN download finish processing at ",myTime))
 
 ##############################################################################
 # Install SWISSPROT database
 
 if SWISSPROT:
+    myTime = datetime.datetime.now()
+    LOG_H.write("%s%s\n" % ("Swissprot download begin processing at ",myTime))
+ 
     os.chdir(swissprotDir)
     try:
         print ("Downloading Swissprot database.")
@@ -644,7 +773,7 @@ if SWISSPROT:
         success = os.system(command)
         print ("Swissprot database download complete.")
     except BlastError:
-        print ("Command " + command + " failed; please check the location of your blast executables")
+        print ("WARNING: Command " + command + " failed; please check the location of your blast executables")
 
     print ("Unpacking files...")
     try:
@@ -658,23 +787,31 @@ if SWISSPROT:
                 success = os.system(command)
         ls_h.close()
     except Exception:
-        print ("Error encountered in unpacking files")
+        print ("WARNING: Error encountered in unpacking files")
 
     # Remove unneeded files
     try:
         print ("Removing unneeded files.")
         command = "rm *tar.gz*"
         success = os.system(command)
+        command = "rm ls.out"
+        success = os.system(command)
     except:
         print ("WARNING: Could not remove unneeded files.")
 
     os.chdir(cwd)
+    myTime = datetime.datetime.now()
+    LOG_H.write("%s%s\n" % ("Swissprot download finish processing at ",myTime))
 
 ##############################################################################
 # Install NR database
 
 if NR:
+    myTime = datetime.datetime.now()
+    LOG_H.write("%s%s\n" % ("NR download begin processing at ",myTime))
     os.chdir(nrDir)
+
+    # Download NR database and format for blast
     try:
         print ("Downloading NR database.")
         print ("This may take a long time...")
@@ -682,7 +819,7 @@ if NR:
         success = os.system(command)
         print ("NR database download complete.")
     except BlastError:
-        print ("Command " + command + " failed; please check the location of your blast executables")
+        print ("WARNING: Command " + command + " failed; please check the location of your blast executables")
 
     # Clean up
     try:
@@ -691,12 +828,18 @@ if NR:
         success = os.system(command)
     except:
         print ("WARNING: Could not remove unneeded files.")
+
+    myTime = datetime.datetime.now()
+    LOG_H.write("%s%s\n" % ("NR download finish processing at ",myTime))
+ 
     os.chdir(cwd)
 
 ##############################################################################
 # Install VOG databases
 # 
 if VOGS:
+    myTime = datetime.datetime.now()
+    LOG_H.write("%s%s\n" % ("Vogs download begin processing at ",myTime))
     os.chdir(VOGsDir)
 
     # First, download the sequences
@@ -755,7 +898,7 @@ if VOGS:
         else:
             print ("WARNING: Not all data files were successfully downloaded.")
     except:
-        print("Downloading of VOG file(s) failed") 
+        print("WARNING: Downloading of VOG file(s) failed") 
 
     # Next, reformat sequence headers with VOG identifiers
     OK2FORMAT4BLAST = False
@@ -767,11 +910,11 @@ if VOGS:
             print ("This may take a long time (perhap 8 hours).")
             try:
                 command = "python3 dbPrep_vogTagFastas.py " + VOGsDir 
-                result = os.system(command)
+                success = os.system(command)
                 OK2FORMAT4BLAST = True
             except:
                 command = "python dbPrep_vogTagFastas.py " + VOGsDir
-                result = os.system(command)
+                success = os.system(command)
                 OK2FORMAT4BLAST = True
         except:
             print ("WARNING: Reformatting of sequence headers unsuccessful.")
@@ -785,7 +928,7 @@ if VOGS:
             success = os.system(command)
             print ("done")
         except BlastError:
-            print ("Command " + command + " failed; please check the location of your blast executables")
+            print ("WARNING: Command " + command + " failed; please check the location of your blast executables")
 
         try:
             print ("Formatting VOGs gene database for blast.")
@@ -793,14 +936,20 @@ if VOGS:
             success = os.system(command)
             print ("done")
         except BlastError:
-            print ("Command " + command + " failed; please check the location of your blast executables")
+            print ("WARNING: Command " + command + " failed; please check the location of your blast executables")
 
     os.chdir(cwd)
+    myTime = datetime.datetime.now()
+    LOG_H.write("%s%s\n" % ("Vogs download finish processing at ",myTime))
 
 ##### Install VOG HMMS
 
 if VOG_HMMS:
+    myTime = datetime.datetime.now()
+    LOG_H.write("%s%s\n" % ("Vog Hmms download begin processing at ",myTime))
     os.chdir(VOGhmmsDir)
+
+    # Download VOG Hmms, unpack, concatenate, and format for hmm search
     try:
         command = 'wget -O ' + vogHmms_filename + ' "' + VOG_DOWNLOAD_URL + vogHmms_filename + '"'
         success = os.system(command)
@@ -832,19 +981,23 @@ if VOG_HMMS:
                     print ("Next item is not a file:",fLine)
             print ("Concatenation is complete.")
         except:
-            print ("Concatenation failed.")
-
+            print ("WARNING: Concatenation failed.")
+       
+        # Format VOG HMMs
         try:
-            print ("Formatting VOG HMM file.")
-            command = "hmmpress VOGsHmmProfilesDB.hmm"
-            success = os.system(command)
-            print ("Formatting complete.")
+            try:
+                print ("Formatting VOG HMM file.")
+                command = "hmmpress VOGsHmmProfilesDB.hmm"
+                success = os.system(command)
+                print ("Formatting complete.")
+            except:
+                command = "hmmconvert VOGsHmmProfilesDB.hmm VOGsHmmProfilesDB.hmm"
+                success = os.system(command)
+                command = "hmmpress VOGsHmmProfilesDB.hmm"
+                success = os.system(command)
+                print ("Formatting complete.")
         except:
-            command = "hmmconvert VOGsHmmProfilesDB.hmm VOGsHmmProfilesDB.hmm"
-            os.system(command)
-            command = "hmmpress VOGsHmmProfilesDB.hmm"
-            success = os.system(command)
-            print ("Formatting complete.")
+            print ("WARNING: Formatting of VOG HMM file unsuccessful.")
 
         # Clean up the directory
         try:
@@ -860,13 +1013,18 @@ if VOG_HMMS:
             print ("WARNING: Something went wrong cleaning up the VOG HMM directory.")
 
     os.chdir(cwd)
+    myTime = datetime.datetime.now()
+    LOG_H.write("%s%s\n" % ("Vog Hmms download finish processing at ",myTime))
 
 ##############################################################################
 # Prepare PVOG HMMs
 
 if PVOG_HMMS:
+    myTime = datetime.datetime.now()
+    LOG_H.write("%s%s\n" % ("pVog Hmms download begin processing at ",myTime))
     os.chdir(pVOGhmmsDir)
 
+    # Download Pvog Hmms, unpack, concatenate, and format for hmm search
     HMMS = False
     try:
         print ("Downloading PVOG HMM profiles file.")
@@ -876,11 +1034,11 @@ if PVOG_HMMS:
         command = 'gunzip AllvogHMMprofiles.tar.gz'
         success = os.system(command)
         print ("tar")
-        command = 'tar -xvf AllvogHmmprofiles.tar'
+        command = 'tar -xvf AllvogHMMprofiles.tar'
         success = os.system(command)
         HMMS = True
     except:
-        print ("Download of PVOG HMM Profiles database unsuccessful.")
+        print ("WARNING: Download of PVOG HMM Profiles database unsuccessful.")
   
     if HMMS:
         pVOGhmmsSubDir = "AllvogHMMprofiles/"
@@ -904,19 +1062,23 @@ if PVOG_HMMS:
                     print ("Next item is not a file:",fLine)
             print ("Concatenation is complete.")
         except:
-            print ("Concatenation failed.")
+            print ("WARNING: Concatenation failed.")
 
+        # Format PVOG HMMs
         try:
-            print ("Formatting PVOG HMM file.")
-            command = "hmmpress PVOGsHmmProfilesDB.hmm"
-            success = os.system(command)
-            print ("Formatting complete.")
-        except:  # Could be older format
-            command = "hmmconvert PVOGsHmmProfilesDB.hmm PVOGsHmmProfilesDB.hmm"
-            os.system(command)
-            command = "hmmpress PVOGsHmmProfilesDB.hmm"
-            success = os.system(command)
-            print ("Formatting complete.")
+            try:
+                print ("Formatting PVOG HMM file.")
+                command = "hmmpress PVOGsHmmProfilesDB.hmm"
+                success = os.system(command)
+                print ("Formatting complete.")
+            except:  # Could be older format
+                command = "hmmconvert PVOGsHmmProfilesDB.hmm PVOGsHmmProfilesDB.hmm"
+                success = os.system(command)
+                command = "hmmpress PVOGsHmmProfilesDB.hmm"
+                success = os.system(command)
+                print ("Formatting complete.")
+        except:
+            print ("WARNING: Cound not format PVOG HMM file")
 
         # Clean up the directory
         try:
@@ -935,17 +1097,79 @@ if PVOG_HMMS:
         try:
             print ("Removing file(s) no longer needed.")
             command = "rm AllvogHMMprofiles.tar"
-            os.system(command)
+            success = os.system(command)
             print ("Cleanup successful.")
         except:
             print ("WARNING: Could not clean up pVOGhmms dir")
 
+    os.chdir(cwd)
+    myTime = datetime.datetime.now()
+    LOG_H.write("%s%s\n" % ("Pvog Hmms downloading finish processing at ",myTime))
+
+################
+# Download and format CAZy sequence database and associated files
+
+if CAZY:
+    myTime = datetime.datetime.now()
+    LOG_H.write("%s%s\n" % ("CAZy download begin processing at ",myTime))
+    os.chdir(CAZyDir)
+
+    # Download CAZy database files
+    try:
+        print ("Downloading ",cazyProteins)
+        command = 'wget "' + cazyProteins_httpAddr + '"'
+        success = os.system(command)
+    except:
+        print ("WARNING: Could not download ",cazyProteins)
+
+    try:
+        print ("Downloading ",cazyFamActivities)
+        command = 'wget "' + cazyFamActivities_httpAddr + '"'
+        success = os.system(command)
+    except:
+        print ("WARNING: Could not download ",cazyFamActivities)
+
+    try:
+        print ("Downloading ",cazyFamSubfamEC)
+        command = 'wget "' + cazyFamSubfamEC_httpAddr + '"'
+        success = os.system(command)
+    except:
+        print ("WARNING: Could not download ",cazyFamSubfamEC)
+
+    try:
+        print ("Downloading ",cazyFamInfo)
+        command = 'wget "' + cazyFamInfo_httpAddr + '"'
+        success = os.system(command)
+    except:
+        print ("WARNING: Could not download ",cazyFamInfo)
+
+    try:
+        print ("Downloading ",cazyPrWithEC)
+        command = 'wget "' + cazyPrWithEC_httpAddr + '"'
+        success = os.system(command)
+    except:
+        print ("WARNING: Could not download ",cazyPrWithEC)
+
+    # Format CAZy protein database for Blast
+    try:
+        print ("Formatting CAZy protein database for blast.")
+        command = blastPath + "makeblastdb -dbtype prot -in " + cazyProteins  
+        success = os.system(command)
+    except:
+        print ("WARNING: Could not format CAZy protein database for blast.")
+
+    os.chdir(cwd)
+    myTime = datetime.datetime.now()
+    LOG_H.write("%s%s\n" % ("CAZy download finish processing at ",myTime))
     os.chdir(cwd)
 
 ##############################################################################
 # Run makeblastdb on the Phantome and pVOGs databases
 
 if PHANTOME:
+    myTime = datetime.datetime.now()
+    LOG_H.write("%s%s\n" % ("Phantome formatting begin processing at ",myTime))
+ 
     os.chdir(phantomeDir)
     try:
         print ("Formatting Phantome database for blast.")
@@ -953,10 +1177,16 @@ if PHANTOME:
         success = os.system(command)
         print ("done")
     except BlastError:
-        print ("Command " + command + " failed; please check the location of your blast executables")
+        print ("WARNING: Command " + command + " failed; please check the location of your blast executables")
+
     os.chdir(cwd)
+    myTime = datetime.datetime.now()
+    LOG_H.write("%s%s\n" % ("Phantome formatting finish processing at ",myTime))
 
 if PVOGS:
+    myTime = datetime.datetime.now()
+    LOG_H.write("%s%s\n" % ("pVogs formatting begin processing at ",myTime))
+ 
     os.chdir(pVOGsDir)
     try:
         print ("Formatting pVOGs database for blast.")
@@ -964,12 +1194,18 @@ if PVOGS:
         success = os.system(command)
         print ("done")
     except BlastError:
-        print ("Command " + command + " failed; please check the location of your blast executables")
+        print ("WARNING: Command " + command + " failed; please check the location of your blast executables")
+
     os.chdir(cwd)
+    myTime = datetime.datetime.now()
+    LOG_H.write("%s%s\n" % ("pVogs formatting finish processing at ",myTime))
 
 #############################################################################
 
 print ("Done!")
+LOG_H.write("%s%s%s\n" % (CODE_NAME," end processing at ",myTime))
+LOG_H.close()
+DATA_H.close()
 
 ##############################################################################
 ##############################################################################
