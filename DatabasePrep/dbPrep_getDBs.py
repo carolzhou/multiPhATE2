@@ -11,7 +11,7 @@
 #
 # Summary:  This script facilitates the downloading of databases to be used with multiPhATE.
 #
-# Most recent update:  26 July 2020
+# Most recent update:  29 July 2020
 #
 ##############################################################################
 
@@ -150,7 +150,7 @@ VOGsBlastDBdir         = os.path.join(VOGsDir,        "BlastDBs/")
 VOGhmmsDir             = os.path.join(dbDir,          "VOGhmms/")
 CAZyDir                = os.path.join(dbDir,          "CAZY/")
 
-# Filenames from source
+# Additional filenames from source
 vogProteins_filename             = "vog.proteins.all.fa.gz"
 vogGenes_filename                = "vog.genes.all.fa.gz"
 vogAnnotations_filename          = "vog.annotations.tsv.gz"
@@ -173,7 +173,6 @@ pvogProteinHmms                  = "AllvogHMMprofiles/PVOGsHmmProfilesDB.hmm"
 vogGenes                         = "vog.genes.tagged.all.fa"
 vogProteins                      = "vog.proteins.tagged.all.fa"
 vogProteinHmms                   = "VOGsHmmProfilesDB.hmm"
-cazyProteins                     = "CAZy.faa"
 
 # Create database directories, if they don't already exist
 if not os.path.exists(dbDir):
@@ -499,6 +498,7 @@ elif INTERACTIVE:
 if NCBI_VIRUS_GENOME:
     myTime = datetime.datetime.now()
     LOG_H.write("%s%s\n" % ("NCBI VIRUS GENOME download begin processing at ",myTime))
+    LOG_H.flush()
     os.chdir(ncbiGenomeDownloadDir)
 
     # Download directories containing virus genome fasta files
@@ -603,6 +603,7 @@ if NCBI_VIRUS_GENOME:
     os.chdir(cwd)  # Return to home directory
     myTime = datetime.datetime.now()
     LOG_H.write("%s%s\n" % ("NCBI Virus Genome download finish processing at ",myTime))
+    LOG_H.flush()
 
 ##############################################################################
 # Install NCBI VIRUS PROTEIN database
@@ -611,6 +612,7 @@ if NCBI_VIRUS_PROTEIN:
 
     myTime = datetime.datetime.now()
     LOG_H.write("%s%s\n" % ("NCBI Virus Protein download begin processing at ",myTime))
+    LOG_H.flush()
  
     os.chdir(ncbiProteinDownloadDir)
 
@@ -711,6 +713,7 @@ if NCBI_VIRUS_PROTEIN:
     os.chdir(cwd)  # Return to home directory
     myTime = datetime.datetime.now()
     LOG_H.write("%s%s\n" % ("NCBI Virus Protein download finish processing at ",myTime))
+    LOG_H.flush()
 
 ##############################################################################
 # Install REFSEQ PROTEIN database
@@ -718,6 +721,7 @@ if NCBI_VIRUS_PROTEIN:
 if REFSEQ_PROTEIN:
     myTime = datetime.datetime.now()
     LOG_H.write("%s%s\n" % ("REFSEQ PROTEIN download begin processing at ",myTime))
+    LOG_H.flush()
     os.chdir(refseqProteinDir)
  
     filename_root = "refseq_protein"
@@ -757,6 +761,7 @@ if REFSEQ_PROTEIN:
     os.chdir(cwd)
     myTime = datetime.datetime.now()
     LOG_H.write("%s%s\n" % ("REFSEQ PROTEIN download finish processing at ",myTime))
+    LOG_H.flush()
 
 ##############################################################################
 # Install SWISSPROT database
@@ -764,6 +769,7 @@ if REFSEQ_PROTEIN:
 if SWISSPROT:
     myTime = datetime.datetime.now()
     LOG_H.write("%s%s\n" % ("Swissprot download begin processing at ",myTime))
+    LOG_H.flush()
  
     os.chdir(swissprotDir)
     try:
@@ -802,6 +808,7 @@ if SWISSPROT:
     os.chdir(cwd)
     myTime = datetime.datetime.now()
     LOG_H.write("%s%s\n" % ("Swissprot download finish processing at ",myTime))
+    LOG_H.flush()
 
 ##############################################################################
 # Install NR database
@@ -809,6 +816,7 @@ if SWISSPROT:
 if NR:
     myTime = datetime.datetime.now()
     LOG_H.write("%s%s\n" % ("NR download begin processing at ",myTime))
+    LOG_H.flush()
     os.chdir(nrDir)
 
     # Download NR database and format for blast
@@ -831,6 +839,7 @@ if NR:
 
     myTime = datetime.datetime.now()
     LOG_H.write("%s%s\n" % ("NR download finish processing at ",myTime))
+    LOG_H.flush()
  
     os.chdir(cwd)
 
@@ -840,6 +849,7 @@ if NR:
 if VOGS:
     myTime = datetime.datetime.now()
     LOG_H.write("%s%s\n" % ("Vogs download begin processing at ",myTime))
+    LOG_H.flush()
     os.chdir(VOGsDir)
 
     # First, download the sequences
@@ -941,12 +951,14 @@ if VOGS:
     os.chdir(cwd)
     myTime = datetime.datetime.now()
     LOG_H.write("%s%s\n" % ("Vogs download finish processing at ",myTime))
+    LOG_H.flush()
 
 ##### Install VOG HMMS
 
 if VOG_HMMS:
     myTime = datetime.datetime.now()
     LOG_H.write("%s%s\n" % ("Vog Hmms download begin processing at ",myTime))
+    LOG_H.flush()
     os.chdir(VOGhmmsDir)
 
     # Download VOG Hmms, unpack, concatenate, and format for hmm search
@@ -1015,6 +1027,7 @@ if VOG_HMMS:
     os.chdir(cwd)
     myTime = datetime.datetime.now()
     LOG_H.write("%s%s\n" % ("Vog Hmms download finish processing at ",myTime))
+    LOG_H.flush()
 
 ##############################################################################
 # Prepare PVOG HMMs
@@ -1022,6 +1035,7 @@ if VOG_HMMS:
 if PVOG_HMMS:
     myTime = datetime.datetime.now()
     LOG_H.write("%s%s\n" % ("pVog Hmms download begin processing at ",myTime))
+    LOG_H.flush()
     os.chdir(pVOGhmmsDir)
 
     # Download Pvog Hmms, unpack, concatenate, and format for hmm search
@@ -1105,6 +1119,7 @@ if PVOG_HMMS:
     os.chdir(cwd)
     myTime = datetime.datetime.now()
     LOG_H.write("%s%s\n" % ("Pvog Hmms downloading finish processing at ",myTime))
+    LOG_H.flush()
 
 ################
 # Download and format CAZy sequence database and associated files
@@ -1112,6 +1127,7 @@ if PVOG_HMMS:
 if CAZY:
     myTime = datetime.datetime.now()
     LOG_H.write("%s%s\n" % ("CAZy download begin processing at ",myTime))
+    LOG_H.flush()
     os.chdir(CAZyDir)
 
     # Download CAZy database files
@@ -1161,6 +1177,7 @@ if CAZY:
     os.chdir(cwd)
     myTime = datetime.datetime.now()
     LOG_H.write("%s%s\n" % ("CAZy download finish processing at ",myTime))
+    LOG_H.flush()
     os.chdir(cwd)
 
 ##############################################################################
@@ -1169,6 +1186,7 @@ if CAZY:
 if PHANTOME:
     myTime = datetime.datetime.now()
     LOG_H.write("%s%s\n" % ("Phantome formatting begin processing at ",myTime))
+    LOG_H.flush()
  
     os.chdir(phantomeDir)
     try:
@@ -1182,10 +1200,12 @@ if PHANTOME:
     os.chdir(cwd)
     myTime = datetime.datetime.now()
     LOG_H.write("%s%s\n" % ("Phantome formatting finish processing at ",myTime))
+    LOG_H.flush()
 
 if PVOGS:
     myTime = datetime.datetime.now()
     LOG_H.write("%s%s\n" % ("pVogs formatting begin processing at ",myTime))
+    LOG_H.flush()
  
     os.chdir(pVOGsDir)
     try:
@@ -1199,11 +1219,13 @@ if PVOGS:
     os.chdir(cwd)
     myTime = datetime.datetime.now()
     LOG_H.write("%s%s\n" % ("pVogs formatting finish processing at ",myTime))
+    LOG_H.flush()
 
 #############################################################################
 
 print ("Done!")
 LOG_H.write("%s%s%s\n" % (CODE_NAME," end processing at ",myTime))
+LOG_H.flush()
 LOG_H.close()
 DATA_H.close()
 

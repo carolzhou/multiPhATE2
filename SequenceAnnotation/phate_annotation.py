@@ -2,7 +2,7 @@
 # Module: phate_annotation.py
 # Programmer: Carol L. Ecale Zhou
 #
-# Latest update: 30 June 2020
+# Latest update: 28 July 2020
 #
 # Description: Module containing classes and methods for representing annotation results from various sources 
 #
@@ -463,14 +463,16 @@ class annotationRecord(object):
             accession = words[0]
             description = ' '.join(words[1:])
             # Find line in database corresponding to this accession
-            if MAC_OSX:
+            try:
                 #*** THIS COMMAND WORKS ON MAC OSX; I DON'T KNOW IF IT WILL WORK ON UNIX
                 #*** LC_ALL=C might crash on non-OSX systems.
                 command = 'LC_ALL="C" grep -a \"' + accession + '\" ' + database
-            else:
+                proc = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
+                out, err = proc.communicate()
+            except:
                 command = 'grep -a \"' + accession + '\" ' + database
-            proc = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
-            out, err = proc.communicate()
+                proc = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
+                out, err = proc.communicate()
             if DEBUG:
                 print("phate_annotation says, DEBUG: out is",out)
             # Apparently, grep reads as binary... so need to convert result
@@ -493,7 +495,8 @@ class annotationRecord(object):
             print("phate_annotation says, DEBUG: Returning ncbiTaxonList:",ncbiTaxonList)
         return ncbiTaxonList
 
-    def link2databaseIdentifiers(self,database,dbName):
+    def link2databaseIdentifiers(self,database,dbName):   #*** DE-HARD-CODE the cazy annotation database !!!
+        cazyAnnotationFile = "/Users/zhou4/DEV/PhATE/test_getDBs/Databases/CAZY/CAZyDB.07312019.fam-activities.txt"
         dbxrefList = []; VOGlist = []  # holds concatenation of functional annotations
         enzymeList = []; ncbiProteinList = []; taxonList = [] # hold specific annotations
         pfamList   = []; uniprotList     = []; koList    = [] # hold specific annotations
@@ -546,7 +549,13 @@ class annotationRecord(object):
                     description = words[1:]
                 VOGlist = description
 
-            elif dbName.lower() == 'vogs':
+            elif dbName.lower() == 'vogs':   #*** To be deprecated
+                VOGlist = self.getVOGmembers(VOGannotationFile,'vog') 
+
+            elif dbName.lower() == 'vogGene':
+                VOGlist = self.getVOGmembers(VOGannotationFile,'vog') 
+
+            elif dbName.lower() == 'vogProtein':
                 VOGlist = self.getVOGmembers(VOGannotationFile,'vog') 
 
             elif dbName.lower() == 'pvogs_hmm':
@@ -557,6 +566,9 @@ class annotationRecord(object):
 
             elif dbName.lower() == 'ncbivirusprotein':
                 pass
+ 
+            elif dbName.lower() == 'cazy':   # use dbxrefList
+                dbxrefList = self.getECdescription4cazy(cazyAnnotationFile)
  
             else:
                 if PHATE_WARNINGS == 'True':
@@ -573,6 +585,49 @@ class annotationRecord(object):
         self.description = annotationString
 
         return 
+
+    # Parses the CAZy annotation file to capture enzyme description(s) for blast hits.
+    def getECdescription4cazy(self,cazyAnnotationFile):
+        # self.name is the subject hit header
+        dbxrefList = []; dbxrefCode = ""  # captures codes and annotations for CAZy hits
+        code = ""; codeList = []  # captures codes that are listed in the headers of CAZy hits 
+        annotationCode = ""; annotationDescription = ""  # from cazy annotation file; these are captured for reporting
+        # Headers look like this: ">AWI06117.1|GT2|AT46|" (with one or more codes, pipe-separated)
+        p_header = re.compile('^.*\|(.*)\|$')   # Greedy matching should capture all codes 
+        CAZY_ANNOT_H = open(cazyAnnotationFile,'r')
+        try:
+            # Pull dbxref from header; find data line in cazyAnnotationFile; add to dbxrefList
+            match_header = re.search(p_header,self.name)
+            if match_header:
+                dbxrefCode = match_header.group(1)
+                codeList = dbxrefCode.split('|')
+                if DEBUG: 
+                    print("phate_annotation says, DEBUG: dbxrefCode is",dbxrefCode)
+                ANNOT_H = open(cazyAnnotationFile,'r')
+                aLines = ANNOT_H.read().splitlines()
+                for code in codeList:
+                    if code != "": 
+                        for aLine in aLines:
+                            match_dbxref = re.search(code,aLine)
+                            if match_dbxref:
+                                try:
+                                    (annotationCode,annotationDescription) = aLine.split('\t')
+                                    if code == annotationCode:  # Need to identify the identical one (else keep looking)
+                                        dbxrefList.append(annotationDescription)
+                                        break 
+                                    else:
+                                        code = ""; annotationCode = ""; annotationDescription = "" # reset
+                                        continue
+                                except:
+                                    if PHATE_WARNINGS == 'True':
+                                        print("phate_annotation says, WARNING: No annotation found for dbxrefCode",dbxrefCode)
+                ANNOT_H.close()
+            else:
+                print("phate_annotation says, WARNING: getECdescription4cazy saw an unexpected subject hit header:",self.name)
+        except:
+            print("phate_annotation says, WARNING: Cannot identify dbxref for subject header",self.name)
+        CAZY_ANNOT_H.close()
+        return dbxrefList
 
     # PRINT METHODS
 

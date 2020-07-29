@@ -44,8 +44,10 @@ NCBI_VIRUS_PROTEIN_HMM_HOME   = os.environ["PHATE_NCBI_VIRUS_PROTEIN_BLAST_HOME"
 REFSEQ_PROTEIN_HMM_HOME       = os.environ["PHATE_REFSEQ_PROTEIN_BLAST_HOME"]
 REFSEQ_GENE_HMM_HOME          = os.environ["PHATE_REFSEQ_GENE_BLAST_HOME"]
 PVOGS_HMM_HOME                = os.environ["PHATE_PVOGS_BLAST_HOME"]
-VOGS_HMM_HOME                 = os.environ["PHATE_VOGS_BLAST_HOME"]
+VOGS_HMM_HOME                 = os.environ["PHATE_VOGS_BLAST_HOME"]   #*** To be deprecated
 VOGS_ANNOTATION_FILE          = os.environ["PHATE_VOGS_ANNOTATION_FILE"]
+VOG_GENE_HMM_HOME             = os.environ["PHATE_VOG_GENE_BLAST_HOME"]
+VOG_PROTEIN_HMM_HOME          = os.environ["PHATE_VOG_PROTEIN_BLAST_HOME"]
 PHANTOME_HMM_HOME             = os.environ["PHATE_PHANTOME_BLAST_HOME"]
 PHAGE_ENZYME_HMM_HOME         = os.environ["PHATE_PHAGE_ENZYME_BLAST_HOME"]
 KEGG_VIRUS_HMM_HOME           = os.environ["PHATE_KEGG_VIRUS_BLAST_HOME"]
@@ -54,6 +56,8 @@ SMART_HMM_HOME                = os.environ["PHATE_SMART_BLAST_HOME"]
 SWISSPROT_HMM_HOME            = os.environ["PHATE_SWISSPROT_BLAST_HOME"]
 UNIPROT_HMM_HOME              = os.environ["PHATE_UNIPROT_BLAST_HOME"]
 NR_HMM_HOME                   = os.environ["PHATE_NR_BLAST_HOME"]
+CUSTOM_GENE_HMM_HOME          = os.environ["PHATE_CUSTOM_GENE_BLAST_HOME"]
+CUSTOM_PROTEIN_HMM_HOME       = os.environ["PHATE_CUSTOM_PROTEIN_BLAST_HOME"]
 
 # Verbosity and output/error capture
 CLEAN_RAW_DATA                = os.environ["PHATE_CLEAN_RAW_DATA"]
