@@ -1,4 +1,4 @@
-# multiPhATE v.1.50
+# multiPhATE v.1.9
 /MultiPhATE/ - multiPhATE2 (beta version) - This code is under development - Testing is appreciated!
 For a production version of multiPhATE, use the code at https://github.com/carolzhou/multiPhATE.git.
 
@@ -286,13 +286,13 @@ Note that genemarks and phanotate are not available as conda packages, so these 
 * Feel free to post issues and suggestions regarding multiPhATE on our github project page: https://github.com/carolzhou/multiPhATE2.git. Select the 'Issues' tab.
 
 #### TROUBLESHOOTING
-* multiPhATE runs under Python 3.x. It is recommended to set up a Conda environment, but if you are not doing so, and you receive a syntax error referring to a print statement, then you may indicate that you are running the code in a Python 2.x environment. Unfortunately, invoking python3 at the command line will not enable python3 for subordinate codes in the multiPhATE code base. You must either upgrade your system to Python 3.x, or run multiPhATE in a Python 3.x Conda environment.
-* The dbPrep\_getDBs.py script can become out of date as 3rd party database providers modify their data or its location. Kindly notify the developers by submitting an issue on the project github project page if you encounter problems in downloading with dbPrep\_getDBs.py.
+* multiPhATE runs under Python 3.x. It is recommended to set up a Conda environment, but if you are not doing so, and you receive a syntax error referring to a print statement, then that may indicate that you are running the code in a Python 2.x environment. Unfortunately, invoking python3 at the command line will not enable python3 for subordinate codes in the multiPhATE code base. You must either upgrade your system to Python 3.x, or run multiPhATE in a Python 3.x Conda environment.
+* The dbPrep\_getDBs.py script can become out of date as 3rd party database providers modify their data or its location. Kindly notify the developers by submitting an issue on the github project page if you encounter problems in downloading with dbPrep\_getDBs.py.
 * Are you installing on a remote server and your console keeps timing out and getting disconnected before dbPrep_getDBs.py finishes a download? The script can be modified as a workaround for this problem. Edit the dbPrep_getDBs.py file as follows: set INTERACTIVE to False, and set REMOTE to True and VERBOSE to True (note: these words are case sensitive). Running dbPrep_getDBs.py in REMOTE mode will require that you pre-set the databases you want downloaded. Scroll down to the comment that says, "Pre-set download instructions; skip user input", and set the databases you want to True.
 
 #### RUNNING PHATE AS AN "EMBARASSINGLY PARALLEL" CODE
 
-There are three ways to perform parallel processing with multiPhATE. 1) The code can be run using pthread by specifying the number of threads in the configuration file (threads=''), or by specifying 'ALL', to use all available pthreads on your system. 2) Multiple instances of multiPhATE can be distributed across cores of a high-performance computing machine by specifying HPC='true' in the configuration file. Note that the user will need to write scripts specific to the hardware on which multiPhATE is to be run. 3) Blast+ allows the user to specify the number of threads for running blast processing. Specify the number of blast threads in the configuration file: blast_threads=''. 
+There are three ways to perform parallel processing with multiPhATE. 1) The code can be run using pthreads by specifying the number of threads in the configuration file (threads=''), or by specifying 'ALL', to use all available pthreads on your system. 2) Multiple instances of multiPhATE can be distributed across cores of a high-performance computing machine by specifying HPC='true' in the configuration file. Note that the user will need to write scripts specific to the hardware on which multiPhATE is to be run. 3) Blast+ allows the user to specify the number of threads for running blast processing. Specify the number of blast threads in the configuration file: blast_threads=''. 
 
 The MultiPhATE2 Pipeline avoids clashes in writing results; outputs for each genome are written to user-specified output subdirectories (specified in your multiPhate.config file).
 
