@@ -8,14 +8,18 @@ THIS CODE IS COVERED BY THE BSD LICENSE. SEE INCLUDED FILE BSD-3.pdf FOR DETAILS
 
 #### WHAT'S NEW?
 
-1) multiPhATE inputs an optional user-provided (custom) gene-call set.
-2) In comparing gene calls from multiple gene callers, multiPhATE now generates several new gene-call sets: superset, consensus, commoncore.
-3) The new gene-call sets can be forwarded to the functional annotation processing.
-4) The PhATE annotation pipeline now runs phmmer and hmmscan, in addition to jackhmmer.
-5) PhATE now captures the raw hmm search output (ie, alignments).
-6) multiPhATE now runs CompareGeneProfiles, a code that identifies gene similarities among genomes.
-7) A genomics module computes gene and protein homology groups among all genomes input to the pipeline
-8) PhATE now includes the VOG sequences and hmms, processed by blastp, hmm search, and profile search.
+1)  multiPhATE inputs an optional user-provided (custom) gene-call set.
+2)  In comparing gene calls from multiple gene callers, multiPhATE now generates several new gene-call sets: superset, consensus, commoncore.
+3)  The new gene-call sets can be forwarded to the functional annotation processing.
+4)  The PhATE annotation pipeline now runs phmmer and hmmscan, in addition to jackhmmer.
+5)  PhATE now captures the raw hmm search output (ie, alignments).
+6)  multiPhATE now runs CompareGeneProfiles, a code that identifies gene similarities among genomes.
+7)  A genomics module computes gene and protein homology groups among all genomes input to the pipeline
+8)  PhATE now includes the VOG sequences and hmms, processed by blastn, blastp, hmm search, and profile search.
+9)  The user may now include custom gene and protein fasta databases for blast analysis.
+10) PhATE now runs blastp against the CAZy database.
+11) The Refseq Gene database is no longer supported by multiPhATE. Refseq Gene has been replaced with the VOG gene database.
+12) multiPhATE now support parallelism using pthreads and by distributing blast+.
 
 #### ABOUT THE MULTI-PHATE PIPELINE DRIVER
 
@@ -23,7 +27,7 @@ MultiPhATE is a command-line program that runs the PhATE annotation code over us
 
 #### ABOUT THE PHATE PIPELINE
 
-PhATE is a fully automated computational pipeline for identifying and annotating phage genes in genome sequence. PhATE is written in Python 3.7, and runs on Linux and Mac operating systems. Code execution is controled by a configuration file, which can be tailored to run specific gene finders and to blast sequences against specific phage- and virus-centric data sets, in addition to more generic (genome, protein) data sets. See below for the specific databases that are accommodated. PhATE runs at least one gene finding algorithm, then annotates the genome, gene, and protein sequences using nucleotide and protein blast flavors and a set of fasta sequence databases, and uses hmm searches (phmmer, jackhmmer) against these same fasta databases. It also run hmmscan against the pVOG profile database. If more than one gene finder is run, PhATE will provide a side-by-side comparison of the genes called by each gene caller. The user specifies the preferred gene caller, and the genes and proteins predicted by that caller are annotated using blast against the supporting databases (or, the user may specify one of the comparison gene sets: superset, consensus, or commoncore, for functional annotation). Classification of each protein sequence into a pVOG group is followed by generation of an alignment-ready fasta file. By convention, genome sequence files end with extension, ".fasta"; gene nucleotide fasta files end with, ".fnt", and cds amino-acid fasta files end with, ".faa".
+PhATE is a fully automated computational pipeline for identifying and annotating phage genes in genome sequence. PhATE is written in Python 3.7, and runs on Linux and Mac operating systems. Code execution is controled by a configuration file, which can be tailored to run specific gene finders and to blast sequences against specific phage- and virus-centric data sets, in addition to more generic (genome, protein) data sets. See below for the specific databases that are accommodated. PhATE runs at least one gene finding algorithm, then annotates the genome, gene, and protein sequences using nucleotide and protein blast flavors and a set of fasta sequence databases, and uses hmm searches (phmmer, jackhmmer) against these same fasta databases. It also runs hmmscan against the pVOG and VOG hmm profile databases. If more than one gene finder is run, PhATE will provide a side-by-side comparison of the genes called by each gene caller. The user specifies the preferred gene caller, and the genes and proteins predicted by that caller are annotated using blast against the supporting databases (or, the user may specify one of the comparison gene sets: superset, consensus, or commoncore, for functional annotation). Classification of each protein sequence into a pVOG group is followed by generation of an alignment-ready fasta file. By convention, genome sequence files end with extension, ".fasta"; gene nucleotide fasta files end with, ".fnt", and cds amino-acid fasta files end with, ".faa".
 
 #### ABOUT COMPARE-GENE-PROFILES and the GENOMICS MODULE
 
@@ -62,7 +66,7 @@ Availability and locations of supporting databases and codes are to be specified
 
 Procedure:
 
-1) At the command line, make a copy of the file, sample.multiPhate.config, and name it appropriately (hereafter referred to as 'multiPhate.config'):  `$ cp sample.multiPhate.config multiPhate.config`.  Then, edit your config file as described below.
+1) At the command line, make a copy of the file, sample.multiPhate.config, and name it appropriately (hereafter referred to as 'multiPhate.config'):  `$ cp sample.multiPhate.config multiPhate.config.  Then, edit your config file as described below.
 
 2) List of Genomes:
 For each genome to be processed, provide six lines under "Genome List:" and before "END of list":  for each genome, you need to list the genome number, the name of the genome fasta file, the genome type (typically 'phage', but could be 'bacteria'), the species, if known (no spaces), the name of the genome, and a name for the output directory to hold this genome's output files (again, no spaces), in that order. You can simply copy/paste the six lines provided as many times as needed, and fill in the information appropriate for each genome.
@@ -77,7 +81,8 @@ The gene_caller option specifies which gene caller's results (ie, gene calls) wi
 Set to 'true' each blast or hmm process that you want to be run. Note that you must have acquired the associated database, and in the next section (Databases) you must configure the location of each database. You may also set the desired blast parameters. The blast_identity sets the minimum identity that will be considered; any blast result below that threshold will be ignored. The hit_count parameters will determine how many top hits will be reported. (Note that recent releases of blast+ suggest considering at least 5 hits, and will generate a warning message if you set the hit count to less than 5.) You may select hmm search using phmmer, jackhmmer, or hmmscan. Currently hmm searches are performed only using the protein fasta databases or the pVOG profile database (future releases of multiPhate are expected to support additional databases).
 
 6) Databases:
-For each database that you have in-house, specify the full path/filename. Note that you may need to prepare in advance all blast databases by running the "makeblastdb" utility (see instructions with blast+ code for how to do that). MultiPhate will only run with blast+; it does not support legacy blast. For instructions where to download the databases, see the SUPPORTING DATABASES section below. Note that KEGG is available by license. Note also that in some cases additional files are required. In this case, place the additional file(s) in the same directory as the associated blast database. For example, place the NCBI accession2taxid file in the same directory as your NCBI virus genome file (see below). If you are downloading datasets that you anticipate using specifically with multiPhATE, then it is suggested, for convenience, that you save them in the Databases/ folder in the multiPhATE distribution, but any database can be located anywhere on your local system; you need only indicate in the multiPhate.config file the full path/filename for each database. Remember, the pVOGs and Phantome data sets are included in the multiPhATE distribution in the Databases/ folder, but you will need to run makeblastdb to render the datasets blast-able (`$ makeblastdb -help`). If you will be running hmmscan, then you will need to format the pVOG database accordingly: 
+Most databases used by multiPhATE can be downloaded and formatted automatically using script dbPrep-getDBs.py. Find this script in the DatabasePrep/ folder. dbPrep-getDBs.py is provided for your convenience; however, please be aware that web page URLs and filenames may change at any time, effectively breaking the script. If this happens, do kindly notify us by submitting an issue on the project's github page. dbPrep-getDBs.py will generate a listing of the locations of the downloaded databases, which you may use to fill in the database locations in your multiphate configuration file. Always double check that the databases are indeed present and located where listed. Alternately, you may download and format the databases by hand, as described below in the Supporting Databases section. Downloading large databases can be a time-consuming process, so plan accordingly.
+For each database that you have in-house, specify the full path/filename. Note that you may need to prepare in advance all blast databases by running the "makeblastdb" utility (see instructions with blast+ code for how to do that). MultiPhate will only run with blast+; it does not support legacy blast. For instructions where to download the databases, see the SUPPORTING DATABASES section below. Note that KEGG is available by license. Note also that in some cases additional files are required. In this case, place the additional file(s) in the same directory as the associated blast database. For example, place the NCBI accession2taxid file in the same directory as your NCBI virus genome file (see below). If you are downloading datasets that you anticipate using specifically with multiPhATE, then it is suggested, for convenience, that you save them in the Databases/ folder in the multiPhATE distribution, but any database can be located anywhere on your local system; you need only indicate in the multiPhate.config file the full path/filename for each database. Remember, the pVOGs and Phantome data sets are included in the multiPhATE distribution in the Databases/ folder, but you will need to run makeblastdb to render the datasets blast-able (`$ makeblastdb -help`). If you will be running hmmscan, then you will need to format the pVOG and VOG databases accordingly: 
 
 ```
 $ cat pVOG\*.hmm > pVOGsHmmProfilesDB.hmm
@@ -109,8 +114,6 @@ NCBI-associated file:  accession2taxid file - ftp://ftp.ncbi.nlm.nih.gov/pub/tax
 
 NCBI Refseq Protein - download using blast+: /bin/update_blastdb.pl refseq_protein
 
-NCBI Refseq Gene - download using blast+: /bin/update_blastdb.pl refseqgene. This database contains primarily human sequences. To acquire bacterial gene sequences you may need to download them via http://ncbi.nlm.nih.gov/gene and process the data to generate a fasta data set. Support for doing this is not provided with the multiPhATE distribution.
-
 NCBI Swissprot - download using blast+: /bin/update_blastdb.pl swissprot
 
 NR - ftp://ftp.ncbi.nlm.nih.gov/nr/
@@ -119,7 +122,7 @@ KEGG virus subset - (available by license) http://www.kegg.jp/kegg/download/
 
 KEGG associated files - T40000.pep, T40000.nuc, vg_enzyme.list, vg_genome.list, vg_ko.list, vg_ncbi-geneid.list, vg_ncbi-proteinid.list, vg_pfam.list, vg_rs.list, vg_tax.list, vg_uniprot.list
 
-Phantome protein fasta sequences - http://www.phantome.org/Downloads/phage_proteins_nnnnnnnnn.fasta. (A version of Phantome is included in the multiPhATE distribution.)
+Phantome protein fasta sequences - http://www.phantome.org/Downloads/phage_proteins_nnnnnnnnn.fasta. (A version of Phantome is included in the multiPhATE distribution.) !!! URL NEEDS UPDATE.
 
 pVOGs prepared database (pVOGs.faa) - included in PhATE distribution. This data set was derived by C. Zhou from the pVOGs fasta database. For use in PhATE, the sequence fasta headers have been modified to include the pVOG identifiers (all groups to which each sequence belongs). This re-formatting facilitates pVOG group identification and construction of the alignment-ready fasta files. Codes for reconstructing this modified data set are included in the PhATE distribution. Note that the pVOGs are not mutually exclusive, meaning that a sequence may have membership in more than one VOG group. The codes included in the phate distribution will combine identifiers that belong to a given sequence and list all the VOG identifiers in the fasta header. In this way, the pVOG fasta database used in PhATE is also non-redundant. See documentation in DatabasePrep/dbPrep_createPvogFastaFile.py for instructions how to update your local pVOGs data set for use in PhATE, but you can start with the pVOGs.faa file included in the PhATE distribution. Combine the pVOG fasta sequences into a single file and format for hmmscan profile search as follows:
 ```
@@ -128,12 +131,17 @@ $ mv pVOGsHMMprofilesDB.hmm ../.
 $ cd ..
 $ hmmpress pVOGsHmmProfilesDB.hmm
 ```
-VOGs - download at http://fileshare.csb.univie.ac.at/vog/vog98/. Prepare for hmm profile searching in the same manner as pVOGs (see #6 above). Caution: this database is large. If you get error messages to the effect that there are too many lines to concatenate, then try using the dbPrep_consolidateVOGs.py script in the DatabasePrep/ folder. Then format using hmmpress as above.
+The pVOGs data set is updated infrequently; as of this writing (1 August 2020), the pVOGs database has not been updated since it was last inserted into the multiPhATE distribution.
+
+VOGs - download at http://fileshare.csb.univie.ac.at/vog/vog99/. Prepare for hmm profile searching in the same manner as pVOGs (see #6 above). Caution: this database is large. If you get error messages to the effect that there are too many lines to concatenate, then try using the dbPrep_consolidateVOGs.py script in the DatabasePrep/ folder. Then format using hmmpress as above. The VOG database files are updated on a regular basis. You may modify the dbPrep-getDBs.py script to download the current database version by modifying the VOG\_VERSION variable at the top of the dbPrep-getDBs.py code (approximately line 59). The multiPhATE developers will check periodically for the next update and will modify the dbPrep\_getDBs.py script accordingly, but please feel free to notify us if you detect an update before we do.
+
+CAZy - download at http://bcb.unl.edu/dbCAN2/download/Databases/CAZyDB.07312019.fa. Also get the file, "CAZyDB.07312019.fam-activities.txt". CAZy is updated frequently, so be sure to capture the most recent version of the data (based on embedded date in filenames). 
 
 For simplicity in configuring the locations of dependent databases in the multiPhate.config file, it is suggested that the above databases be placed in a directory structure as follows: 
 
 ```
 Databases/
+	CAZY/
 	KEGG/ 
 	NCBI/ 
 		Virus_Genome/ 
@@ -142,10 +150,11 @@ Databases/
 	Phantome/ 
 	Refseq/ 
 		Protein/ 
-		Gene/ 
 	Swissprot/ 
 	pVOGs/
+	pVOGhmms/
         VOGs/
+	VOGhmms/
 ```
 
 You must specify in your multiPhate.config file the locations of the data sets that you will be using. Although it is recommended that you place your databases in the above directory structure, they can reside anywhere locally on disk, but in any case you must specify the full directory path/filename to a given resource in your multiPhate.config file.
@@ -167,13 +176,12 @@ Glimmer - https://ccb.jhu.edu/software/glimmer/ Use Glimmer version 3. (optional
 
 Prodigal - https://github.com/hyattpd/Prodigal (optional) (conda)
 
-PHANOTATE - A Python 3-compatible version of PHANOTATE is included in the multiPhATE distribution, in the ExternalCodes/ folder. Unzip PHANOTATE.zip, and follow instructions in the README. Future updates to PHANOTATE will be available at https://github.com/deprekate/PHANOTATE. (optional)
+PHANOTATE - https://github.com/deprekate/PHANOTATE. (optional) (install using pip3 or follow instructions in PHANOTATE distribution)
 
 jackhmmer, phmmer, hmmscan - https://www.eddylab.org/software.html or http://www.hmmer.org/download.html. Download HMMER; hmm search codes are included in this package (optional) (conda - hmmer) 
 
 tRNAscan-SE - https://www.eddylab.org/software.html - select tRNAscan-SE download link (conda)
 
-Third-party codes should be installed globally whenever possible. However, it is recommended that PHANOTATE be installed under the ExternalCodes/ subdirectory in the execution/working directory. (The ExternalCodes/ subdirectory should already exist in the multiPhATE distribution, with PHANOTATE for Python 3.x in that location.)
 
 #### CONDA INSTALLATION
 
@@ -210,31 +218,41 @@ Note that genemarks and phanotate are not available as conda packages, so these 
 
 #### MultiPHATE OUTPUT FILES 
 
-In the user-specified output directory (eg, myGenomeDir/), under PipelineOutput/, the following files will be written:
+1) In the main output directory (PipelineOutput/), the following files and directories are written:
 
-gene-call outputs from each of the gene callers that was run, including a gff-formatted output file
+* Output directories, one for each genome processed through PhATE (see below)
+* CGP\_RESULTS/ directory - Output from the CompareGeneProfiles analysis (see below)
+* GENOMICS\_RESULTS/ directory  - Output from the Comparative Genomics modue (see below)
+* Log files
 
-gene.fnt and protein.faa fasta files generated using the designated preferred gene finder
+2) Under each genome's output directory, the following directories and files are written:
 
-CGC_results.txt - side-by-side comparison of all gene finder results (if at least two were run) plus comparison statistics
-
-cgc.gff - a superset of gene calls, each tagged with the gene caller(s) that made the call
-
-phate_sequenceAnnotation_main.out - tabbed integrated annotation results (also written in gff format)
-
-BLAST/ directory - raw blast results for genome (under Genome/) and proteins (under Protein/) (if CLEAN_RAW_DATA switch in multiPhate.config file is 'false')
-
-HMM/ directory - raw hmm search results for protein sequences (under Protein/) (if CLEAN_RAW_DATA switch in phate_runPipeline.py is 'False') This includes the hmm-formatted outputs (tbl and dom) and the raw alignments (std), which are voluminous.
-
-pVOG grouping comprising alignment-ready fasta files (under HMM/Protein/) based on best hmm hits
-
-log files capturing details of the processing and time stamps
+* BLAST/ directory - Raw blast output (if not "cleaned"); pvog and vog fasta groupings
+* HMM/ directory - Raw hmm output (if not "cleaned"); pvog and vog hmm fasta groupings
+* PROFILE/ directory - Raw profile search output (if not "cleaned"); pvog and vog profile fasta groupings
+* Output files:
+	gene-call outputs from each of the gene callers that was run, including a gff-formatted output file
+	gene.fnt and protein.faa fasta files generated using the user-designated preferred gene finder
+	CGC_results.txt - side-by-side comparison of all gene finder results (if at least two were run) plus comparison statistics
+	cgc.gff - a superset of gene calls, each tagged with the gene caller(s) that made the call
+	gene-call subsets:  consensus, common-core
+	Annotation output files: phate_sequenceAnnotation_main.out/gff - Integrated annotation results in tabbed and GFF formats. 
+* Intermediate files: gene and protein sequences formatted for CompareGeneProfiles processing.
+* Log files
 
 The auto-generated myGenomeName_phate.config file, to record exactly how you configured the pipeline for the current run (genome).
 
-CGP/ directory - 
+3) CGP\_RESULTS/ directory - Binary genome comparison files, output from CompareGeneProfiles. Under each Results\_xxx directory are the results of binary comparisons among genes/proteins of 2 genomes, including report and summary files.
 
-GENOMICS/ directory - 
+4) GENOMICS/ directory - Output from genomic comparisons among all input genomes.
+* HOMOLOGY\_GROUPS/ directory: gene and protein fasta files, each containing fasta sequences identified as homologous among genomes; annotations of the sequences per group
+* Files listing: 
+	the core genome
+	gene/protein correspondences
+	unmatched genes/proteins ("loners")
+	mutual best hits
+	singular best hits
+	paralogs
 
 #### INSTALLATION AND SET-UP CHECKLIST
 
@@ -251,6 +269,10 @@ GENOMICS/ directory -
 	- modified the verbosity (optional)
 * We recommend stepwise testing to be sure all components have been correctly installed and specified.
 * Feel free to post issues and suggestions regarding multiPhATE on our github project page: https://github.com/carolzhou/multiPhATE2.git. Select the 'Issues' tab.
+
+#### TROUBLESHOOTING
+* multiPhATE runs under Python 3.x. It is recommended to set up a Conda environment, but if you are not doing so, and you receive a syntax error referring to a print statement, then you may be running the code in a Python 2.x environment. Unfortunately, invoking python3 at the command line will not enable python3 for subordinate codes in the multiPhATE code base. You must either upgrade your system to Python 3.x, or run multiPhATE in a Python 3.x Conda environment.
+* The dbPrep\_getDBs.py script can become out of date as 3rd party database providers modify their data or its location. Kindly notify the developers by submitting an issue on the project github project page if you encounter problems in downloading with dbPrep\_getDBs.py.
 
 #### RUNNING PHATE AS AN "EMBARASSINGLY PARALLEL" CODE
 
