@@ -6,7 +6,7 @@ Written by Carol L. Ecale Zhou and Jeffrey A Kimbrel
 CODE
 All rights reserved.
 
-This file is part of multiPhATE (PhATE). For details, see https://github.com/carolzhou/multiPhATE. Please also read this link - Additional BSD Notice.
+This file is part of multiPhATE (PhATE). For details, see https://github.com/carolzhou/multiPhATE2. Please also read this link - Additional BSD Notice.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
