@@ -48,18 +48,19 @@ if PHATE_MAC_OSX == 'True':
 else:
     MAC_OSX = False
 
-KEGG_VIRUS_BASE_DIR = os.environ["PHATE_KEGG_VIRUS_BASE_DIR"]
-NCBI_VIRUS_BASE_DIR = os.environ["PHATE_NCBI_VIRUS_BASE_DIR"]
-PHANTOME_BASE_DIR   = os.environ["PHATE_PHANTOME_BASE_DIR"]
-NCBI_TAXON_DIR      = os.environ["PHATE_NCBI_TAXON_DIR"]
-PVOGS_BASE_DIR      = os.environ["PHATE_PVOGS_BASE_DIR"]
-VOGS_BASE_DIR       = os.environ["PHATE_VOGS_BASE_DIR"]
+KEGG_VIRUS_BASE_DIR  = os.environ["PHATE_KEGG_VIRUS_BASE_DIR"]
+NCBI_VIRUS_BASE_DIR  = os.environ["PHATE_NCBI_VIRUS_BASE_DIR"]
+PHANTOME_BASE_DIR    = os.environ["PHATE_PHANTOME_BASE_DIR"]
+NCBI_TAXON_DIR       = os.environ["PHATE_NCBI_TAXON_DIR"]
+PVOGS_BASE_DIR       = os.environ["PHATE_PVOGS_BASE_DIR"]
+VOGS_BASE_DIR        = os.environ["PHATE_VOGS_BASE_DIR"]
+CAZY_ANNOTATION_PATH = os.environ["PHATE_CAZY_ANNOTATION_PATH"]
 
 # Verbosity
-CLEAN_RAW_DATA      = os.environ["PHATE_CLEAN_RAW_DATA"]
-PHATE_WARNINGS      = os.environ["PHATE_PHATE_WARNINGS"]
-PHATE_MESSAGES      = os.environ["PHATE_PHATE_MESSAGES"]
-PHATE_PROGRESS      = os.environ["PHATE_PHATE_PROGRESS"]
+CLEAN_RAW_DATA = os.environ["PHATE_CLEAN_RAW_DATA"]
+PHATE_WARNINGS = os.environ["PHATE_PHATE_WARNINGS"]
+PHATE_MESSAGES = os.environ["PHATE_PHATE_MESSAGES"]
+PHATE_PROGRESS = os.environ["PHATE_PHATE_PROGRESS"]
 
 # External links
 NCBI_TAXON_LINK = "https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id="
@@ -495,8 +496,8 @@ class annotationRecord(object):
             print("phate_annotation says, DEBUG: Returning ncbiTaxonList:",ncbiTaxonList)
         return ncbiTaxonList
 
-    def link2databaseIdentifiers(self,database,dbName):   #*** DE-HARD-CODE the cazy annotation database !!!
-        cazyAnnotationFile = "/Users/zhou4/DEV/PhATE/test_getDBs/Databases/CAZY/CAZyDB.07312019.fam-activities.txt"
+    def link2databaseIdentifiers(self,database,dbName): 
+        cazyAnnotationFile = CAZY_ANNOTATION_PATH 
         dbxrefList = []; VOGlist = []  # holds concatenation of functional annotations
         enzymeList = []; ncbiProteinList = []; taxonList = [] # hold specific annotations
         pfamList   = []; uniprotList     = []; koList    = [] # hold specific annotations
