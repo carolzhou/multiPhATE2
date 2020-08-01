@@ -28,7 +28,7 @@ from pathlib import Path
 # Run interactive for user to input which data sets they want to install
 INTERACTIVE = True 
 # Run remote to pre-set download instructions and skip user input
-REMOTE = Remote 
+REMOTE = False 
 # Set verbost to true for remote processing if server is killing idle processes.
 # Verbose will write voluminous progress to console, keeping user process non-idle during long computations.
 VERBOSE = False 
