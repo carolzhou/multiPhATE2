@@ -26,9 +26,9 @@ from pathlib import Path
 # CONSTANTS, BOOLEANS
 
 # Run interactive for user to input which data sets they want to install
-INTERACTIVE = False
+INTERACTIVE = True 
 # Run remote to pre-set download instructions and skip user input
-REMOTE = True
+REMOTE = False 
 # Set verbost to true for remote processing if server is killing idle processes.
 # Verbose will write voluminous progress to console, keeping user process non-idle during long computations.
 VERBOSE = False 
@@ -262,7 +262,7 @@ elif INTERACTIVE:
     print ("Welcome to dbPrep_getDBs.py, a code for downloading data sets used by multiPhATE.")
     time.sleep(1)
     print ("We will be downloading data sets one at a time. You will select the data sets")
-    ime.sleep(1)
+    time.sleep(1)
     print ("   that you want to download. You don't need to download all of them at once--you ")
     time.sleep(1)
     print ("   may download any or all of the them now, and you can return later to this program to ")
