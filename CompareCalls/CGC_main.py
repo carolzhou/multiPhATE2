@@ -8,7 +8,7 @@
 #
 # Description:  Accepts a list of input files, each comprising a set of
 #    gene calls from a given gene caller program (e.g., Prodigal, Glimmer,
-#    GeneMark, RAST, PHANOTATE).  Outputs comparisons accross the gene calls. 
+#    GeneMark, RAST, PHANOTATE, custom).  Outputs comparisons accross the gene calls. 
 #    Note:  The input files are re-formatted using CGC_parser.py, so that
 #    they have a common format and identify the gene caller in the comments
 #    at the top of the file.

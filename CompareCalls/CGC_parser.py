@@ -106,8 +106,8 @@ p_custom    = re.compile('[Cc][Uu][Ss][Tt][Oo][Mm]')
 
 ##### CONTROL 
 
-#DEBUG = True
 DEBUG = False
+DEBUG = True
 
 ##### CONSTANTS
 
@@ -131,6 +131,8 @@ if PHATE_PROGRESS:
     print("CGC_parser says, Begin processing; gathering input parameters.")
 
 argCount = len(sys.argv)
+if DEBUG:
+    print("CGC_parser says, DEBUG: sys.argv is",sys.argv)
 if argCount in ACCEPTABLE_ARG_COUNT:
     match = re.search("help", sys.argv[1].lower())
     if match:
@@ -210,10 +212,10 @@ except IOError as e:
 
 if fileError:
     print("CGC_parser says, ERROR: Check files.")
-    LOGFILE.write("%s%s%s\n" % ("ERROR: problem with input file:",geneCallerOut,e))
+    LOGFILE.write("%s%s\n" % ("ERROR: problem with input file:",geneCallerOut))
     LOGFILE.close(); exit(0)
     if RUNLOGOPEN:
-        RUNLOGFILE.write("%s%s%s\n" % ("ERROR: problem with input file:",geneCallerOut,e))
+        RUNLOGFILE.write("%s%s%s\n" % ("ERROR: problem with input file:",geneCallerOut))
         RUNLOGFILE.close(); exit(0)
 
 if USER_OUT_PROVIDED:

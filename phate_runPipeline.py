@@ -4,7 +4,7 @@
 #
 # Program Title:  phate_runPipeline.py ()
 #
-# Most recent update:  09 June 2020
+# Most recent update:  04 August 2020
 #
 # Description: Runs the phate annotation pipeline.  This code runs under Python 3.7, and requires
 #    dependent packages.
@@ -163,8 +163,8 @@ OUTFILE.write("%s%s%s\n" % ("Begin out file ",datetime.datetime.now(), " *******
 runLog = "" # Pipeline log file for current pipeline run (written to user's output subdirectory; this is created once we know the subdir name)
 
 # DEBUG messages control (local)
-#DEBUG = True
-DEBUG = False
+DEBUG = True
+#DEBUG = False
 
 ##### HELP STRINGS
 
@@ -233,8 +233,8 @@ prodigalCalls            = False
 glimmerCalls             = False
 genemarksCalls           = False
 customGeneCalls          = False
-customGeneCallerName     = 'unknown'
-customGeneCallerOutfile  = 'unknown'
+customGeneCallerName     = 'unknown' # Set in user's config file (e.g., "custom" or "rast")
+#customGeneCallerOutfile  = 'unknown'
 primaryCalls             = 'unknown' 
 primaryCallsFile         = 'unknown'
 blastpSearch             = False
@@ -250,7 +250,9 @@ ncbiVirusProteinBlast    = False
 refseqGeneBlast          = False
 refseqProteinBlast       = False
 pvogsBlast               = False
-vogsBlast                = False
+vogsBlast                = False #*** To be deprecated
+vogGeneBlast             = False
+vogProteinBlast          = False
 phantomeBlast            = False
 phageEnzymeBlast         = False
 keggVirusBlast           = False
@@ -259,6 +261,7 @@ smartBlast               = False
 swissprotBlast           = False
 uniprotBlast             = False
 nrBlast                  = False
+cazyBlast                = False
 customGenomeBlast        = False
 customGenomeDBname       = 'unknown' 
 customGenomeDBpath       = 'unknown' 
@@ -304,9 +307,9 @@ with open(jsonFile, 'r') as jsonParameters:
     prodigalCalls            = parameters["prodigalCalls"]
     glimmerCalls             = parameters["glimmerCalls"]
     genemarksCalls           = parameters["genemarksCalls"]
-    customGeneCalls          = parameters["customCalls"]
+    customGeneCalls          = parameters["customGeneCalls"]
     customGeneCallerName     = parameters["customGeneCallerName"]
-    customGeneCallerOutfile  = parameters["customGeneCallerOutfile"]
+    #customGeneCallerOutfile  = parameters["customGeneCallerOutfile"]
     primaryCalls             = parameters["primaryCalls"]
     primaryCallsFile         = parameters["primaryCallsFile"]
     blastpSearch             = parameters["blastpSearch"]
@@ -323,6 +326,8 @@ with open(jsonFile, 'r') as jsonParameters:
     refseqGeneBlast          = parameters["refseqGeneBlast"]
     pvogsBlast               = parameters["pvogsBlast"]
     vogsBlast                = parameters["vogsBlast"]
+    vogGeneBlast             = parameters["vogGeneBlast"]
+    vogProteinBlast          = parameters["vogProteinBlast"]
     phantomeBlast            = parameters["phantomeBlast"]
     phageEnzymeBlast         = parameters["phageEnzymeBlast"]
     keggVirusBlast           = parameters["keggVirusBlast"]
@@ -331,6 +336,7 @@ with open(jsonFile, 'r') as jsonParameters:
     swissprotBlast           = parameters["swissprotBlast"]
     uniprotBlast             = parameters["uniprotBlast"]
     nrBlast                  = parameters["nrBlast"]
+    cazyBlast                = parameters["cazyBlast"]
     customGenomeBlast        = parameters["customGenomeBlast"]
     customGenomeDBname       = parameters["customGenomeDBname"]
     customGenomeDBpath       = parameters["customGenomeDBpath"]
@@ -361,10 +367,18 @@ with open(jsonFile, 'r') as jsonParameters:
 
 jsonParameters.close()
 
-# Capture user's configured values
+# Check input
+if DEBUG:
+    print("phate_runPipeline says, DEBUG: customProteinBlast is",customProteinBlast)
+    print("phate_runPipeline says, DEBUG: customProteinDBname is",customProteinDBname)
+    print("phate_runPipeline says, DEBUG: customProteinDBpath is",customProteinDBpath)
 
-PIPELINE_OUTPUT_SUBDIR = PIPELINE_OUTPUT_DIR + outputSubdir 
-runLog = PIPELINE_OUTPUT_SUBDIR + "runPhATE.log"
+# Capture user's configured values
+#
+#PIPELINE_OUTPUT_SUBDIR = PIPELINE_OUTPUT_DIR + outputSubdir 
+PIPELINE_OUTPUT_SUBDIR = os.path.join(PIPELINE_OUTPUT_DIR,outputSubdir) 
+#runLog = PIPELINE_OUTPUT_SUBDIR + "runPhATE.log"
+runLog = os.path.join(PIPELINE_OUTPUT_SUBDIR,"runPhATE.log")
 LOGFILE.write("%s%s\n" % ("PIPELINE_OUTPUT_SUBDIR is ",PIPELINE_OUTPUT_SUBDIR))
 GENOME_FILE = genomeName + '.fasta' 
 LOGFILE.write("%s%s\n" % ("GENOME_FILE is ",GENOME_FILE))
@@ -389,8 +403,6 @@ else:
         print(e)
         LOGFILE.write("%s%s%s%s\n" % ("ERROR: could not open runLog file: ",runLog, " at ",datetime.datetime.now()))
         LOGFILE.close(); exit(0)
-
-# Create objects for passing genecall, blast, and hmm parameters to subordinate codes 
 
 if genomeType.lower() == 'phage' and primaryCallsFile != 'phanotate.cgc':
     if PHATE_WARNINGS == 'True':
@@ -417,9 +429,9 @@ if PHATE_MESSAGES == 'True':
     print("genemarksCalls is", genemarksCalls)
     print("primaryCalls is", primaryCalls)
     print("primaryCallsFile is", primaryCallsFile)
-    print("customCalls is", customCalls)
-    print("customCallerName is", customCallerName)
-    print("customCallerOutfile is", customCallerOutfile)
+    print("customGeneCalls is", customGeneCalls)
+    print("customGeneCallerName is", customGeneCallerName)
+    print("customGeneCallerOutfile is", customGeneCallerOutfile)
     print("primaryCalls is", primaryCalls) 
     print("blastpSearch is", blastpSearch)
     print("phmmerSearch is", phmmerSearch)
@@ -443,9 +455,10 @@ if PHATE_MESSAGES == 'True':
     print("swissprotBlast is", swissprotBlast)
     print("uniprotBlast is", uniprotBlast)
     print("nrBlast is", nrBlast)
+    print("cazyBlast is", cazyBlast)
     print("customGenomeBlast is", customGenomeBlast)
-    print("customGenomeDBname is", customGenomeBlastDBname)
-    print("customGenomeDBpath is", customGenomeBlastDBpath)
+    print("customGenomeDBname is", customGenomeDBname)
+    print("customGenomeDBpath is", customGenomeDBpath)
     print("customGeneBlast is", customGeneBlast)
     print("customGeneDBname is", customGeneDBname)
     print("customGeneDBpath is", customGeneDBpath)
@@ -490,7 +503,7 @@ RUNLOG.write("%s%s\n" % ("   primaryCalls is ",primaryCalls))
 RUNLOG.write("%s%s\n" % ("   primaryCallsFile is ",primaryCallsFile))
 RUNLOG.write("%s%s\n" % ("   customGeneCalls is ",customGeneCalls))
 RUNLOG.write("%s%s\n" % ("   customGeneCallerName is ",customGeneCallerName))
-RUNLOG.write("%s%s\n" % ("   customGeneCallerOutfile is ",customGeneCallerOutfile))
+#RUNLOG.write("%s%s\n" % ("   customGeneCallerOutfile is ",customGeneCallerOutfile))
 RUNLOG.write("%s%s\n" % ("   blastpSearch is ",blastpSearch))
 RUNLOG.write("%s%s\n" % ("   phmmerSearch is ",phmmerSearch))
 RUNLOG.write("%s%s\n" % ("   jackhmmerSearch is ",jackhmmerSearch))
@@ -503,8 +516,10 @@ RUNLOG.write("%s%s\n" % ("   ncbiVirusGenomeBlast is ",ncbiVirusGenomeBlast))
 RUNLOG.write("%s%s\n" % ("   ncbiVirusProteinBlast is ",ncbiVirusProteinBlast))
 RUNLOG.write("%s%s\n" % ("   refseqProteinBlast is ",refseqProteinBlast))
 RUNLOG.write("%s%s\n" % ("   refseqGeneBlast is ",refseqGeneBlast))
-RUNLOG.write("%s%s\n" % ("   pvogsBlast is ",pvogsBlast))
+RUNLOG.write("%s%s\n" % ("   pvogsBlast is ",pvogsBlast))   #*** To be deprecated
 RUNLOG.write("%s%s\n" % ("   vogsBlast is ",vogsBlast))
+RUNLOG.write("%s%s\n" % ("   vogGeneBlast is ",vogGeneBlast))
+RUNLOG.write("%s%s\n" % ("   vogProteinBlast is ",vogProteinBlast))
 RUNLOG.write("%s%s\n" % ("   phantomeBlast is ",phantomeBlast))
 RUNLOG.write("%s%s\n" % ("   phageEnzymeBlast is ",phageEnzymeBlast))
 RUNLOG.write("%s%s\n" % ("   keggVirusBlast is ",keggVirusBlast))
@@ -513,6 +528,7 @@ RUNLOG.write("%s%s\n" % ("   smartBlast is ",smartBlast))
 RUNLOG.write("%s%s\n" % ("   swissprotBlast is ",swissprotBlast))
 RUNLOG.write("%s%s\n" % ("   uniprotBlast is ",uniprotBlast))
 RUNLOG.write("%s%s\n" % ("   nrBlast is ",nrBlast))
+RUNLOG.write("%s%s\n" % ("   cazyBlast is ",cazyBlast))
 RUNLOG.write("%s%s\n" % ("   hmmscan is ",hmmscan))
 RUNLOG.write("%s%s\n" % ("   ncbiVirusGenomeHmm is ",ncbiVirusGenomeHmm))
 RUNLOG.write("%s%s\n" % ("   ncbiVirusProteinHmm is ",ncbiVirusProteinHmm))
@@ -528,6 +544,15 @@ RUNLOG.write("%s%s\n" % ("   smartHmm is ",smartHmm))
 RUNLOG.write("%s%s\n" % ("   swissprotHmm is ",swissprotHmm))
 RUNLOG.write("%s%s\n" % ("   uniprotHmm is ",uniprotHmm))
 RUNLOG.write("%s%s\n" % ("   nrHmm is ",nrHmm))
+RUNLOG.write("%s%s\n" % ("   customGenomeBlast is ",customGenomeBlast))
+RUNLOG.write("%s%s\n" % ("   customGenomeDBname is ",customGenomeDBname))
+RUNLOG.write("%s%s\n" % ("   customGenomeDBpath is ",customGenomeDBpath))
+RUNLOG.write("%s%s\n" % ("   customGeneBlast is ",customGeneBlast))
+RUNLOG.write("%s%s\n" % ("   customGeneDBname is ",customGeneDBname))
+RUNLOG.write("%s%s\n" % ("   customGeneDBpath is ",customGeneDBpath))
+RUNLOG.write("%s%s\n" % ("   customProteinBlast is ",customProteinBlast))
+RUNLOG.write("%s%s\n" % ("   customProteinDBname is ",customProteinDBname))
+RUNLOG.write("%s%s\n" % ("   customProteinDBpath is ",customProteinDBpath))
 
 # Open and check input file(s)
 
@@ -587,29 +612,43 @@ param3 = ''  # can't pass a dict; future re-write genecalling module as class
 
 MULTIPLE_CALLERS = False
 geneCallerCount = 0
+
 if genemarksCalls:
     geneCallerCount += 1
     param3 += "genemarks_"
+
 if prodigalCalls:
     geneCallerCount += 1
     param3 += "prodigal_"
+
 if glimmerCalls:
     geneCallerCount += 1
     param3 += "glimmer_"
+
 if phanotateCalls:
     geneCallerCount += 1
     param3 += "phanotate_"
-if customGeneCalls:   
+
+if customGeneCalls: 
+    customCallFile  = outputSubdir.rstrip('/') + ".custom.gff"  # This is what the user should have named it
+    customPhateFile = "phate_custom.gff" 
+    source      = os.path.join(PIPELINE_INPUT_DIR,    customCallFile)
+    destination = os.path.join(PIPELINE_OUTPUT_SUBDIR,customPhateFile)
     try:
-        geneCallerCount += 1
-        param3 += "custom_"
-        command = 'cp ' + PIPELINE_INPUT_DIR + customGeneCallerOutfile + ' ' + PIPELINE_OUTPUT_SUBDIR + customGeneCallerOutfile
-        result = os.system(command)
+        command = "cp " + source + ' ' + destination 
+        success = os.system(command)
     except:
-        print ("phate_runPipeline says, ERROR: could not copy custom genecall file ",customGeneCallerOutfile, " to working subdirectory ",PIPELINE_OUTPUT_SUBDIR)
-        if primaryCalls == 'custom':
-            print("phate_runPipeline says, ERROR: cannot use custom calls as primary")
+        if PHATE_WARNINGS:
+            print("phate_runPipeline says, WARNING: Cannot move user's custom genecall file to pipeline output subdirectory. Custom gene calls will not be used.")
+        if primaryCalls == 'custom':  # If user selected custom as primary calls, and file is in error, then must abort processing.
+            print("phate_runPipeline says, ERROR: Cannot use custom calls as primary")
             exit(0)
+    geneCallerCount += 1
+    param3 += "custom_"
+    # If the user selected 'custom' as the primary calls, then reset to the custom calls pathfile
+    #if primaryCalls == 'custom': 
+    #    #primaryCallsPathFile = destination 
+    #    primaryCallsPathFile = "custom.cgc" 
 
 if geneCallerCount >= 2:
     MULTIPLE_CALLERS = True
@@ -627,8 +666,9 @@ if MULTIPLE_CALLERS:
     if primaryCalls == 'common_core':
         primaryCallsPathFile = PIPELINE_OUTPUT_SUBDIR + 'common_core.cgc' 
 
-#param4 = "2>&1 > genecall.err" # Trying to capture jackhmmer screen output - but doesn't work!`
-command = "python " + GENECALL_CODE + ' ' + genomeFile + ' ' + param2 + ' ' + param3 + ' ' + customGeneCallerOutfile 
+command = "python " + GENECALL_CODE + ' ' + genomeFile + ' ' + param2 + ' ' + param3 + ' ' + primaryCallsPathFile
+if DEBUG:
+    print("phate_runPipeline says, DEBUG: Calling Genecall module; command is", command)
 
 if PHATE_PROGRESS == 'True':
     print("phate_runPipeline says, Calling the gene-call module.")
@@ -667,7 +707,11 @@ if refseqGeneBlast:
 if pvogsBlast:
     blastDatabaseParameterString += '_pvogs'
 if vogsBlast:
-    blastDatabaseParameterString += '_Vogs'
+    blastDatabaseParameterString += '_Vogs'  #*** to be deprecated
+if vogGeneBlast:
+    blastDatabaseParameterString += '_vogGene'
+if vogProteinBlast:
+    blastDatabaseParameterString += '_vogProtein'
 if phantomeBlast:
     blastDatabaseParameterString += '_phantome'
 if phageEnzymeBlast:
@@ -684,6 +728,14 @@ if uniprotBlast:
     blastDatabaseParameterString += '_uniprot'
 if nrBlast:
     blastDatabaseParameterString += '_nr'
+if cazyBlast:
+    blastDatabaseParameterString += '_cazy'
+if customGenomeBlast:
+    blastDatabaseParameterString += '_customGenome'
+if customGeneBlast:
+    blastDatabaseParameterString += '_customGene'
+if customProteinBlast:
+    blastDatabaseParameterString += '_customProtein'
 
 blastProgramParameterString = ''   # programs 
 if blastpSearch:
@@ -733,10 +785,24 @@ if swissprotHmm:
     profileDatabaseParameterString += '_swissprotHmm'
 if nrHmm:
     profileDatabaseParameterString += '_nrHmm'
+if customHmm:
+    profileDatabaseParameterString += '_customHmm'
 
 profileProgramParameterString = ''  # hmm programs to run against sequence databases
 if hmmscan:
     profileProgramParameterString  += '_hmmscan'
+
+"""
+customDatabasePathParameterString = ''
+if customGenomeDBpath != '':
+    customDatabasePathParameterString += '^customGenomeDBpath:'  + customGenomeDBpath  + ':' + customGenomeDBname
+if customGeneDBpath != '':
+    customDatabasePathParameterString += '^customGeneDBpath:'    + customGeneDBpath    + ':' + customGeneDBname
+if customProteinDBpath != '':
+    customDatabasePathParameterString += '^customProteinDBpath:' + customProteinDBpath + ':' + customProteinDBname
+if customHmmDBpath != '':
+    customDatabasePathParameterString += '^customHmmDBpath:'     + customHmmDBpath     + ':' + customHmmDBname
+"""
 
 # Set empty strings (so parameter is passed regardless, not as '')
 if blastProgramParameterString == '':
@@ -753,6 +819,8 @@ if profileProgramParameterString == '':
     profileProgramParameterString = 'none'
 if profileDatabaseParameterString == '':
     profileDatabaseParameterString = 'none'
+#if customDatabasePathParameterString == '':
+#    customDatabasePathParameterString = 'none'
 
 commandRoot1  = "python " + SEQANNOTATION_CODE      + " -o " + outputDir  # code and output direction
 commandRoot2  = " -G "    + genomeFile              + " -g " + geneFile             + " -p " + proteinFile   # genome files
@@ -764,8 +832,10 @@ commandRoot7  = " -B "    + blastProgramParameterString   + " -b " + blastDataba
 commandRoot8  = " -M "    + hmmProgramParameterString     + " -m " + seqDatabaseParameterString              # hmm search of hmm profile database(s)
 commandRoot9  = " -R "    + profileProgramParameterString + " -r " + profileDatabaseParameterString          # program and databases for hmm search
 commandRoot10 = " -z "    + blastThreadsParameterString
-commandRootA  = commandRoot1 + commandRoot2 + commandRoot3 + commandRoot4 + commandRoot5
-commandRoot   = commandRootA + commandRoot6 + commandRoot7 + commandRoot8 + commandRoot9 + commandRoot10
+#commandRoot11 = " -C "    + customDatabasePathParameterString
+commandRootA  = commandRoot1 + commandRoot2 + commandRoot3 + commandRoot4 + commandRoot5  + commandRoot6
+#commandRoot   = commandRootA + commandRoot7 + commandRoot8 + commandRoot9 + commandRoot10 + commandRoot11
+commandRoot   = commandRootA + commandRoot7 + commandRoot8 + commandRoot9 + commandRoot10
 
 # As appropriate, append additional parameters
 if translateOnly:

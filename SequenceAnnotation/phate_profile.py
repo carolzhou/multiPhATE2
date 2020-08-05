@@ -58,11 +58,11 @@ SWISSPROT_PROFILE_DB_HOME            = os.environ["PHATE_SWISSPROT_HMM_HOME"]
 UNIPROT_PROFILE_DB_HOME              = os.environ["PHATE_UNIPROT_HMM_HOME"]
 NR_PROFILE_DB_HOME                   = os.environ["PHATE_NR_HMM_HOME"]
 # database of pVOG headers for searching and sequences for writing fasta files (pre-alignment)
-PVOG_HEADERS                         = os.environ["PHATE_PVOGS_BASE_DIR"] + "pVOGs.headers.lst"
-PVOG_SEQUENCES                       = os.environ["PHATE_PVOGS_BASE_DIR"] + "pVOGs.faa"
-VOG_HEADERS                          = os.environ["PHATE_VOGS_BASE_DIR"]  + "VOGs.headers.lst"
-VOG_SEQUENCES                        = os.environ["PHATE_VOGS_BLAST_HOME"]
-VOG_ANNOTATIONS                      = os.environ["PHATE_VOGS_BASE_DIR"]  + "vog.annotations.tsv"
+PVOG_HEADERS                         = os.environ["PHATE_PVOGS_HEADER_FILE"]
+PVOG_SEQUENCES                       = os.environ["PHATE_PVOGS_BLAST_HOME"]
+VOG_HEADERS                          = os.environ["PHATE_VOG_PROTEIN_HEADER_FILE"]
+VOG_SEQUENCES                        = os.environ["PHATE_VOG_PROTEIN_BLAST_HOME"]
+VOG_ANNOTATIONS                      = os.environ["PHATE_VOG_PROTEIN_ANNOTATION_FILE"]
 
 # Verbosity and output/error capture
 CLEAN_RAW_DATA                       = os.environ["PHATE_CLEAN_RAW_DATA"]

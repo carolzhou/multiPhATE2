@@ -10,7 +10,7 @@
 #
 # Programmer: CEZhou
 #
-# Latest Update: 28 July 2020
+# Latest Update: 03 August 2020
 # Version 1.5
 #
 ################################################################
@@ -22,9 +22,8 @@ import sys, os, re, string, copy
 import time, datetime
 from subprocess import call
 
-# DEBUG control
-DEBUG = True
-#DEBUG = False 
+#DEBUG = True
+DEBUG = False 
 
 # Defaults/Parameters
 PRIMARY_CALLS          = 'phanotate'   # Default; can be configured by user

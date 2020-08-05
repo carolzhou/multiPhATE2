@@ -4,7 +4,7 @@
 #
 # Programmers: Jeff Kimbrel, Carol Zhou
 #
-# Last update: 06 June 2020
+# Last update: 04 August 2020
 #
 # Description: Single command to run PHANOTATE, Prodigal, Glimmer and GeneMarkS on a fasta file
 #
@@ -71,9 +71,13 @@ if len(sys.argv) == 1:
         print("phate_genecallPhage says, Usage: /usr/local/bin/python3.4 annotatePhage.py fastaFile.fa outFolder", "Exiting now.")
     exit(0)
 
+# Get input parameters
+if DEBUG:
+    print("phate_geneCallPhage says, DEBUG: input parameters are:",sys.argv)
 fastaFileName       = sys.argv[1]
 outputFolder        = sys.argv[2] + "/"
 customCallerOutfile = sys.argv[4]  # will be 'unknown' if user is not including a custom genecaller output file
+#customCallerOutfile = "custom.gff"  # will be 'unknown' if user is not including a custom genecaller output file
 
 cgcLog         = outputFolder + "CGC_main.log"
 cgcGff         = outputFolder + "CGCcallSummary.gff"
@@ -103,6 +107,8 @@ if len(sys.argv) == 5:
         PHANOTATE_CALLS = True 
     if match_custom:
         CUSTOM_CALLS    = True
+if DEBUG:
+    print("phate_genecallPhage says, DEBUG: CUSTOM_CALLS is",CUSTOM_CALLS)
 
 logfilefullpath = outputFolder + "phate_genecallPhage.log"
 logfile = open(logfilefullpath,"w")
@@ -261,19 +267,28 @@ def Convert_gff2cgc(gffFile,cgcFile):
     rightEnd = 0
     contig   = 'unknown'
     protein  = 'unknown'
+    ERROR_1  = "FILE_ERROR"
 
     p_contigLine = re.compile('seqhdr="(.*)"') 
     p_comment    = re.compile("^#")
     p_blank      = re.compile("^\s*%")
 
-    GFF_H = open(gffFile,"r")
-    CGC_H = open(cgcFile,"w")
+    try:
+        GFF_H = open(gffFile,"r")
+        CGC_H = open(cgcFile,"w")
+    except:
+        print("phate_genecallPhage says, ERROR: Cannot open gffFile,",gffFile,", in Convert_gff2cgc")
+        return ERROR_1 
 
     CGC_H.write("%s%s\n" % ("# Custom gene calls reformatted from file ",gffFile))
     CGC_H.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % ("#Gene No.","Strand","LeftEnd","RightEnd","Length","Contig","Protein"))
 
+    if DEBUG:
+        print("phate_genecallPhage says, DEBUG: Reading lines from gff file in Convert_gff2cgc")
     fLines = GFF_H.read().splitlines()
     for fLine in fLines:
+        if DEBUG:
+            print("phate_genecallPhage says, DEBUG: Next line is,",fLine)
         match_comment    = re.search(p_comment,fLine)
         match_blank      = re.search(p_blank,fLine)
         match_contigLine = re.search(p_contigLine,fLine)
@@ -301,6 +316,8 @@ def Convert_gff2cgc(gffFile,cgcFile):
             rightEnd = temp
         CGC_H.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,leftEnd,rightEnd,length,contig,protein)) 
 
+    if DEBUG:
+        print("phate_genecallPhage says, DEBUG: Completed conversion of gff to cgc")
     GFF_H.close()
     CGC_H.close()
 
@@ -460,8 +477,8 @@ if PHANOTATE_CALLS:
         print("########## PHANOTATE ##########")
     logfile.write("%s\n" % ("Processing PHANOTATE"))
 
-    os.chdir(phanotatePath)
-    systemCall('python phanotate.py ' + fastaFileName + ' > ' + outputFolder + 'phanotateOutput.txt' )
+    #os.chdir(phanotatePath)
+    systemCall('phanotate.py ' + fastaFileName + ' > ' + outputFolder + 'phanotateOutput.txt' )
     os.chdir(workingFolder)
 
     for line in open(outputFolder + 'phanotateOutput.txt', 'rt'):
@@ -485,7 +502,9 @@ if CUSTOM_CALLS:
     if PHATE_MESSAGES == 'True':
         print("\n######## CUSTOM CALLS #########")
     try:
-        Convert_gff2cgc(customCalls,customCallsCgc)
+        if DEBUG:
+            print("phate_runPipeline says, DEBUG: Calling Convert_gff2cgc(customCalls,customCallsCgc) with files:",customCalls,"and",customCallsCgc)
+        errorMsg = Convert_gff2cgc(customCalls,customCallsCgc)
         logfile.write("%s\n" % ("Completed converting custom calls gff file to cgc format."))
     except:
         logfile.write("%s%s%s\n" % ("ERROR in phate_genecallPhage.py in Covert_gff2cgc(), input files: ",customCalls,customCallsCgc))
@@ -535,7 +554,7 @@ if PHANOTATE_CALLS:
 if CUSTOM_CALLS:
     callerCount += 1
     logfile.write("%s\n" % ("Calling CGC_parser.py with custom calls"))
-    systemCall('python ' + cgcPath + '/CGC_parser.py Custom ' + outputFolder + 'custom.gff ' + outputFolder + 'custom.cgc')
+    systemCall('python ' + cgcPath + '/CGC_parser.py Custom ' + outputFolder + 'phate_custom.gff ' + outputFolder + 'custom.cgc')
 
 logfile.write("%s%s\n" % ("callerCount is ",callerCount))
 if callerCount >= 2:
@@ -546,7 +565,7 @@ if runCGC:
     commandString2 = ' cgc=' + cgcGff + ' superset=' + supersetCgc + ' consensus=' + consensusCgc + ' commoncore=' + commoncoreCgc
     commandString3 = ' ' + outputFolder + '*.cgc > ' + outputFolder + 'CGC_results.txt'
     command = commandString1 + commandString2 + commandString3
-    logfile.write("%s%s\n" % ("phate_genecallPhage says, DEBUG: calling CGC, cgcLog is", cgcLog))
+    logfile.write("%s%s\n" % ("phate_genecallPhage says, Calling CGC, cgcLog is", cgcLog))
     logfile.write("%s%s\n" % ("phate_genecallPhage says, command is ",command))
     systemCall(command)
 else:

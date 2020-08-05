@@ -936,8 +936,13 @@ class comparison(object):
 
                         # Get annotation for each member of the reference protein's homology group and write to file
                         for seqID in protein.homologyList:
-                            fullAnnotation = ast.literal_eval(self.getAnnotation(seqID,"protein"))
-                            annotation = fullAnnotation[0][1:]
+                            try:
+                                fullAnnotation = ast.literal_eval(self.getAnnotation(seqID,"protein"))
+                                annotation = fullAnnotation[0][1:]
+                            except:
+                                if PHATE_WARNINGS:
+                                    print("genomics_compareGenomes says, WARNING: No annotation found for ",seqID)
+                                annotation = "no annotation found"
                             ANNOT_FILE_H.write("%s\t%s\n" % (seqID,annotation))
 
                         # Clean up
