@@ -2,7 +2,7 @@
 # Module: phate_annotation.py
 # Programmer: Carol L. Ecale Zhou
 #
-# Latest update: 28 July 2020
+# Latest update: 05 August 2020
 #
 # Description: Module containing classes and methods for representing annotation results from various sources 
 #
@@ -37,8 +37,8 @@
 import re, os, subprocess
 import platform
 
-#DEBUG = True
 DEBUG = False
+#DEBUG = True
 
 p_comment = re.compile('^#')
 
@@ -55,6 +55,7 @@ NCBI_TAXON_DIR       = os.environ["PHATE_NCBI_TAXON_DIR"]
 PVOGS_BASE_DIR       = os.environ["PHATE_PVOGS_BASE_DIR"]
 VOGS_BASE_DIR        = os.environ["PHATE_VOGS_BASE_DIR"]
 CAZY_ANNOTATION_PATH = os.environ["PHATE_CAZY_ANNOTATION_PATH"]
+VOG_ANNOTATION_FILE  = os.environ["PHATE_VOGS_ANNOTATION_FILE"]
 
 # Verbosity
 CLEAN_RAW_DATA = os.environ["PHATE_CLEAN_RAW_DATA"]
@@ -79,6 +80,9 @@ ncbi_taxon_lookup    = NCBI_TAXON_DIR      + "nucl_gb.accession2taxid"
 pVOGheaderFile       = PVOGS_BASE_DIR      + "pVOGs.headers.lst"
 VOGheaderFile        = VOGS_BASE_DIR       + "VOGs.headers.lst"
 VOGannotationFile    = VOGS_BASE_DIR       + "vog.annotations.tsv"
+VOG_HEADERS_FILE     = os.environ["PHATE_VOG_PROTEIN_HEADERS_FILE"]
+VOG_ANNOTATION_FILE  = os.environ["PHATE_VOGS_ANNOTATION_FILE"]
+
 
 class annotationRecord(object):
 
@@ -419,9 +423,11 @@ class annotationRecord(object):
                 break
         return vogAnnotation
 
+    #*** IMPROVE CODE HERE: calling method is passing database; doesn't need to, since annotation DB is environ var now
     # This method finds the summary annotation for a given VOG.
     def findVOGannotation(self,vogID,database):   # database is the vog.annotations.tsv file
-        database_h = open(database,'r')
+        #database_h = open(database,'r')
+        database_h = open(VOG_ANNOTATION_FILE,'r')
         dLines = database_h.read().splitlines()
         database_h.close()
         for dLine in dLines:
@@ -433,16 +439,12 @@ class annotationRecord(object):
 
     # Query a taxonomy lookup table to get taxonomy information
     def getNCBItaxonomyID(self,database):   # Database maps ncbi header to taxonomy 
-        if DEBUG:
-            print("phate_annotation says, DEBUG: getNCBItaxonomyID is searching taxID for ",self.name)
         # First, determine what operating system this code is running on.
         command = "platform.system()"  #*** THIS DOES NOT WORK IN CODE, BUT DOES ON COMMAND LINE; WHY???
         proc = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
         result, err = proc.communicate()
         #result = os.system(command)
         resultStr = str(result,'utf-8')
-        if DEBUG:
-            print("phate_annotation says, DEBUG: OS is",resultStr)  #*** RETURNS '' !!! WHY?
 
         # The database is the nucl_gb.accession2taxid, and the format of each line is as follows:
         # accn<\t>accn.version<\t>taxid<\t>gi
@@ -474,12 +476,8 @@ class annotationRecord(object):
                 command = 'grep -a \"' + accession + '\" ' + database
                 proc = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
                 out, err = proc.communicate()
-            if DEBUG:
-                print("phate_annotation says, DEBUG: out is",out)
             # Apparently, grep reads as binary... so need to convert result
             newOut = out.decode('utf8')
-            if DEBUG:
-                print("phate_annotation says, DEBUG: newOut is",newOut)
             if newOut != '':
                 (accn,accn_v,taxID,gi) = newOut.split('\t')
                 taxonomyString = 'NCBItaxID=' + taxID
@@ -492,12 +490,12 @@ class annotationRecord(object):
         else:
             if PHATE_WARNINGS == 'True':
                 print("phate_annotation says, WARNING: NCBI hit header has improper format or is missing:", self.name)
-        if DEBUG:
-            print("phate_annotation says, DEBUG: Returning ncbiTaxonList:",ncbiTaxonList)
         return ncbiTaxonList
 
     def link2databaseIdentifiers(self,database,dbName): 
         cazyAnnotationFile = CAZY_ANNOTATION_PATH 
+        vogAnnotationFile  = VOG_ANNOTATION_FILE  # for VOG hits
+        vogHeadersFile     = VOG_HEADERS_FILE     # for pVOG hits
         dbxrefList = []; VOGlist = []  # holds concatenation of functional annotations
         enzymeList = []; ncbiProteinList = []; taxonList = [] # hold specific annotations
         pfamList   = []; uniprotList     = []; koList    = [] # hold specific annotations
@@ -551,19 +549,30 @@ class annotationRecord(object):
                 VOGlist = description
 
             elif dbName.lower() == 'vogs':   #*** To be deprecated
-                VOGlist = self.getVOGmembers(VOGannotationFile,'vog') 
+                VOGlist = self.getVOGmembers(vogAnnotationFile,'vog') 
 
-            elif dbName.lower() == 'vogGene':
-                VOGlist = self.getVOGmembers(VOGannotationFile,'vog') 
+            elif dbName.lower() == 'voggene':
+                VOGlist = self.getVOGmembers(vogAnnotationFile,'vog') 
 
-            elif dbName.lower() == 'vogProtein':
-                VOGlist = self.getVOGmembers(VOGannotationFile,'vog') 
+            elif dbName.lower() == 'vogprotein':
+                VOGlist = self.getVOGmembers(vogAnnotationFile,'vog') 
 
             elif dbName.lower() == 'pvogs_hmm':
-                VOGlist = self.getVOGmembers(pVOGheaderFile,'pvog') 
+                # If >1 VOGid, no matter, as it's a single protein sequence, with membership in >1 group.
+                description = ''
+                if self.name:
+                    words = self.name.split(' ') 
+                    description = words[1:]
+                VOGlist = description
 
             elif dbName.lower() == 'vogs_hmm':
-                VOGlist = self.getVOGmembers(VOGannotationFile,'vog') 
+                VOGlist = self.getVOGmembers(vogAnnotationFile,'vog') 
+
+            elif dbName.lower() == 'vogs_hmm':
+                VOGlist = self.getVOGmembers(vogAnnotationFile,'vog') 
+
+            elif dbName.lower() == 'vogs_hmm':
+                VOGlist = self.getVOGmembers(vogAnnotationFile,'vog') 
 
             elif dbName.lower() == 'ncbivirusprotein':
                 pass
@@ -594,16 +603,26 @@ class annotationRecord(object):
         code = ""; codeList = []  # captures codes that are listed in the headers of CAZy hits 
         annotationCode = ""; annotationDescription = ""  # from cazy annotation file; these are captured for reporting
         # Headers look like this: ">AWI06117.1|GT2|AT46|" (with one or more codes, pipe-separated)
-        p_header = re.compile('^.*\|(.*)\|$')   # Greedy matching should capture all codes 
+        # Headers can also look like this: ">AAD03276,1|GH104|4.2.2.n1|" (with an EC number following, with or w/o terminal '|') 
+        #p_header_1 = re.compile('^.*\|(.*)\|$')   # Greedy matching should capture all codes; CAZy code is (.*) between '|'s. 
+        #p_header_2 = re.compile('^.*\|(.*)\|\d+\.\d+\.\d+\.')   # Greedy matching should capture all codes; CAZy code is (.*) between '|'s. 
+        #p_header = re.compile('^.*\|(\w+\d+)\|') # Some headers have EC numbers following CAZy code   
+        #p_header = re.compile('^.*\|(\w+\d+)\|') # Some headers have EC numbers following CAZy code   
+        p_header = re.compile('\|([\w\d_^\.]+)\|') # Some headers have EC numbers following CAZy code   
         CAZY_ANNOT_H = open(cazyAnnotationFile,'r')
         try:
             # Pull dbxref from header; find data line in cazyAnnotationFile; add to dbxrefList
+            #match_header_1 = re.search(p_header_1,self.name)
+            #match_header_2 = re.search(p_header_2,self.name)
             match_header = re.search(p_header,self.name)
+            #if match_header_1 or match_header_2:
             if match_header:
                 dbxrefCode = match_header.group(1)
+                #if match_header_1:
+                #    dbxrefCode = match_header_1.group(1)
+                #elif match_header_2:
+                #    dbxrefCode = match_header_2.group(1)
                 codeList = dbxrefCode.split('|')
-                if DEBUG: 
-                    print("phate_annotation says, DEBUG: dbxrefCode is",dbxrefCode)
                 ANNOT_H = open(cazyAnnotationFile,'r')
                 aLines = ANNOT_H.read().splitlines()
                 for code in codeList:
@@ -617,7 +636,6 @@ class annotationRecord(object):
                                         dbxrefList.append(annotationDescription)
                                         break 
                                     else:
-                                        code = ""; annotationCode = ""; annotationDescription = "" # reset
                                         continue
                                 except:
                                     if PHATE_WARNINGS == 'True':

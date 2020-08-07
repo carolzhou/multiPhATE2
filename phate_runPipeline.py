@@ -164,7 +164,7 @@ runLog = "" # Pipeline log file for current pipeline run (written to user's outp
 
 # DEBUG messages control (local)
 DEBUG = True
-#DEBUG = False
+DEBUG = False
 
 ##### HELP STRINGS
 

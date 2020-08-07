@@ -87,8 +87,8 @@ PHATE_EMBOSS_HOME = os.environ["PHATE_EMBOSS_HOME"]
 
 # The following switches are for the benefit of code development, primarily.
 
-#DEBUG = True
 DEBUG = False
+#DEBUG = True
 
 BLAST_ON = True    # controls whether blast is performed (used during development to skip lengthy blast for testing)
 #BLAST_ON = False
@@ -1310,9 +1310,5 @@ call(["cp", paralogFile,  paralogCopy])
 
 if PHATE_PROGRESS:
     print ("cpg_compareGeneProfiles_main says, CompareGeneProfiles completed.")
-
-if DEBUG:
-    print("cgp_compareGeneProfiles_main says, DEBUG: Printing all of genome1")
-    genome1.printAll()
 
 #######################################################################################################

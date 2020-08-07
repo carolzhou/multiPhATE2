@@ -10,7 +10,7 @@
 #
 # Programmer: CEZhou
 #
-# Latest Update: 03 August 2020
+# Latest Update: 05 August 2020
 # Version 1.5
 #
 ################################################################
@@ -22,8 +22,8 @@ import sys, os, re, string, copy
 import time, datetime
 from subprocess import call
 
-#DEBUG = True
 DEBUG = False 
+#DEBUG = True
 
 # Defaults/Parameters
 PRIMARY_CALLS          = 'phanotate'   # Default; can be configured by user
@@ -843,7 +843,8 @@ LOGFILE_H.write("%s%s\n" % ("SMART_HMM is ",SMART_HMM))
 LOGFILE_H.write("%s%s\n" % ("SWISSPROT_HMM is ",SWISSPROT_HMM))
 LOGFILE_H.write("%s%s\n" % ("UNIPROT_HMM is ",UNIPROT_HMM))
 LOGFILE_H.write("%s%s\n" % ("NR_HMM is ",NR_HMM))
-LOGFILE_H.write("%s%s\n" % ("CUSTOM_HMM is ",CUSTOM_HMM))
+#LOGFILE_H.write("%s%s\n" % ("CUSTOM_GENE_HMM is ",CUSTOM_GENE_HMM))
+#LOGFILE_H.write("%s%s\n" % ("CUSTOM_PROTEIN_HMM is ",CUSTOM_PROTEIN_HMM))
 
 # Communicate to user
 if PHATE_MESSAGES == 'True':
@@ -913,7 +914,8 @@ if PHATE_MESSAGES == 'True':
     print("  SWISSPROT_HMM is", SWISSPROT_HMM)
     print("  UNIPROT_HMM is", UNIPROT_HMM)
     print("  NR_HMM is", NR_HMM)
-    print("  CUSTOM_HMM is", CUSTOM_HMM)
+    print("  CUSTOM_GENE_HMM is", CUSTOM_GENE_HMM)
+    print("  CUSTOM_PROTEIN_HMM is", CUSTOM_PROTEIN_HMM)
 
 if PHATE_PROGRESS == 'True':
     print("phate_sequenceAnnotation_main says, Configuration complete for sequence annotation module.")
@@ -1138,6 +1140,8 @@ else:
             'blastOutDir'         : geneBlastOutputDir,
             'refseqGeneBlast'     : REFSEQ_GENE_BLAST,   #*** To ge deprecated
             'vogGeneBlast'        : VOG_GENE_BLAST,
+            'pvogsOutDir'         : geneBlastOutputDir,
+            'vogsOutDir'          : geneBlastOutputDir,
             'customGeneBlast'     : CUSTOM_GENE_BLAST,
             'blastThreads'        : blastThreads,
         }
@@ -1208,8 +1212,6 @@ else:
             'blastThreads'          : blastThreads,
         }
         blast.setBlastParameters(myParamSet)
-        if DEBUG:
-            print("phate_sequenceAnnotation says, DEBUG: blast parameters are:",myParamSet)
         blast.setBlastFlavor('blastp')
 
         if PHATE_PROGRESS == 'True': 
@@ -1289,8 +1291,9 @@ else:
             'uniprotBlast'          : UNIPROT_BLAST,
             'nrBlast'               : NR_BLAST,
             'cazyBlast'             : CAZY_BLAST,
+            'customGeneBlast'       : CUSTOM_GENE_BLAST,
+            'customProteinBlast'    : CUSTOM_PROTEIN_BLAST,
         }
-
         hmm.setHmmParameters(myParamSet)
 
         if PHATE_PROGRESS == 'True':

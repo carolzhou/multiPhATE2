@@ -5,7 +5,7 @@
 # Program Title:  multiPhate2.py (/multiPhate2/)
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last Update:  03 August 2020
+# Last Update:  05 August 2020
 #
 # Description: Script multiPhate.py runs an annotation pipeline (phate_runPipeline.py) over any
 #    number of genomes specified in the user's input configuration file (multPhate.config). It then
@@ -95,8 +95,8 @@ PHATE_MESSAGES = PHATE_MESSAGES_DEFAULT
 PHATE_WARNINGS = PHATE_WARNINGS_DEFAULT
 CGP_PROGRESS   = CGP_PROGRESS_DEFAULT
 
+DEBUG = False
 #DEBUG = True     # Controls debug settings in this (local) code only
-DEBUG = False    # Leave False, unless debugging
 
 ##### SET DEFAULTS for USER-DEFINED PARAMETERS
 
@@ -336,6 +336,7 @@ os.environ["PHATE_NR_BLAST_BASE_DIR"]               = DATABASE_DIR_DEFAULT + "NR
 os.environ["PHATE_NR_BLAST_HOME"]                   = os.environ["PHATE_NR_BLAST_BASE_DIR"] + "nr"
 os.environ["PHATE_CAZY_BLAST_BASE_DIR"]             = DATABASE_DIR_DEFAULT + "CAZY/"
 os.environ["PHATE_CAZY_BLAST_HOME"]                 = os.environ["PHATE_CAZY_BLAST_BASE_DIR"] + "cazy.faa"
+os.environ["PHATE_CAZY_ANNOTATION_PATH"]            = ""  # read from config file
 os.environ["PHATE_CUSTOM_GENOME_BLAST_HOME"]        = ""  # read from config file
 os.environ["PHATE_CUSTOM_GENE_BLAST_HOME"]          = ""  # read from config file
 os.environ["PHATE_CUSTOM_PROTEIN_BLAST_HOME"]       = ""  # read from config file

@@ -34,8 +34,8 @@ import phate_annotation
 from subprocess import Popen, PIPE, STDOUT
 import string
 
-#DEBUG = True
 DEBUG = False
+#DEBUG = True
 
 MAX_SEQ_HITS = 100 # Upper limit
 
@@ -517,9 +517,6 @@ class multiProfile(object):
 
                     # Add this completed annotation to growing list for this fasta
                     fasta.annotationList.append(newAnnotation)
-                    if DEBUG:
-                        print("phate_profile says, DEBUG: newAnnotation is...")
-                        newAnnotation.printAnnotationRecord_tagged()
             else:
                 if PHATE_MESSAGES == 'True':
                     print("phate_profiles says, No Profile hit found for query", fasta.blastHeader, "against", database)    

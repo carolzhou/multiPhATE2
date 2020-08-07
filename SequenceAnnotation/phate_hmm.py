@@ -8,7 +8,7 @@
 # Programmer's Notes: 
 #
 # Programmer:  C Zhou
-# Most recent update:  06 July 2020
+# Most recent update:  06 August 2020
 # 
 # Classes and Methods:
 #
@@ -29,8 +29,8 @@ from subprocess import Popen, PIPE, STDOUT
 import string
 
 # DEBUG control
-#DEBUG = True
 DEBUG = False
+#DEBUG = True
 
 # Get environment variables (set in phate_runPipeline.py)
 # Hmm searches in this module are done against fasta blast databases 
@@ -56,6 +56,7 @@ SMART_HMM_HOME                = os.environ["PHATE_SMART_BLAST_HOME"]
 SWISSPROT_HMM_HOME            = os.environ["PHATE_SWISSPROT_BLAST_HOME"]
 UNIPROT_HMM_HOME              = os.environ["PHATE_UNIPROT_BLAST_HOME"]
 NR_HMM_HOME                   = os.environ["PHATE_NR_BLAST_HOME"]
+CAZY_HMM_HOME                 = os.environ["PHATE_CAZY_BLAST_HOME"]
 CUSTOM_GENE_HMM_HOME          = os.environ["PHATE_CUSTOM_GENE_BLAST_HOME"]
 CUSTOM_PROTEIN_HMM_HOME       = os.environ["PHATE_CUSTOM_PROTEIN_BLAST_HOME"]
 
@@ -74,7 +75,7 @@ HMM_OUT_DIR              = ""  # set by set method, via parameter list
 PVOGS_OUT_DIR            = ""  # set by set method, via parameter list
 PVOGS_FASTA_DB_NAME      = "pVOGs.faa"  #*** CHECK HOW THIS IS SET 
 VOGS_OUT_DIR             = ""  # set by set method, via parameter list
-VOGS_FASTA_DB_NAME       = "vog.proteins.tagged.all.fa"  #*** CHECK HOW THIS IS SET 
+VOGS_FASTA_DB_NAME       = "vog.proteins.tagged.all.fa"  #*** CHECK HOW THIS IS SET - Should be set as env var
 HMM_RAW_OUT_FILENAME     = "hmm_raw.out"   # for capturing raw output from hmm search codes (eg, alignments)
 
 HIT_COUNT_MAX  = 50  # Put a limit on the number of hits that should be processed; let's not go over this
@@ -110,7 +111,9 @@ class multiHMM(object):
         self.REFSEQ_PROTEIN_HMM       = False     #
         self.REFSEQ_GENE_HMM          = False     #  
         self.PVOGS_HMM                = False     # 
-        self.VOGS_HMM                 = False     # 
+        self.VOGS_HMM                 = False     # Protein only; to be deprecated
+        self.VOG_GENE_HMM             = False     # Not in service
+        self.VOG_PROTEIN_HMM          = False     # Protein only
         self.PHANTOME_HMM             = False     # 
         self.PHAGE_ENZYME_HMM         = False     # 
         self.KEGG_VIRUS_HMM           = False     # 
@@ -119,22 +122,21 @@ class multiHMM(object):
         self.SWISSPROT_HMM            = False     #  
         self.UNIPROT_HMM              = False     # 
         self.NR_HMM                   = False     #  
+        self.CAZY_HMM                 = False     #  
+        self.CUSTOM_GENE_HMM          = False     #  
+        self.CUSTOM_PROTEIN_HMM       = False     #  
 
     ##### SET AND GET PARAMETERS
 
     def setHmmParameters(self,paramset):
         if isinstance(paramset,dict):
             # Set by function for quality control
-            #if 'hmmProgram' in list(paramset.keys()):
-            #    self.setHmmProgram(paramset['hmmProgram'])
             if 'phmmerSearch' in list(paramset.keys()):
                 self.phmmerSearch = paramset['phmmerSearch'] 
             if 'jackhmmerSearch' in list(paramset.keys()):
                 self.jackhmmerSearch = paramset['jackhmmerSearch']
             if 'geneCallDir' in list(paramset.keys()):
                 self.geneCallDir = paramset['geneCallDir']
-            #if 'hmmOutDir' in list(paramset.keys()):
-            #    self.hmmOutDir = paramset['hmmOutDir']
             if 'genomeHmmOutDir' in list(paramset.keys()):
                 self.genomeHmmOutDir = paramset['genomeHmmOutDir']
             if 'geneHmmOutDir' in list(paramset.keys()):
@@ -145,9 +147,11 @@ class multiHMM(object):
                 self.pVOGsOutDir = paramset['pVOGsOutDir']
             if 'VOGsOutDir' in list(paramset.keys()):
                 self.VOGsOutDir = paramset['VOGsOutDir']
-            # Booleans to control execution  #*** Only pvogsHmm and vogsHmm are currently in service
+            # Booleans to control execution  
             # This module performs hmm search against sequence databases--hence the blast/sequence databases are referenced
             # Values are True or False, and True indicates that the database shall be used.
+            if 'ncbiVirusGenomeBlast' in list(paramset.keys()):
+                self.NCBI_VIRUS_GENOME_HMM = paramset["ncbiVirusGenomeBlast"]
             if 'ncbiVirusProteinBlast' in list(paramset.keys()):
                 self.NCBI_VIRUS_PROTEIN_HMM = paramset["ncbiVirusProteinBlast"]
             if 'refseqProteinBlast' in list(paramset.keys()):
@@ -158,6 +162,10 @@ class multiHMM(object):
                 self.PVOGS_HMM = paramset["pvogsBlast"]
             if 'vogsBlast' in list(paramset.keys()):
                 self.VOGS_HMM = paramset["vogsBlast"]
+            if 'vogGeneBlast' in list(paramset.keys()):
+                self.VOG_GENE_HMM = paramset["vogGeneBlast"]
+            if 'vogProteinBlast' in list(paramset.keys()):
+                self.VOG_PROTEIN_HMM = paramset["vogProteinBlast"]
             if 'phantomeBlast' in list(paramset.keys()):
                 self.PHANTOME_HMM = paramset["phantomeBlast"]
             if 'phageEnzymeBlast' in list(paramset.keys()):
@@ -174,6 +182,12 @@ class multiHMM(object):
                 self.UNIPROT_HMM = paramset["uniprotBlast"]
             if 'nrBlast' in list(paramset.keys()):
                 self.NR_HMM = paramset["nrBlast"]
+            if 'cazyBlast' in list(paramset.keys()):
+                self.CAZY_HMM = paramset["cazyBlast"]
+            if 'customProteinBlast' in list(paramset.keys()):
+                self.CUSTOM_PROTEIN_HMM = paramset["customProteinBlast"]
+            if 'customGeneBlast' in list(paramset.keys()):
+                self.CUSTOM_GENE_HMM = paramset["customGeneBlast"]
 
     def setHmmProgram(self,hmmProgram):
         if hmmProgram.lower() == 'jackhmmer':
@@ -237,7 +251,7 @@ class multiHMM(object):
         fastaFileH.close()
 
         # Run hmm program; write output to specified file  #*** Note: only jackhmmer is currently in service
-        if self.hmmProgram == 'jackhmmer':
+        if self.jackhmmerSearch:
             # Construct out file names
             seqOutfile = outfile + '.jackhmmer.seqout' # captures tabbed data for the sequence-level analysis
             domOutfile = outfile + '.jackhmmer.domout' # captures tabbed data for the domain-level analysis
@@ -245,7 +259,7 @@ class multiHMM(object):
  
             command = HMMER_HOME + "jackhmmer --tblout " + seqOutfile + ' --domtblout ' + domOutfile + ' ' + fastaFile + ' ' + database + ' > ' + stdOutfile
 
-        elif self.hmmProgram == 'phmmer': 
+        elif self.phmmerSearch: 
             # Construct out file names
             seqOutfile = outfile + '.phmmer.seqout' # captures tabbed data for the sequence-level analysis
             domOutfile = outfile + '.phmmer.domout' # captures tabbed data for the domain-level analysis
@@ -253,7 +267,7 @@ class multiHMM(object):
  
             command = HMMER_HOME + "phmmer --tblout " + seqOutfile + ' --domtblout ' + domOutfile + ' ' + fastaFile + ' ' + database + ' > ' + stdOutfile
 
-        if command == '':  # set to 'jackhmmer' (only hmm code currently supported)
+        if command == '':  # set to 'jackhmmer' as default 
             command = HMMER_HOME + "jackhmmer --tblout " + seqOutfile + ' --domtblout ' + domOutfile + ' ' + fastaFile + ' ' + database + ' > ' + stdOutfile
             if PHATE_WARNINGS == 'True':
                 print("phate_hmm says, WARNING: HMM program not currently supported: ", self.hmmProgram, "Program was set to jackhmmer.")
@@ -385,8 +399,6 @@ class multiHMM(object):
             for hit in hitList:
                 if hit["hitVOG"]:
                     vogs = hit["hitVOG"].split(' ')
-                    if DEBUG:
-                        print("vogs is:",vogs)
                     for vog in vogs:
                         if vog != '':
                             tempVOGlist.append(vog)  # Now we have a complete (super)set of all pVOG identifiers found in hmm search 
@@ -468,17 +480,18 @@ class multiHMM(object):
                     newAnnotation.end            = 'N' # query end
                     newAnnotation.category       = "sequence"
 
-                    # Extract pVOG identifier(s) from hit's header (if pVOG database)
+                    # Extract VOG identifier(s) from hit's header (if pVOG or VOG database)
                     VOGlist = [] 
                     VOGlist = hit["hitVOG"].split(' ')
-                    for pVOG in VOGlist: 
-                        if pVOG != '':
-                            newAnnotation.VOGlist.append(pVOG)
+                    for VOG in VOGlist: 
+                        if VOG != '':
+                            newAnnotation.VOGlist.append(VOG)
                     
                     # Fill in description, if it's empty (ie, VOG hits have empty description)
                     if VOGlist:
-                        if dbName.lower() == 'vogs' or dbName.lower() == 'vog':
+                        if dbName.lower() == 'vogs' or dbName.lower() == 'vog' or dbName.lower() == 'voggene' or dbName.lower() == 'vogprotein' or dbName.lower() == 'vogs_hmm' or dbName.lower() == 'cazy':
                             newAnnotation.link2databaseIdentifiers(database,dbName)
+                    # Link to description for CAZy hit
 
                     # Collapse all domain hits into an annotation list for this sequence/global hit
                     for domain in hit["hitDomainList"]:
@@ -507,7 +520,6 @@ class multiHMM(object):
                 print("phate_hmm says, WARNING: Output format", self.outputFormat, "not yet supported in phate_hmm.py/hmm1fasta(). Use hmm out TBL format for now.")
 
     def runHmm(self,fastaSet,dbType="protein"): # fastaSet is a phate_fastaSequence.multiFasta object
-
         # Set sequence type 
         GENOME = False; GENE = False; PROTEIN = False
         if dbType.lower() == "protein" or dbType.lower == "aa" or dbType.lower == "prot" or dbType.lower == "peptide":
@@ -524,12 +536,14 @@ class multiHMM(object):
         # Set database variable, invoke HMM program for each fasta 
         database = ''
 
+        # Currently no hmm search supported for genomes.
         if GENOME:
             if PHATE_WARNINGS == 'True':
                 print("phate_hmm says, WARNING: Currently genome HMM search is not supported.")
 
+        # Currently no hmm search supported for genes.
         if GENE:
-            if self.REFSEQ_GENE_HMM:
+            if self.REFSEQ_GENE_HMM:   # Not in service
                 database = REFSEQ_GENE_HMM_HOME # same database as blast uses
                 dbName   = 'refseqGene'
                 count = 0
@@ -538,7 +552,20 @@ class multiHMM(object):
                 for fasta in fastaSet.fastaList:
                     count += 1
                     outfile = self.hmmOutDir + self.hmmProgram + "_refseqGene_" + str(count)
+                    if PHATE_PROGRESS:
+                        print("phate_hmm says, Searching fasta number",count)
                     self.hmm1fasta(fasta,outfile,database,dbName)  #*** CONTROL
+
+            if self.CUSTOM_GENE_HMM:
+                database = CUSTOM_GENE_HMM_HOME
+                dbName   = 'customGeneHmm'
+                count    = 0
+                if PHATE_PROGRESS == 'True':
+                    print("phate_hmm says, Running Custom Gene hmm search:", database, dbName)
+                for fasta in fastaSet.fastaList:
+                    count += 1
+                    outfile = self.geneHmmOutDir + self.hmmProgram + "_customGeneHmm_" + str(count)
+                    self.hmm1fasta(fasta,outfile,database,dbName)
 
         if PROTEIN:
             if self.NR_HMM:  
@@ -605,7 +632,7 @@ class multiHMM(object):
                 for fasta in fastaSet.fastaList:
                     count += 1
                     outfile = self.proteinHmmOutDir + self.hmmProgram + "_swissprot_" + str(count)
-                    self.hmm1fasta(fasta,outfile,database,dbName)   #*** CONTROL
+                    self.hmm1fasta(fasta,outfile,database,dbName)   
 
             if self.PHAGE_ENZYME_HMM: 
                 database = PHAGE_ENZYME_HMM_HOME # same database as blast uses
@@ -616,7 +643,18 @@ class multiHMM(object):
                 for fasta in fastaSet.fastaList:
                     count += 1
                     outfile = self.proteinHmmOutDir + self.hmmProgram + "_phageEnz_" + str(count)
-                    self.hmm1fasta(fasta,outfile,database,dbName)   #*** CONTROL
+                    self.hmm1fasta(fasta,outfile,database,dbName)   
+
+            if self.CAZY_HMM: 
+                database = CAZY_HMM_HOME # same database as blast uses
+                dbName   = 'cazy'
+                count = 0
+                if PHATE_PROGRESS == 'True':
+                    print("phate_hmm says, Running CAZy hmm search:", database, dbName)
+                for fasta in fastaSet.fastaList:
+                    count += 1
+                    outfile = self.proteinHmmOutDir + self.hmmProgram + "_cazy_" + str(count)
+                    self.hmm1fasta(fasta,outfile,database,dbName)   
 
             if self.PVOGS_HMM:  
                 database = PVOGS_HMM_HOME # same database as blast uses
@@ -627,14 +665,12 @@ class multiHMM(object):
                 for fasta in fastaSet.fastaList:
                     count += 1
                     outfile = self.proteinHmmOutDir + self.hmmProgram + "_pvog_" + str(count)
-                    if count <= 2:  # DEBUG
-                        self.hmm1fasta(fasta,outfile,database,dbName)
 
                 if PHATE_PROGRESS == 'True':
                     print("phate_hmm says, pVOGs hmm search complete.")
                     print("phate_hmm says, Collecting and saving pVOG sequences corresponding to hmm hit(s)")
 
-                if self.jackhmmerSearch: # Create pVOG fasta group files so user can do alignments
+                if self.jackhmmerSearch or self.phmmerSearch: # Create pVOG fasta group files so user can do alignments
                     # You need only one "alignment" file per pVOG group that the fasta hit (under blast cutoffs)
                     # Capture pVOG.faa lines
                     pVOGs_h = open(database,"r")
@@ -653,7 +689,10 @@ class multiHMM(object):
                                         pvogPrintedList.append(pVOG)  # Record this pVOG identifier as "done"
                                         # create dynamic file name
                                         countA += 1 
-                                        outfilePVOG = self.pVOGsOutDir + "hmm_pvogGroup_" + str(count) + '_' + str(countA) + '.faa' 
+                                        if self.jackhmmerSearch:
+                                            outfilePVOG = self.pVOGsOutDir + "hmm_jackhmmer_pvogGroup_" + str(count) + '_' + str(countA) + '.faa' 
+                                        elif self.phmmerSearch:
+                                            outfilePVOG = self.pVOGsOutDir + "hmm_phmmer_pvogGroup_" + str(count) + '_' + str(countA) + '.faa' 
                                         # open file and write current fasta pluse each corresponding pVOG fasta
                                         outfilePVOG_h = open(outfilePVOG,'w')
                                         outfilePVOG_h.write("%c%s\n%s\n" % ('>',fasta.header,fasta.sequence)) # write the current peptide fasta,
@@ -663,23 +702,22 @@ class multiHMM(object):
                                     if PHATE_WARNINGS == 'True':
                                         print("phate_hmm says, WARNING: unexpected pVOG identifier:", pVOG, "for fasta", fasta.header)        
 
-            if self.VOGS_HMM:  
-                database = VOGS_HMM_HOME # same database as blast uses
-                dbName   = 'VOGs'
+            if self.VOG_PROTEIN_HMM:   
+                database = VOG_PROTEIN_HMM_HOME # same database as blast uses
+                dbName   = 'vogs_hmm'
                 count = 0
                 if PHATE_PROGRESS == 'True':
                     print("phate_hmm says, Running VOGs hmm search:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
                     outfile = self.proteinHmmOutDir + self.hmmProgram + "_vog_" + str(count)
-                    if count <= 2:   # DEBUG
-                        self.hmm1fasta(fasta,outfile,database,dbName)
+                    self.hmm1fasta(fasta,outfile,database,dbName)
 
                 if PHATE_PROGRESS == 'True':
                     print("phate_hmm says, VOGs hmm search complete.")
                     print("phate_hmm says, Collecting and saving VOG sequences corresponding to hmm hit(s)")
 
-                if self.jackhmmerSearch: # Create VOG fasta group files so user can do alignments
+                if self.jackhmmerSearch or self.phmmerSearch: # Create VOG fasta group files so user can do alignments
                     # You need only one "alignment" file per VOG group that the fasta hit (under blast cutoffs)
                     # Capture VOG.faa lines
                     VOGs_h = open(database,"r")
@@ -698,7 +736,10 @@ class multiHMM(object):
                                         vogPrintedList.append(VOG)  # Record this VOG identifier as "done"
                                         # create dynamic file name
                                         countA += 1 
-                                        outfileVOG = self.VOGsOutDir + "hmm_vogGroup_" + str(count) + '_' + str(countA) + '.faa' 
+                                        if self.jackhmmerSearch:
+                                            outfileVOG = self.VOGsOutDir + "hmm_jackhmmer_vogGroup_" + str(count) + '_' + str(countA) + '.faa' 
+                                        elif self.phmmerSearch:
+                                            outfileVOG = self.VOGsOutDir + "hmm_phmmer_vogGroup_" + str(count) + '_' + str(countA) + '.faa' 
                                         # open file and write current fasta pluse each corresponding VOG fasta
                                         outfileVOG_h = open(outfileVOG,'w')
                                         outfileVOG_h.write("%c%s\n%s\n" % ('>',fasta.header,fasta.sequence)) # write the current peptide fasta,
@@ -707,6 +748,17 @@ class multiHMM(object):
                                 else:
                                     if PHATE_WARNINGS == 'True':
                                         print("phate_hmm says, WARNING: unexpected VOG identifier:", VOG, "for fasta",fasta.header)        
+
+            if self.CUSTOM_PROTEIN_HMM:
+                database = CUSTOM_PROTEIN_HMM_HOME
+                dbName   = 'customProteinHmm'
+                count    = 0
+                if PHATE_PROGRESS == 'True':
+                    print("phate_hmm says, Running Custom Protein hmm search:", database, dbName)
+                for fasta in fastaSet.fastaList:
+                    count += 1
+                    outfile = self.proteinHmmOutDir + self.hmmProgram + "_customProteinHmm_" + str(count)
+                    self.hmm1fasta(fasta,outfile,database,dbName)
 
         if CLEAN_RAW_DATA == 'True':
             self.cleanHmmOutDir('protein')

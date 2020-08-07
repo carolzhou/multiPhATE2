@@ -6,7 +6,7 @@
 #
 # Programmer:  Carol Zhou
 #
-# Last Update:  28 July 2020
+# Last Update:  05 August 2020
 # 
 # Classes and Methods:
 #    multiBlast
@@ -114,8 +114,8 @@ BLAST_OUT_DIR            = ""  # set by set method, via parameter list
 PVOGS_OUT_DIR            = ""  # set by set method, via parameter list
 VOGS_OUT_DIR             = ""  # set by set method, via parameter list
 
-#DEBUG  = True 
 DEBUG  = False 
+#DEBUG  = True 
 
 # blast formats
 XML  = 5
@@ -495,7 +495,7 @@ class multiBlast(object):
                 newAnnotation.method         = self.blastFlavor
                 newAnnotation.annotationType = "homology"
                 newAnnotation.category       = "sequence"
-                newAnnotation.name           = nextHitDataSet["hitDefline"]               # subject header (possibly truncated)
+                newAnnotation.name           = nextHitDataSet["hitDefline"]               # subject header (possibly truncated by blast)
                 newAnnotation.start          = nextHitDataSet["hitHSPs"][0]["queryStart"] # query start
                 newAnnotation.end            = nextHitDataSet["hitHSPs"][0]["queryEnd"]   # query end
                 resultString                 = 'identity=' + str(round(nextHitDataSet["hitHSPs"][0]["hspPercentIdentity"],2)) 
@@ -508,10 +508,12 @@ class multiBlast(object):
                     MEETS_IDENTITY_CUTOFF = True
 
                 # CHECK THIS: code adapted assuming same structure of pVOGs vs. VOGs
-                # If this is a pVOGs blast result, capture the pVOG identifiers in the annotation object
-                match_pVOG = re.search('pvog',newAnnotation.source.lower())
-                match_VOG  = re.search('VOG', newAnnotation.source)
+                # If this is a pVOG/VOG blast result, capture the VOG identifiers in the annotation object
+                match_pVOG = re.search('pvog',newAnnotation.source.lower())  # First check if it's a pVOG
+                if not match_pVOG:                                           # If it's not a pVOG, then it might be a VOG
+                    match_VOG  = re.search('vog', newAnnotation.source.lower())
                 if match_pVOG or match_VOG: 
+                    # Note that structure of pVOG annotation information differs from that of VOG.
                     # VOG hit header has VOGid(s) + proteinID; pVOG hit header has VOGid(s) + proteinID + description
                     VOGidList = re.findall('VOG\d+',newAnnotation.name)  # name holds to hit's header, which has func dscr for pVOG
                     for VOGid in VOGidList:
@@ -599,17 +601,18 @@ class multiBlast(object):
         if GENOME:
             if self.NCBI_VIRUS_GENOME_BLAST:
                 database = NCBI_VIRUS_GENOME_BLAST_HOME
-                dbName = 'ncbi'
+                dbName = 'ncbiVirusGenome'
                 count = 0
                 if PHATE_PROGRESS == 'True':
                     print("phate_blast says, Running NCBI blast:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
-                    outfile = self.blastOutDir + self.blastFlavor + "_ncbi_" + str(count)
+                    outfile = self.blastOutDir + self.blastFlavor + "_ncbiVirGenome_" + str(count)
                     self.blast1fasta(fasta,outfile,database,dbName)
+
             elif self.CUSTOM_GENOME_BLAST:
-                database = CUSTOM_DATABASE_BLAST_HOME
-                dbName = 'custom'
+                database = CUSTOM_GENOME_BLAST_HOME
+                dbName = 'customGenome'
                 count = 0
                 if PHATE_PROGRESS == 'True':
                     print("phate_blast says, Running Custom Genome blast:", database, dbName)

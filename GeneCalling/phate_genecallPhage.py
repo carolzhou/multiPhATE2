@@ -84,7 +84,8 @@ cgcGff         = outputFolder + "CGCcallSummary.gff"
 supersetCgc    = outputFolder + "superset.cgc"
 consensusCgc   = outputFolder + "consensus.cgc"
 commoncoreCgc  = outputFolder + "commoncore.cgc"
-customCalls    = outputFolder + customCallerOutfile  # user's calls in gff format; to be converted to cgc format
+#customCalls    = outputFolder + customCallerOutfile  # user's calls in gff format; to be converted to cgc format
+customCalls    = customCallerOutfile  # user's calls in gff format; to be converted to cgc format
 customCallsCgc = outputFolder + "custom.cgc"         # name of cgc formated custom calls file (to be written)
 
 # booleans to control gene finding
@@ -249,6 +250,8 @@ def processPhanotate(line):
         callCounts['phanotate'] += 1
 
 def Convert_gff2cgc(gffFile,cgcFile):
+    if DEBUG:
+        print("phate_genecallPhage says, DEBUG: Executing Convert_gff2cgc with gffFile,",gffFile,"and cgcFile,",cgcFile)
     # NOTE:  start/end versus leftEnd/rightEnd may be modified once I figure out what GFF3 does.
     # GFF format that is input to this code may not be strictly GFF. The 9 columns are as follows:
     # col1: contig            col2: source (ie gene caller)   col3: feature (cds or other)
@@ -322,6 +325,7 @@ def Convert_gff2cgc(gffFile,cgcFile):
     CGC_H.close()
 
 def Convert_cgc2gff(cgcFile,gffFile):
+    print("TESTING: just called Convert_cgc2gff with cgcFile,",cgcFile,"and gffFile",gffFile)
     p_caller   = re.compile('^#\s([\w\d\.\-]+)\sgene\scalls')  # caller is names in first line of file
     p_dataLine = re.compile('^\d')   # data lines begin with a digit
 
