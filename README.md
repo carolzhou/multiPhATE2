@@ -289,6 +289,7 @@ Note that genemarks and phanotate are not available as conda packages, so these 
 * The dbPrep_getDBs.py script can become out of date as 3rd party database providers modify their data or its location. Kindly notify the developers by submitting an issue on the github project page if you encounter problems in downloading with dbPrep_getDBs.py.
 * Are you installing on a remote server and your console keeps timing out and getting disconnected before dbPrep_getDBs.py finishes a download? The script can be modified as a workaround for this problem. Edit the dbPrep_getDBs.py file as follows: set INTERACTIVE to False, and set REMOTE to True and VERBOSE to True (note: these words are case sensitive). Running dbPrep_getDBs.py in REMOTE mode will require that you pre-set the databases you want downloaded. Scroll down to the comment that says, "Pre-set download instructions; skip user input", and set the databases you want to True.
 * Are you running phmmer or jackhmmer against a segmented database (e.g., NR, Swissprot) and you are seeing the following message: "Error: Failed to open target sequence database ... for reading"? This is telling you that you the hmm search program does not recognize the database volumes. Try another (non-segmented) database. 
+* If you ran pVOG and VOG searches and notice that the same VOG identifier yields different descriptions, please be aware that there is no correspondence between the VOG identifiers in the pVOG database and those in the VOG database. 
 
 #### RUNNING PHATE AS AN "EMBARASSINGLY PARALLEL" CODE
 
