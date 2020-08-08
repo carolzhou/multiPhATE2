@@ -5,7 +5,7 @@
 # CGC_parser.py
 #
 # Programmer:  Carol Zhou
-# Last update:  12 April 2020
+# Last update:  07 August 2020
 #
 # Description:  This code inputs the name of a gene caller plus
 #    the gene-caller's output file, and outputs a properly formatted
@@ -72,6 +72,7 @@ PRODIGAL_gff = False  # using the XXX.genes.gff file
 RAST_GFF3    = True   # using RAST gff3 file; other RAST formats not yet supported
 GFF3         = True   # using a properly formatted Genbank .faa file (format as GFF3)
 CUSTOM_GFF3  = True   # using gff3 input format for custom gene calls
+CUSTOM_GFF   = True   # gff mimics Prodigal's gff
 
 ##### FILES
 
@@ -107,7 +108,7 @@ p_custom    = re.compile('[Cc][Uu][Ss][Tt][Oo][Mm]')
 ##### CONTROL 
 
 DEBUG = False
-DEBUG = True
+#DEBUG = True
 
 ##### CONSTANTS
 
@@ -131,8 +132,6 @@ if PHATE_PROGRESS:
     print("CGC_parser says, Begin processing; gathering input parameters.")
 
 argCount = len(sys.argv)
-if DEBUG:
-    print("CGC_parser says, DEBUG: sys.argv is",sys.argv)
 if argCount in ACCEPTABLE_ARG_COUNT:
     match = re.search("help", sys.argv[1].lower())
     if match:
@@ -340,6 +339,7 @@ def ProcessGlimmer(fLines,OUT):
 # Contig name (must match corresponding in .fasta file) is in first column 
 def ProcessCustom(fLines,OUT):  
     geneNo = 0; contig = "unknown"; strand = ''; leftEnd = ''; rightEnd = ''; length = 0; protein = "unknown" 
+
     if CUSTOM_GFF3:
         if RUNLOGOPEN:
             RUNLOGFILE.write("%s\n" % ("In CGC_parser.py, ProcessCustom() method"))
@@ -572,6 +572,7 @@ if USER_OUT_PROVIDED:
     elif match_genbank:
         ProcessGFF3(fileLines,USER_OUT)  # Need to format genbank's protein fasta file as GFF3
     elif match_custom:
+        CUSTOM_GFF = True
         ProcessCustom(fileLines,USER_OUT) # Incoming format is pre-defined; may be same as GFFx, but not necessarily
     else:
         if PHATE_WARNINGS:

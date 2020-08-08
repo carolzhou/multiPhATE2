@@ -4,7 +4,7 @@
 #
 # Programmers: Jeff Kimbrel, Carol Zhou
 #
-# Last update: 04 August 2020
+# Last update: 07 August 2020
 #
 # Description: Single command to run PHANOTATE, Prodigal, Glimmer and GeneMarkS on a fasta file
 #
@@ -65,27 +65,22 @@ files = {
 
 if PHATE_MESSAGES == 'True':
     print("phate_genecallPhage says, There are", len(sys.argv), "input parameters:", sys.argv)
-
 if len(sys.argv) == 1:
     if PHATE_WARNINGS == 'True':
         print("phate_genecallPhage says, Usage: /usr/local/bin/python3.4 annotatePhage.py fastaFile.fa outFolder", "Exiting now.")
     exit(0)
 
 # Get input parameters
-if DEBUG:
-    print("phate_geneCallPhage says, DEBUG: input parameters are:",sys.argv)
 fastaFileName       = sys.argv[1]
 outputFolder        = sys.argv[2] + "/"
-customCallerOutfile = sys.argv[4]  # will be 'unknown' if user is not including a custom genecaller output file
-#customCallerOutfile = "custom.gff"  # will be 'unknown' if user is not including a custom genecaller output file
+outputSubfolderName = os.path.basename(sys.argv[2])
 
 cgcLog         = outputFolder + "CGC_main.log"
 cgcGff         = outputFolder + "CGCcallSummary.gff"
 supersetCgc    = outputFolder + "superset.cgc"
 consensusCgc   = outputFolder + "consensus.cgc"
 commoncoreCgc  = outputFolder + "commoncore.cgc"
-#customCalls    = outputFolder + customCallerOutfile  # user's calls in gff format; to be converted to cgc format
-customCalls    = customCallerOutfile  # user's calls in gff format; to be converted to cgc format
+customCallsGff = outputFolder + outputSubfolderName + ".custom.gff"  # Example: Eb_P2.custom.gff
 customCallsCgc = outputFolder + "custom.cgc"         # name of cgc formated custom calls file (to be written)
 
 # booleans to control gene finding
@@ -108,8 +103,6 @@ if len(sys.argv) == 5:
         PHANOTATE_CALLS = True 
     if match_custom:
         CUSTOM_CALLS    = True
-if DEBUG:
-    print("phate_genecallPhage says, DEBUG: CUSTOM_CALLS is",CUSTOM_CALLS)
 
 logfilefullpath = outputFolder + "phate_genecallPhage.log"
 logfile = open(logfilefullpath,"w")
@@ -136,9 +129,9 @@ logfile.write("%s%s\n" % ("cgcGff is ",cgcGff))
 logfile.write("%s%s\n" % ("supersetCgc is ",supersetCgc))
 logfile.write("%s%s\n" % ("consensusCgc is ",consensusCgc))
 logfile.write("%s%s\n" % ("commoncoreCgc is ",commoncoreCgc))
-logfile.write("%s%s\n" % ("customCalls is ",customCalls))
+logfile.write("%s%s\n" % ("customCallsGff is ",customCallsGff))
 logfile.write("%s%s\n" % ("customCallsCgc is ",customCallsCgc))
-
+#
 callCounts = {'prodigal' : 0, 'glimmer' : 0, 'genemarks' : 0, 'phanotate' : 0, 'custom' : 0}
 
 iterateGlimmer = False
@@ -167,7 +160,6 @@ class geneCall:
 ########## FUNCTIONS ##########
 
 def systemCall(command):
-    #print("\nSYSTEM CALL: "+command)
     if PHATE_MESSAGES == 'True':
         print("\nSYSTEM CALL: ", command)
     logfile.write("%s%s\n" % ("command is ",command))
@@ -250,8 +242,6 @@ def processPhanotate(line):
         callCounts['phanotate'] += 1
 
 def Convert_gff2cgc(gffFile,cgcFile):
-    if DEBUG:
-        print("phate_genecallPhage says, DEBUG: Executing Convert_gff2cgc with gffFile,",gffFile,"and cgcFile,",cgcFile)
     # NOTE:  start/end versus leftEnd/rightEnd may be modified once I figure out what GFF3 does.
     # GFF format that is input to this code may not be strictly GFF. The 9 columns are as follows:
     # col1: contig            col2: source (ie gene caller)   col3: feature (cds or other)
@@ -286,12 +276,8 @@ def Convert_gff2cgc(gffFile,cgcFile):
     CGC_H.write("%s%s\n" % ("# Custom gene calls reformatted from file ",gffFile))
     CGC_H.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % ("#Gene No.","Strand","LeftEnd","RightEnd","Length","Contig","Protein"))
 
-    if DEBUG:
-        print("phate_genecallPhage says, DEBUG: Reading lines from gff file in Convert_gff2cgc")
     fLines = GFF_H.read().splitlines()
     for fLine in fLines:
-        if DEBUG:
-            print("phate_genecallPhage says, DEBUG: Next line is,",fLine)
         match_comment    = re.search(p_comment,fLine)
         match_blank      = re.search(p_blank,fLine)
         match_contigLine = re.search(p_contigLine,fLine)
@@ -319,13 +305,10 @@ def Convert_gff2cgc(gffFile,cgcFile):
             rightEnd = temp
         CGC_H.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,leftEnd,rightEnd,length,contig,protein)) 
 
-    if DEBUG:
-        print("phate_genecallPhage says, DEBUG: Completed conversion of gff to cgc")
     GFF_H.close()
     CGC_H.close()
 
 def Convert_cgc2gff(cgcFile,gffFile):
-    print("TESTING: just called Convert_cgc2gff with cgcFile,",cgcFile,"and gffFile",gffFile)
     p_caller   = re.compile('^#\s([\w\d\.\-]+)\sgene\scalls')  # caller is names in first line of file
     p_dataLine = re.compile('^\d')   # data lines begin with a digit
 
@@ -481,7 +464,6 @@ if PHANOTATE_CALLS:
         print("########## PHANOTATE ##########")
     logfile.write("%s\n" % ("Processing PHANOTATE"))
 
-    #os.chdir(phanotatePath)
     systemCall('phanotate.py ' + fastaFileName + ' > ' + outputFolder + 'phanotateOutput.txt' )
     os.chdir(workingFolder)
 
@@ -497,22 +479,21 @@ else:
 # Custom calls are provided by the user in modified gff format, and converted to cgc format by PhATE
 logfile.write("%s\n" % ("Preparing to process CUSTOM calls"))
 logfile.write("%s%s\n" % ("CUSTOM_CALLS is ",CUSTOM_CALLS))
-logfile.write("%s%s\n" % ("customCalls is ",customCalls))
+logfile.write("%s%s\n" % ("customCallsGff is ",customCallsGff))
 logfile.write("%s%s\n" % ("customCallsCgc is ",customCallsCgc))
 
+# Custom calls must be provided in gff format. Calls need only be converted to cgc format.
 if CUSTOM_CALLS:
     if PHATE_PROGRESS == 'True':
         print("phate_genecallPhage says, custom calls need to be converted to cgc format.")
     if PHATE_MESSAGES == 'True':
         print("\n######## CUSTOM CALLS #########")
     try:
-        if DEBUG:
-            print("phate_runPipeline says, DEBUG: Calling Convert_gff2cgc(customCalls,customCallsCgc) with files:",customCalls,"and",customCallsCgc)
-        errorMsg = Convert_gff2cgc(customCalls,customCallsCgc)
+        errorMsg = Convert_gff2cgc(customCallsGff,customCallsCgc)
         logfile.write("%s\n" % ("Completed converting custom calls gff file to cgc format."))
     except:
-        logfile.write("%s%s%s\n" % ("ERROR in phate_genecallPhage.py in Covert_gff2cgc(), input files: ",customCalls,customCallsCgc))
-        print ("ERROR in phate_genecallPhage.py, running Convert_gff2cgc(), ", customCalls, customCallsCgc)
+        logfile.write("%s%s%s\n" % ("ERROR in phate_genecallPhage.py in Covert_gff2cgc(), input files: ",customCallsGff,customCallsCgc))
+        print ("ERROR in phate_genecallPhage.py, running Convert_gff2cgc(), ", customCallsGff, customCallsCgc)
     logfile.write("%s\n" % ("CUSTOM CALLS - need to be converted to cgc format."))
 
 ########## RESULTS ##########
@@ -531,7 +512,6 @@ logfile.write("%s\n" % ("Printing tallied genecall method call counts..."))
 if PHATE_MESSAGES == 'True':
     for method in callCounts:
         print((method + ": " + str(callCounts[method])))
-
 print()
 
 logfile.write("%s\n" % ("Printing file info..."))
@@ -558,7 +538,7 @@ if PHANOTATE_CALLS:
 if CUSTOM_CALLS:
     callerCount += 1
     logfile.write("%s\n" % ("Calling CGC_parser.py with custom calls"))
-    systemCall('python ' + cgcPath + '/CGC_parser.py Custom ' + outputFolder + 'phate_custom.gff ' + outputFolder + 'custom.cgc')
+    systemCall('python ' + cgcPath + '/CGC_parser.py Custom ' + customCallsGff + ' ' + outputFolder + 'custom.cgc')
 
 logfile.write("%s%s\n" % ("callerCount is ",callerCount))
 if callerCount >= 2:

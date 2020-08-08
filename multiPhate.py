@@ -5,7 +5,7 @@
 # Program Title:  multiPhate2.py (/multiPhate2/)
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last Update:  05 August 2020
+# Last Update:  07 August 2020
 #
 # Description: Script multiPhate.py runs an annotation pipeline (phate_runPipeline.py) over any
 #    number of genomes specified in the user's input configuration file (multPhate.config). It then
@@ -231,11 +231,11 @@ VOG_PROTEIN_ANNOTATION_FILENAME = "vog.annotations.tsv"  # The annotations assoc
 
 # naming the custom gene caller
 # paths to subordinate codes; '' if installed globally (e.g., via conda)
-GENEMARKS_HOME              = ''             # Available via license
-GLIMMER_HOME                = ''             # Can install using Conda
-PRODIGAL_HOME               = ''             # Can install using Conda
-PHANOTATE_HOME              = ''             # not currently a conda package; acquire from github
-HMMER_HOME                  = ''             # Can install using Conda; HMMER includes jackhmmer, hmmbuild, hmmscan
+GENEMARKS_HOME              = '' # Available via license
+GLIMMER_HOME                = '' # Can install using Conda
+PRODIGAL_HOME               = '' # Can install using Conda
+PHANOTATE_HOME              = '' # not currently a conda package; acquire from github
+HMMER_HOME                  = '' # Can install using Conda; HMMER includes jackhmmer, hmmbuild, hmmscan
 
 # blast parameters
 BLASTP_IDENTITY_DEFAULT     = 60

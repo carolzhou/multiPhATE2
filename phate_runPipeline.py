@@ -4,7 +4,7 @@
 #
 # Program Title:  phate_runPipeline.py ()
 #
-# Most recent update:  04 August 2020
+# Most recent update:  07 August 2020
 #
 # Description: Runs the phate annotation pipeline.  This code runs under Python 3.7, and requires
 #    dependent packages.
@@ -163,8 +163,8 @@ OUTFILE.write("%s%s%s\n" % ("Begin out file ",datetime.datetime.now(), " *******
 runLog = "" # Pipeline log file for current pipeline run (written to user's output subdirectory; this is created once we know the subdir name)
 
 # DEBUG messages control (local)
-DEBUG = True
 DEBUG = False
+#DEBUG = True
 
 ##### HELP STRINGS
 
@@ -366,12 +366,6 @@ with open(jsonFile, 'r') as jsonParameters:
     customHmmDBpath          = parameters["customHmmDBpath"]
 
 jsonParameters.close()
-
-# Check input
-if DEBUG:
-    print("phate_runPipeline says, DEBUG: customProteinBlast is",customProteinBlast)
-    print("phate_runPipeline says, DEBUG: customProteinDBname is",customProteinDBname)
-    print("phate_runPipeline says, DEBUG: customProteinDBpath is",customProteinDBpath)
 
 # Capture user's configured values
 #
@@ -631,7 +625,8 @@ if phanotateCalls:
 
 if customGeneCalls: 
     customCallFile  = outputSubdir.rstrip('/') + ".custom.gff"  # This is what the user should have named it
-    customPhateFile = "phate_custom.gff" 
+    #customPhateFile = "phate_custom.gff" 
+    customPhateFile = customCallFile 
     source      = os.path.join(PIPELINE_INPUT_DIR,    customCallFile)
     destination = os.path.join(PIPELINE_OUTPUT_SUBDIR,customPhateFile)
     try:
@@ -667,9 +662,6 @@ if MULTIPLE_CALLERS:
         primaryCallsPathFile = PIPELINE_OUTPUT_SUBDIR + 'common_core.cgc' 
 
 command = "python " + GENECALL_CODE + ' ' + genomeFile + ' ' + param2 + ' ' + param3 + ' ' + primaryCallsPathFile
-if DEBUG:
-    print("phate_runPipeline says, DEBUG: Calling Genecall module; command is", command)
-
 if PHATE_PROGRESS == 'True':
     print("phate_runPipeline says, Calling the gene-call module.")
 if PHATE_MESSAGES == 'True':
