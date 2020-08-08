@@ -11,7 +11,7 @@
 #
 # Summary:  This script facilitates the downloading of databases to be used with multiPhATE.
 #
-# Most recent update:  30 July 2020
+# Most recent update:  08 August 2020
 #
 ##############################################################################
 
@@ -26,9 +26,9 @@ from pathlib import Path
 # CONSTANTS, BOOLEANS
 
 # Run interactive for user to input which data sets they want to install
-INTERACTIVE = True 
+INTERACTIVE = False
 # Run remote to pre-set download instructions and skip user input
-REMOTE = False 
+REMOTE = True
 # Set verbost to true for remote processing if server is killing idle processes.
 # Verbose will write voluminous progress to console, keeping user process non-idle during long computations.
 VERBOSE = False 
@@ -74,6 +74,12 @@ accn2taxid_httpAddr = "ftp://ftp.ncbi.nih.gov/pub/taxonomy/accession2taxid"
 accn2taxid_file     = "nucl_gb.accession2taxid"
 accn2taxid_file_gz  = accn2taxid_file + ".gz"
 accn2taxid_fileAddr = os.path.join(accn2taxid_httpAddr,accn2taxid_file_gz)
+
+# Swissprot Database
+swissprotExpasy_httpAddr = "ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz"
+swissprotDBfile_gz     = "uniprot_sprot.fasta.gz"
+swissprotDBfile        = "uniprot_sprot.fasta"
+swissprotFastaFilename = "swissprot.fa"
 
 # PVOG Database
 # PVOG data are available at the authors' home page and at NCBI. Choose one or the other:
@@ -244,17 +250,17 @@ DATA_H.close()
 # Pre-set download instructions; skip user input
 if REMOTE:
     BLAST               = True 
-    NCBI_VIRUS_GENOME   = True 
-    NCBI_VIRUS_PROTEIN  = True 
-    REFSEQ_PROTEIN      = True 
+    NCBI_VIRUS_GENOME   = False 
+    NCBI_VIRUS_PROTEIN  = False 
+    REFSEQ_PROTEIN      = False 
     SWISSPROT           = True 
     NR                  = False
-    PHANTOME            = True   # Provided in distribution
-    PVOGS               = True   # Provided in distribution
-    PVOG_HMMS           = True 
-    VOGS                = True 
-    VOG_HMMS            = True 
-    CAZY                = True 
+    PHANTOME            = False   # Provided in distribution
+    PVOGS               = False   # Provided in distribution
+    PVOG_HMMS           = False 
+    VOGS                = False 
+    VOG_HMMS            = False 
+    CAZY                = False 
 
 # Determine download instructions via user input
 elif INTERACTIVE:
@@ -352,6 +358,7 @@ elif INTERACTIVE:
             print ("That was not a correct response; please run this script again to download the database.")
 
     ##### SWISSPROT
+    #swissprotExpasy_httpAddr = "ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz"
     time.sleep(1)
     if BLAST:
         print ("Swissprot database: ('y'/'n')")
@@ -774,8 +781,30 @@ if SWISSPROT:
     LOG_H.flush()
  
     os.chdir(swissprotDir)
+
     try:
-        print ("Downloading Swissprot database.")
+        print("Downloading Swissprot fasta sequences")
+        command = "wget " + swissprotExpasy_httpAddr
+        success = os.system(command)
+    except:
+        print("WARNING: Download of Swissprot fasta sequences failed.")
+
+    try:
+        command = "gunzip " + swissprotDBfile_gz
+        success = os.system(command)
+    except:
+        print("WARNING: Could not unzip swissprot fasta file.")
+
+    # Rename the swissprot fasta files
+    try:
+        command = "mv " + swissprotDBfile + ' ' + swissprotFastaFilename
+        success = os.system(command)
+    except:
+        print("WARNING: Cound not rename swissprot fasta file.")
+
+    # Download the swissprot blast database (already formatted)
+    try:
+        print ("Downloading Swissprot blast database.")
         print ("This may take a while...")
         command = blastPath + "update_blastdb.pl" + ' ' + "swissprot"
         success = os.system(command)
@@ -790,7 +819,7 @@ if SWISSPROT:
         ls_h = open("ls.out",'r')
         files = ls_h.read().splitlines()
         for filename in files:
-            if not re.search('md5', filename):
+            if not re.search('md5', filename) and not re.search('ls\.out', filename):
                 command = "gunzip -c " + filename + " | tar xopf -"
                 success = os.system(command)
         ls_h.close()
