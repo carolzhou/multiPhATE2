@@ -268,9 +268,9 @@ def Convert_gff2cgc(gffFile,cgcFile):
 
     try:
         GFF_H = open(gffFile,"r")
-        CGC_H = open(cgcFile,"w")
+        CGC_H = open(cgcFile,'w+')
     except:
-        print("phate_genecallPhage says, ERROR: Cannot open gffFile,",gffFile,", in Convert_gff2cgc")
+        print("phate_genecallPhage says, ERROR: Cannot open gffFile,",gffFile,", or cgcFile,",cgcFile," in Convert_gff2cgc")
         return ERROR_1 
 
     CGC_H.write("%s%s\n" % ("# Custom gene calls reformatted from file ",gffFile))
@@ -311,7 +311,6 @@ def Convert_gff2cgc(gffFile,cgcFile):
 def Convert_cgc2gff(cgcFile,gffFile):
     p_caller   = re.compile('^#\s([\w\d\.\-]+)\sgene\scalls')  # caller is names in first line of file
     p_dataLine = re.compile('^\d')   # data lines begin with a digit
-
     # Initialize gff fields and caller
     seqid = '.'; source = '.'; seqType = 'cds'
     start = '0'; end = '0'; strand = '.'

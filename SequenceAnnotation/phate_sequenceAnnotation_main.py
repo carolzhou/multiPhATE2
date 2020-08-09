@@ -23,7 +23,7 @@ import time, datetime
 from subprocess import call
 
 DEBUG = False 
-DEBUG = True
+#DEBUG = True
 
 # Defaults/Parameters
 PRIMARY_CALLS          = 'phanotate'   # Default; can be configured by user
@@ -927,8 +927,6 @@ geneCallInfo = {      # For passing info to genomeSequence module  #*** ???
     'primaryCallsPathFile' : infile_primaryCalls,
     'genomeName'           : genomeName,
 }
-if DEBUG:
-    print("phate_sequenceAnnotation_main says, DEBUG: geneCallInfo is",geneCallInfo)
 
 # Create a genome object and set parameters 
 
@@ -962,9 +960,6 @@ LOGFILE_H.write("%s%s\n" % ("Processing gene calls at ",datetime.datetime.now())
 # ...for access when ultimately writing the GFF output file. (oh what we do for want of a pointer.)
 if PHATE_PROGRESS == 'True':
     print("phate_sequenceAnnotation_main says, geneCallInfo",geneCallInfo,"infile_primaryCalls",infile_primaryCalls,"contigSeqLen_hash",contigSeqLen_hash)
-if DEBUG:
-    print("phate_sequenceAnnotation_main says, DEBUG: Processing gene calls via genome object...") 
-    print("phate_sequenceAnnotation_main says, DEBUG: geneCallInfo is",geneCallInfo,"and PRIMARY_CALLS_FILE_H is",PRIMARY_CALLS_FILE_H)
 myGenome.processGeneCalls(geneCallInfo,PRIMARY_CALLS_FILE_H)
 myGenome.cleanUpAfterEMBOSS()
 PRIMARY_CALLS_FILE_H.close()

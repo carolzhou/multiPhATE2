@@ -76,10 +76,10 @@ accn2taxid_file_gz  = accn2taxid_file + ".gz"
 accn2taxid_fileAddr = os.path.join(accn2taxid_httpAddr,accn2taxid_file_gz)
 
 # Swissprot Database
-swissprotExpasy_httpAddr = "ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz"
-swissprotDBfile_gz     = "uniprot_sprot.fasta.gz"
-swissprotDBfile        = "uniprot_sprot.fasta"
-swissprotFastaFilename = "swissprot.fa"
+swissprotUniprot_httpAddr = "ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz"
+swissprotDBfile_gz        = "uniprot_sprot.fasta.gz"
+swissprotDBfile           = "uniprot_sprot.fasta"
+swissprotFastaFilename    = "swissprot.fa"
 
 # PVOG Database
 # PVOG data are available at the authors' home page and at NCBI. Choose one or the other:
@@ -358,7 +358,6 @@ elif INTERACTIVE:
             print ("That was not a correct response; please run this script again to download the database.")
 
     ##### SWISSPROT
-    #swissprotExpasy_httpAddr = "ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz"
     time.sleep(1)
     if BLAST:
         print ("Swissprot database: ('y'/'n')")
@@ -784,7 +783,7 @@ if SWISSPROT:
 
     try:
         print("Downloading Swissprot fasta sequences")
-        command = "wget " + swissprotExpasy_httpAddr
+        command = "wget " + swissprotUniprot_httpAddr
         success = os.system(command)
     except:
         print("WARNING: Download of Swissprot fasta sequences failed.")

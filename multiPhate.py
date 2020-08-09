@@ -5,7 +5,7 @@
 # Program Title:  multiPhate2.py (/multiPhate2/)
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last Update:  07 August 2020
+# Last Update:  08 August 2020
 #
 # Description: Script multiPhate.py runs an annotation pipeline (phate_runPipeline.py) over any
 #    number of genomes specified in the user's input configuration file (multPhate.config). It then
@@ -2037,6 +2037,10 @@ else:
     if PHATE_PROGRESS:
         print("multiPhate says, Skipping CompareGeneProfiles.")
     LOG.write("%s\n" % ("Skipping CompareGeneProfiles."))
+
+# Turn off Genomics processing if user selected translate only
+if translateOnly == True:
+    runGenomics = False
 
 # Override
 #runGenomics = False

@@ -4,7 +4,7 @@
 #
 # Program Title:  phate_runPipeline.py ()
 #
-# Most recent update:  07 August 2020
+# Most recent update:  08 August 2020
 #
 # Description: Runs the phate annotation pipeline.  This code runs under Python 3.7, and requires
 #    dependent packages.
@@ -399,10 +399,11 @@ else:
         LOGFILE.close(); exit(0)
 
 if genomeType.lower() == 'phage' and primaryCallsFile != 'phanotate.cgc':
-    if PHATE_WARNINGS == 'True':
-        print("phate_runPipeline says, WARNING: If genome type is phage, the primary gene-call file is usually phanotate.cgc! Yours is", primaryCallsFile)
-    LOGFILE.write("%s%s\n" % ("WARNING:  User has selected genome type as phage, but primary gene-call file as ", primaryCallsFile))
-    RUNLOG.write("%s%s\n" % ("WARNING:  User has selected genome type as phage, but primary gene-call file as ", primaryCallsFile))
+    if genomeType.lower() != 'superset' and genomeType.lower() != 'consensus' and genomeType.lower() != 'coregenome':
+        if PHATE_WARNINGS == 'True':
+            print("phate_runPipeline says, WARNING: If genome type is phage, the primary gene-call file is usually phanotate.cgc! Yours is", primaryCallsFile)
+        LOGFILE.write("%s%s\n" % ("WARNING:  User has selected genome type as phage, but primary gene-call file as ", primaryCallsFile))
+        RUNLOG.write("%s%s\n" % ("WARNING:  User has selected genome type as phage, but primary gene-call file as ", primaryCallsFile))
 
 if PHATE_MESSAGES == 'True':
     print("PIPELINE_INPUT_DIR is", PIPELINE_INPUT_DIR)

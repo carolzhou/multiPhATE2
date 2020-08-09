@@ -2,7 +2,7 @@
 # Module: phate_annotation.py
 # Programmer: Carol L. Ecale Zhou
 #
-# Latest update: 05 August 2020
+# Latest update: 08 August 2020
 #
 # Description: Module containing classes and methods for representing annotation results from various sources 
 #
@@ -38,7 +38,7 @@ import re, os, subprocess
 import platform
 
 DEBUG = False
-#DEBUG = True
+DEBUG = True
 
 p_comment = re.compile('^#')
 
@@ -448,23 +448,34 @@ class annotationRecord(object):
 
         # The database is the nucl_gb.accession2taxid, and the format of each line is as follows:
         # accn<\t>accn.version<\t>taxid<\t>gi
+        # taxID is in the 3rd column of the accession2taxID file, and is one or more digits
         accession = ''; accessionVersion = ''; taxID = ''; giNumber = ''
         ncbiTaxonList = []
 
-        # The name field contains the fasta header of a hit sequence
+        # The name field of the current object (self) contains the fasta header of a hit sequence
         # Current formatting is as follows:
         # >accn.version<\s>Text description of genome
         # Ex: >NC_001798.2 Human herpesvirus 2 strain HG52, complete genome 
         # self.name is the fasta header sans '>'
-        words = []; accession = ""; description = ""
-        # taxID is in the 3rd column, and is one or more digits
-        p_taxID = re.compile('^[\d\w_]+\t[\d\w_]+\t([\d]+)\t[\d]+')
+        # WAIT:  Now (8/8/2020) the name field looks like this:
+        # gi|33438897|ref|NC_005056.1| Bacteriophage WPhi, complete genome
+        # Databases keep changing !!!
+        IDENTIFIERS_INDEX = 0
+        ACCESSION_INDEX   = 3
 
-        if self.name != '' and self.name != 'none':
+        words = []; accession = ""; description = ""
+        p_taxID = re.compile('^[\d\w_]+\t[\d\w_]+\t([\d]+)\t[\d]+')  # 3rd column contains taxID (see above)
+
+        # Split self.name field to extract accn, then search accession2tax file for the taxonomy id
+        if self.name != '' and self.name.lower() != 'none' and self.name.lower() != 'unknown':
+
             # Extract accession and sequence description from header string
-            words = self.name.split(' ')
-            accession = words[0]
-            description = ' '.join(words[1:])
+            words       = self.name.split(' ')     # There is a space separating the identifiers string from the description, which may contain spaces
+            description = ' '.join(words[1:])      # Join all but the first item to construct the full description string
+            fullId      = words[IDENTIFIERS_INDEX] # The identifiers string is several items separated by pipe
+            idWords     = fullId.split('|')        # Separate the identifiers and labels
+            accession   = idWords[ACCESSION_INDEX] # The accession is the 4th item: gi|giNumber|ref|accession.version|
+
             # Find line in database corresponding to this accession
             try:
                 #*** THIS COMMAND WORKS ON MAC OSX; I DON'T KNOW IF IT WILL WORK ON UNIX
@@ -472,10 +483,11 @@ class annotationRecord(object):
                 command = 'LC_ALL="C" grep -a \"' + accession + '\" ' + database
                 proc = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
                 out, err = proc.communicate()
-            except:
+            except:  # Other operating systems might fail the try, drop to this block
                 command = 'grep -a \"' + accession + '\" ' + database
                 proc = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
                 out, err = proc.communicate()
+
             # Apparently, grep reads as binary... so need to convert result
             newOut = out.decode('utf8')
             if newOut != '':
@@ -540,6 +552,11 @@ class annotationRecord(object):
                 for taxon in taxonList:
                     dbxrefList.append(taxon)
 
+            elif dbName.lower() == 'ncbivirusgenome':
+                taxonList = self.getNCBItaxonomyID(ncbi_taxon_lookup)
+                for taxon in taxonList:
+                    dbxrefList.append(taxon)
+
             elif dbName.lower() == 'pvogs': # self.name = hit header, which contains VOGid and NCBIid + function description
                 # If >1 VOGid, no matter, as it's a single protein sequence, with membership in >1 group.
                 description = ''
@@ -564,12 +581,6 @@ class annotationRecord(object):
                     words = self.name.split(' ') 
                     description = words[1:]
                 VOGlist = description
-
-            elif dbName.lower() == 'vogs_hmm':
-                VOGlist = self.getVOGmembers(vogAnnotationFile,'vog') 
-
-            elif dbName.lower() == 'vogs_hmm':
-                VOGlist = self.getVOGmembers(vogAnnotationFile,'vog') 
 
             elif dbName.lower() == 'vogs_hmm':
                 VOGlist = self.getVOGmembers(vogAnnotationFile,'vog') 
@@ -603,32 +614,23 @@ class annotationRecord(object):
         code = ""; codeList = []  # captures codes that are listed in the headers of CAZy hits 
         annotationCode = ""; annotationDescription = ""  # from cazy annotation file; these are captured for reporting
         # Headers look like this: ">AWI06117.1|GT2|AT46|" (with one or more codes, pipe-separated)
-        # Headers can also look like this: ">AAD03276,1|GH104|4.2.2.n1|" (with an EC number following, with or w/o terminal '|') 
-        #p_header_1 = re.compile('^.*\|(.*)\|$')   # Greedy matching should capture all codes; CAZy code is (.*) between '|'s. 
-        #p_header_2 = re.compile('^.*\|(.*)\|\d+\.\d+\.\d+\.')   # Greedy matching should capture all codes; CAZy code is (.*) between '|'s. 
-        #p_header = re.compile('^.*\|(\w+\d+)\|') # Some headers have EC numbers following CAZy code   
-        #p_header = re.compile('^.*\|(\w+\d+)\|') # Some headers have EC numbers following CAZy code   
+        # Headers can also look like this: ">AAD03276.1|GH104|4.2.2.n1|" (with an EC number following, with or w/o terminal '|') 
+        # ...or even like this: ">AUH33181.1|CE14"  (without terminal pipe)
         p_header = re.compile('\|([\w\d_^\.]+)\|') # Some headers have EC numbers following CAZy code   
         CAZY_ANNOT_H = open(cazyAnnotationFile,'r')
         try:
             # Pull dbxref from header; find data line in cazyAnnotationFile; add to dbxrefList
-            #match_header_1 = re.search(p_header_1,self.name)
-            #match_header_2 = re.search(p_header_2,self.name)
             match_header = re.search(p_header,self.name)
-            #if match_header_1 or match_header_2:
             if match_header:
                 dbxrefCode = match_header.group(1)
-                #if match_header_1:
-                #    dbxrefCode = match_header_1.group(1)
-                #elif match_header_2:
-                #    dbxrefCode = match_header_2.group(1)
                 codeList = dbxrefCode.split('|')
                 ANNOT_H = open(cazyAnnotationFile,'r')
                 aLines = ANNOT_H.read().splitlines()
                 for code in codeList:
                     if code != "": 
+                        matchCode = code + '\t'
                         for aLine in aLines:
-                            match_dbxref = re.search(code,aLine)
+                            match_dbxref = re.search(matchCode,aLine)
                             if match_dbxref:
                                 try:
                                     (annotationCode,annotationDescription) = aLine.split('\t')

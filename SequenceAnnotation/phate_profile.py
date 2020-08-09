@@ -3,7 +3,7 @@
 #
 # Module:  phate_profile.py
 #
-# Most Recent Update: 18 June 2020
+# Most Recent Update: 08 August 2020
 #
 # This class performs hmm searches of hmm profiles or alignments against 
 # various protein- or phage-related hmm profile databases.  The terminology may
@@ -668,22 +668,23 @@ class multiProfile(object):
                     countA = 0
                     for annot in fasta.annotationList:
                         for pVOG in annot.VOGlist:  # There may be multiple annotations to inspect
-                            match_good = re.search('VOG',pVOG)
-                            if match_good:
-                                # Avoid redundancy in printing pVOG groups for this fasta; only once per pVOG ID that was an hmm hit
-                                if pVOG not in pvogPrintedList:
-                                    pvogPrintedList.append(pVOG)  # Record this pVOG identifier as "done"
-                                    # create dynamic file name
-                                    countA += 1 
-                                    outfilePVOG = self.pVOGsOutDir + "profile_pvogGroup_" + str(count) + '_' + str(countA) + '.faa' 
-                                    # open file and write current fasta pluse each corresponding pVOG fasta
-                                    outfilePVOG_h = open(outfilePVOG,'w')
-                                    outfilePVOG_h.write("%c%s\n%s\n" % ('>',fasta.header,fasta.sequence)) # write the current peptide fasta,
-                                    self.writeVOGsequences2file(outfilePVOG_h,pVOGlines,pVOG)                  # followed by the pVOG group
-                                    outfilePVOG_h.close()
-                            else:
-                                if PHATE_WARNINGS == 'True':
-                                    print("phate_profiles says, WARNING: unexpected pVOG identifier:", pVOG)        
+                            if pVOG != '':
+                                match_good = re.search('VOG',pVOG)
+                                if match_good:
+                                    # Avoid redundancy in printing pVOG groups for this fasta; only once per pVOG ID that was an hmm hit
+                                    if pVOG not in pvogPrintedList:
+                                        pvogPrintedList.append(pVOG)  # Record this pVOG identifier as "done"
+                                        # create dynamic file name
+                                        countA += 1 
+                                        outfilePVOG = self.pVOGsOutDir + "profile_pvogGroup_" + str(count) + '_' + str(countA) + '.faa' 
+                                        # open file and write current fasta pluse each corresponding pVOG fasta
+                                        outfilePVOG_h = open(outfilePVOG,'w')
+                                        outfilePVOG_h.write("%c%s\n%s\n" % ('>',fasta.header,fasta.sequence)) # write the current peptide fasta,
+                                        self.writeVOGsequences2file(outfilePVOG_h,pVOGlines,pVOG)                  # followed by the pVOG group
+                                        outfilePVOG_h.close()
+                                else:
+                                    if PHATE_WARNINGS == 'True':
+                                        print("phate_profiles says, WARNING: unexpected pVOG identifier:", pVOG)        
 
             if self.VOGS_PROFILE:  
                 database = VOGS_PROFILE_DB_HOME 
@@ -715,22 +716,23 @@ class multiProfile(object):
                     countA = 0
                     for annot in fasta.annotationList:
                         for VOG in annot.VOGlist:  # There may be multiple annotations to inspect
-                            match_good = re.search('VOG',VOG)
-                            if match_good:
-                                # Avoid redundancy in printing VOG groups for this fasta; only once per pVOG ID that was an hmm hit
-                                if VOG not in vogPrintedList:
-                                    vogPrintedList.append(VOG)  # Record this VOG identifier as "done"
-                                    # create dynamic file name
-                                    countA += 1 
-                                    outfileVOG = self.VOGsOutDir + "profile_vogGroup_" + str(count) + '_' + str(countA) + '.faa' 
-                                    # open file and write current fasta plus each corresponding VOG fasta
-                                    outfileVOG_h = open(outfileVOG,'w')
-                                    outfileVOG_h.write("%c%s\n%s\n" % ('>',fasta.header,fasta.sequence)) # write the current peptide fasta,
-                                    self.writeVOGsequences2file(outfileVOG_h,VOGlines,VOG)                  # followed by the VOG group
-                                    outfileVOG_h.close()
-                            else:
-                                if PHATE_WARNINGS == 'True':
-                                    print("phate_profiles says, WARNING: unexpected VOG identifier:", VOG)        
+                            if VOG != '':
+                                match_good = re.search('VOG',VOG)
+                                if match_good:
+                                    # Avoid redundancy in printing VOG groups for this fasta; only once per pVOG ID that was an hmm hit
+                                    if VOG not in vogPrintedList:
+                                        vogPrintedList.append(VOG)  # Record this VOG identifier as "done"
+                                        # create dynamic file name
+                                        countA += 1 
+                                        outfileVOG = self.VOGsOutDir + "profile_vogGroup_" + str(count) + '_' + str(countA) + '.faa' 
+                                        # open file and write current fasta plus each corresponding VOG fasta
+                                        outfileVOG_h = open(outfileVOG,'w')
+                                        outfileVOG_h.write("%c%s\n%s\n" % ('>',fasta.header,fasta.sequence)) # write the current peptide fasta,
+                                        self.writeVOGsequences2file(outfileVOG_h,VOGlines,VOG)                  # followed by the VOG group
+                                        outfileVOG_h.close()
+                                else:
+                                    if PHATE_WARNINGS == 'True':
+                                        print("phate_profiles says, WARNING: unexpected VOG identifier:", VOG)        
 
         if CLEAN_RAW_DATA == 'True':
             if PHATE_PROGRESS == 'True':
