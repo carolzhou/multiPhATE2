@@ -914,8 +914,8 @@ if PHATE_MESSAGES == 'True':
     print("  SWISSPROT_HMM is", SWISSPROT_HMM)
     print("  UNIPROT_HMM is", UNIPROT_HMM)
     print("  NR_HMM is", NR_HMM)
-    print("  CUSTOM_GENE_HMM is", CUSTOM_GENE_HMM)
-    print("  CUSTOM_PROTEIN_HMM is", CUSTOM_PROTEIN_HMM)
+    #print("  CUSTOM_GENE_HMM is", CUSTOM_GENE_HMM)
+    #print("  CUSTOM_PROTEIN_HMM is", CUSTOM_PROTEIN_HMM)
 
 if PHATE_PROGRESS == 'True':
     print("phate_sequenceAnnotation_main says, Configuration complete for sequence annotation module.")

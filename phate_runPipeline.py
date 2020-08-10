@@ -426,7 +426,7 @@ if PHATE_MESSAGES == 'True':
     print("primaryCallsFile is", primaryCallsFile)
     print("customGeneCalls is", customGeneCalls)
     print("customGeneCallerName is", customGeneCallerName)
-    print("customGeneCallerOutfile is", customGeneCallerOutfile)
+    #print("customGeneCallerOutfile is", customGeneCallerOutfile)
     print("primaryCalls is", primaryCalls) 
     print("blastpSearch is", blastpSearch)
     print("phmmerSearch is", phmmerSearch)
