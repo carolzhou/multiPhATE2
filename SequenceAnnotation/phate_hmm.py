@@ -460,7 +460,7 @@ class multiHMM(object):
                         if hit["hitSequenceName"] == targetName:
                             hit["hitDomainList"].append(newDomainDataSet)
                             if PHATE_MESSAGES == 'True':
-                                print("Match found between domain and sequence. targetName:",targetName,"\nfasta:",fasta.header)
+                                print("phate_hmm says: Match found between domain and sequence. targetName:",targetName,"\nfasta:",fasta.header)
 
             # Close HMM output files
             seqOutfileH.close()

@@ -1,7 +1,7 @@
 ###############################################################
 # Module: cgp_genomeSequence.py
 # Programmer: Carol L. Ecale Zhou
-# Last Update: 12 April 2020
+# Last Update: 15 August 2020
 # 
 # Module comprising data structures for organizing genome information
 # Note:  EMBOSS messes with fasta headers; therefore, I am putting minimal info in the header and using only '/'
@@ -392,9 +392,9 @@ class genome(object):
         annotationCount = len(self.annotationList)
         print(self.genomeType, "genome", self.name, self.genomeName, self.species)
         print("Number of contigs:", contigCount)
-        print("Names of contigs:", end=' ')
+        print("Names of contigs:")
         for fa in self.contigSet.fastaList:
-            print(fa.header, end=' ')
+            print(fa.header)
         print("  gene calls:", geneCount)
         print("  proteins:", proteinCount)
         print("  annotations:", annotationCount)

@@ -55,7 +55,8 @@ NCBI_TAXON_DIR       = os.environ["PHATE_NCBI_TAXON_DIR"]
 PVOGS_BASE_DIR       = os.environ["PHATE_PVOGS_BASE_DIR"]
 VOGS_BASE_DIR        = os.environ["PHATE_VOGS_BASE_DIR"]
 CAZY_ANNOTATION_PATH = os.environ["PHATE_CAZY_ANNOTATION_PATH"]
-VOG_ANNOTATION_FILE  = os.environ["PHATE_VOGS_ANNOTATION_FILE"]
+VOG_ANNOTATION_FILE  = os.environ["PHATE_VOG_ANNOTATION_FILE"]
+VOG_HEADERS_FILE     = os.environ["PHATE_VOG_PROTEIN_HEADERS_FILE"]
 
 # Verbosity
 CLEAN_RAW_DATA = os.environ["PHATE_CLEAN_RAW_DATA"]
@@ -78,11 +79,8 @@ vg_uniprot           = KEGG_VIRUS_BASE_DIR + "vg_uniprot.list"
 phantome_phage_genes = PHANTOME_BASE_DIR   + "Phantome_Phage_genes.faa.headers"
 ncbi_taxon_lookup    = NCBI_TAXON_DIR      + "nucl_gb.accession2taxid"   
 pVOGheaderFile       = PVOGS_BASE_DIR      + "pVOGs.headers.lst"
-VOGheaderFile        = VOGS_BASE_DIR       + "VOGs.headers.lst"
-VOGannotationFile    = VOGS_BASE_DIR       + "vog.annotations.tsv"
-VOG_HEADERS_FILE     = os.environ["PHATE_VOG_PROTEIN_HEADERS_FILE"]
-VOG_ANNOTATION_FILE  = os.environ["PHATE_VOGS_ANNOTATION_FILE"]
-
+VOGheaderFile        = VOGS_BASE_DIR       + "VOGs.headers.lst"     #*** ???
+VOGannotationFile    = VOGS_BASE_DIR       + "vog.annotations.tsv"  #*** ???
 
 class annotationRecord(object):
 
@@ -553,9 +551,16 @@ class annotationRecord(object):
                     dbxrefList.append(taxon)
 
             elif dbName.lower() == 'ncbivirusgenome':
-                taxonList = self.getNCBItaxonomyID(ncbi_taxon_lookup)
-                for taxon in taxonList:
-                    dbxrefList.append(taxon)
+                pass
+
+            elif dbName.lower() == 'ncbivirusprotein':
+                pass
+
+            elif dbName.lower() == 'refseqvirusprotein':
+                pass
+
+            elif dbName.lower() == 'refseqprotein':
+                pass
 
             elif dbName.lower() == 'pvogs': # self.name = hit header, which contains VOGid and NCBIid + function description
                 # If >1 VOGid, no matter, as it's a single protein sequence, with membership in >1 group.

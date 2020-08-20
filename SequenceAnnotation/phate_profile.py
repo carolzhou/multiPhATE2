@@ -3,7 +3,7 @@
 #
 # Module:  phate_profile.py
 #
-# Most Recent Update: 08 August 2020
+# Most Recent Update: 15 August 2020
 #
 # This class performs hmm searches of hmm profiles or alignments against 
 # various protein- or phage-related hmm profile databases.  The terminology may
@@ -62,7 +62,7 @@ PVOG_HEADERS                         = os.environ["PHATE_PVOGS_HEADER_FILE"]
 PVOG_SEQUENCES                       = os.environ["PHATE_PVOGS_BLAST_HOME"]
 VOG_HEADERS                          = os.environ["PHATE_VOG_PROTEIN_HEADER_FILE"]
 VOG_SEQUENCES                        = os.environ["PHATE_VOG_PROTEIN_BLAST_HOME"]
-VOG_ANNOTATIONS                      = os.environ["PHATE_VOG_PROTEIN_ANNOTATION_FILE"]
+VOG_ANNOTATIONS                      = os.environ["PHATE_VOG_ANNOTATION_FILE"]
 
 # Verbosity and output/error capture
 CLEAN_RAW_DATA                       = os.environ["PHATE_CLEAN_RAW_DATA"]
@@ -200,6 +200,7 @@ class multiProfile(object):
 
     def getDescription4pvog(self,pvogID):
         description = ""; words = []
+        print("TESTING: opening PVOG_HEADERS:",PVOG_HEADERS)
         headers_h = open(PVOG_HEADERS,'r')
         hLines = headers_h.read().splitlines()
         for hLine in hLines:

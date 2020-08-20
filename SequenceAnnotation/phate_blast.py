@@ -6,7 +6,7 @@
 #
 # Programmer:  Carol Zhou
 #
-# Last Update:  05 August 2020
+# Last Update:  16 August 2020
 # 
 # Classes and Methods:
 #    multiBlast
@@ -70,6 +70,7 @@ PVOGS_BLAST_HOME              = os.environ["PHATE_PVOGS_BLAST_HOME"]
 VOGS_BLAST_HOME               = os.environ["PHATE_VOGS_BLAST_HOME"]    #*** To be deprecated
 VOG_GENE_BLAST_HOME           = os.environ["PHATE_VOG_GENE_BLAST_HOME"]
 VOG_PROTEIN_BLAST_HOME        = os.environ["PHATE_VOG_PROTEIN_BLAST_HOME"]
+VOG_ANNOTATION_FILE           = os.environ["PHATE_VOG_ANNOTATION_FILE"]
 PHANTOME_BLAST_HOME           = os.environ["PHATE_PHANTOME_BLAST_HOME"]
 KEGG_VIRUS_BLAST_HOME         = os.environ["PHATE_KEGG_VIRUS_BLAST_HOME"]
 SWISSPROT_BLAST_HOME          = os.environ["PHATE_SWISSPROT_BLAST_HOME"]
@@ -84,8 +85,6 @@ NCBI_TAXON_DIR                = os.environ["PHATE_NCBI_TAXON_DIR"]
 CUSTOM_GENOME_BLAST_HOME      = os.environ["PHATE_CUSTOM_GENOME_BLAST_HOME"]
 CUSTOM_GENE_BLAST_HOME        = os.environ["PHATE_CUSTOM_GENE_BLAST_HOME"]
 CUSTOM_PROTEIN_BLAST_HOME     = os.environ["PHATE_CUSTOM_PROTEIN_BLAST_HOME"]
-
-VOGS_ANNOTATION_FILE          = os.environ["PHATE_VOGS_ANNOTATION_FILE"]
 
 # Blast parameters
 MIN_BLASTP_IDENTITY           = os.environ["PHATE_MIN_BLASTP_IDENTITY"]   # Sets a lower limit
@@ -694,6 +693,8 @@ class multiBlast(object):
                     count += 1
                     outfile = self.blastOutDir + self.blastFlavor + "_nr_" + str(count)
                     self.blast1fasta(fasta,outfile,database,dbName)  
+                if PHATE_PROGRESS == 'True':
+                    print("phate_blast says, NR blasting completed.")
 
             if self.NCBI_VIRUS_PROTEIN_BLAST:  
                 database = NCBI_VIRUS_PROTEIN_BLAST_HOME
@@ -705,6 +706,8 @@ class multiBlast(object):
                     count += 1
                     outfile = self.blastOutDir + self.blastFlavor + "_ncbiVirProt_" + str(count)
                     self.blast1fasta(fasta,outfile,database,dbName) 
+                if PHATE_PROGRESS == 'True':
+                    print("phate_blast says, NCBI Virus Protein blasting completed.")
 
             if self.REFSEQ_PROTEIN_BLAST:
                 database = REFSEQ_PROTEIN_BLAST_HOME
@@ -716,6 +719,8 @@ class multiBlast(object):
                     count += 1
                     outfile = self.blastOutDir + self.blastFlavor + "_refseqProtein_" + str(count)
                     self.blast1fasta(fasta,outfile,database,dbName) 
+                if PHATE_PROGRESS == 'True':
+                    print("phate_blast says, Refseq Protein blasting completed.")
 
             if self.PHANTOME_BLAST:
                 database = PHANTOME_BLAST_HOME
@@ -727,6 +732,8 @@ class multiBlast(object):
                     count += 1
                     outfile = self.blastOutDir + self.blastFlavor + "_phantome_" +str(count)
                     self.blast1fasta(fasta,outfile,database,dbName)
+                if PHATE_PROGRESS == 'True':
+                    print("phate_blast says, Phantome blasting completed.")
 
             if self.KEGG_VIRUS_BLAST: 
                 database = KEGG_VIRUS_BLAST_HOME
@@ -738,6 +745,8 @@ class multiBlast(object):
                     count += 1
                     outfile = self.blastOutDir + self.blastFlavor + "_kegg_" + str(count)
                     self.blast1fasta(fasta,outfile,database,dbName)
+                if PHATE_PROGRESS == 'True':
+                    print("phate_blast says, Kegg blasting completed.")
 
             if self.SWISSPROT_BLAST: 
                 database = SWISSPROT_BLAST_HOME
@@ -749,6 +758,8 @@ class multiBlast(object):
                     count += 1
                     outfile = self.blastOutDir + self.blastFlavor + "_swissprot_" + str(count)
                     self.blast1fasta(fasta,outfile,database,dbName)  
+                if PHATE_PROGRESS == 'True':
+                    print("phate_blast says, Swissprot blasting completed.")
 
             if self.PHAGE_ENZYME_BLAST: 
                 database = PHAGE_ENZYME_BLAST_HOME
@@ -760,6 +771,8 @@ class multiBlast(object):
                     count += 1
                     outfile = self.blastOutDir + self.blastFlavor + "_phageEnz_" + str(count)
                     self.blast1fasta(fasta,outfile,database,dbName) 
+                if PHATE_PROGRESS == 'True':
+                    print("phate_blast says, Phage Enzyme blasting completed.")
 
             if self.PVOGS_BLAST:  
                 database = PVOGS_BLAST_HOME
@@ -771,7 +784,6 @@ class multiBlast(object):
                     count += 1
                     outfile = self.blastOutDir + self.blastFlavor + "_pvog_" + str(count)
                     self.blast1fasta(fasta,outfile,database,dbName)
-
                 if PHATE_PROGRESS == 'True':
                     print("phate_blast says, Blasting completed.")
                     print("phate_blast says, Collecting and saving pVOG sequences corresponding to blast hit(s)")
@@ -902,6 +914,8 @@ class multiBlast(object):
                     count += 1
                     outfile = self.blastOutDir + self.blastFlavor + "_customProtein_" + str(count)
                     self.blast1fasta(fasta,outfile,database,dbName) 
+                if PHATE_PROGRESS == 'True':
+                    print("phate_blast says, Custom Protein blasting completed.")
 
         if CLEAN_RAW_DATA == 'True':
             self.cleanBlastOutDir()

@@ -20,6 +20,7 @@ THIS CODE IS COVERED BY THE BSD LICENSE. SEE INCLUDED FILE BSD-3.pdf FOR DETAILS
 10) PhATE now runs blastp and hmm search against the CAZy database.
 11) The Refseq Gene database is no longer supported by multiPhATE. Refseq Gene has been replaced with the VOG gene database.
 12) multiPhATE now supports parallelism using pthreads and by distributing blast+.
+13) multiPhATE uses checkpoints to re-start processing at intermediate stages of the computation (ie, after gene calling, after PhATE processing).
 
 #### ABOUT THE MULTI-PHATE PIPELINE DRIVER
 
@@ -195,6 +196,7 @@ jackhmmer, phmmer, hmmscan - https://www.eddylab.org/software.html or http://www
 
 tRNAscan-SE - https://www.eddylab.org/software.html - select tRNAscan-SE download link (conda)
 
+wget - https://www.cyberciti.biz/faq/howto-install-wget-om-mac-os-x-mountain-lion-mavericks-snow-leopard/ https://www.tecmint.com/install-wget-in-linux/ (conda)
 
 #### CONDA INSTALLATION
 
@@ -223,7 +225,7 @@ Note: bioconda is supported on Linux and Mac operating systems, but so far not o
 
 6) Install conda packages within that environment:  `$ conda install python=3`
 
-Repeat for each of biopython, emboss, blast, glimmer, prodigal, hmmer, trnascan-se.  
+Repeat for each of biopython, emboss, blast, glimmer, prodigal, hmmer, trnascan-se, wget.  
 
 7) When running multiPhATE within your multiphate Conda environment, the pipeline will use the version of python and the third party codes installed within the multiphate environment, so there should be no clashes with other versions of these packages that may be installed elsewhere on your system. When you are finished running multiPhATE, you may exit from the multiphate Conda environment:  $ source deactivate
 

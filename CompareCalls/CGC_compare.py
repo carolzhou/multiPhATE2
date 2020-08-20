@@ -8,7 +8,7 @@
 #    callers.
 #
 # Updates:
-#    12 April 2020
+#    15 August 2020
 #
 # Programmer's Notes:
 #
@@ -562,7 +562,7 @@ class Comparison(object):
         print("\n***************Merge List")
         count = 1 
         for gene in self.mergeList:
-            print(count, end=' ')
+            print(count)
             gene.PrintAll_brief()
             count += 1
         return
@@ -582,7 +582,7 @@ class Comparison(object):
         for list in self.uniqueList:
             print("Unique gene call", count)
             for gene in list:
-                print("  --  ", end=' ') 
+                print("  --  ") 
                 gene.PrintAll_brief()
             count += 1
         return
@@ -602,7 +602,7 @@ class Comparison(object):
         print("\n***************Common Core")
         count = 1 
         for gene in self.commonCore:
-            print(count, end=' ')
+            print(count)
             gene.PrintAll_brief()
             count += 1
         return
@@ -646,9 +646,9 @@ class Comparison(object):
 
                 # Print column headers, for as many gene callers as we have
                 print("\nGene-call Table:")
-                print("count\t", end=' ')
+                print("count\t")
                 for i in range(0,len(self.callerList)):
-                    print("caller\tstrand\tleftEnd\trightEnd\tlength\tcontig\t", end=' ')
+                    print("caller\tstrand\tleftEnd\trightEnd\tlength\tcontig\t")
                 print() 
 
                 # Format each gene call as a single line of output, arranging gene callers in order left to right
@@ -668,12 +668,12 @@ class Comparison(object):
                                                 + geneList[i].geneLength + '\t' + geneList[i].contig + '\t'
 
                     # Print the current row: horizontal list of identical gene calls 
-                    print(count, '\t', end=' ')
+                    print(count, '\t')
                     for geneCallString in printArray:
                         if geneCallString == '':
-                            print("\t\t\t\t\t\t", end=' ')
+                            print("\t\t\t\t\t\t")
                         else:
-                            print(geneCallString, end=' ') 
+                            print(geneCallString) 
                     print() 
                     count += 1
             else:
@@ -759,9 +759,9 @@ class Comparison(object):
     def PrintStats(self):
 
         # Print a list of the callers 
-        print("The following gene callers were considered:", end=' ')
+        print("The following gene callers were considered:")
         for caller in self.callerList:
-            print(',', caller, end=' ')
+            print(',', caller)
         print()
         print("The number of distinct gene calls over all gene callers is", len(self.uniqueList))
         print("The number of gene calls in common among all callers is", len(self.commonCore)) 

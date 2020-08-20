@@ -4,7 +4,7 @@
 #
 # Programmers: Jeff Kimbrel, Carol Zhou
 #
-# Last update: 07 August 2020
+# Last update: 15 August 2020
 #
 # Description: Single command to run PHANOTATE, Prodigal, Glimmer and GeneMarkS on a fasta file
 #
@@ -516,7 +516,7 @@ print()
 logfile.write("%s\n" % ("Printing file info..."))
 for fileType in files:
     #print(fileType,files[fileType],sep=": ")
-    print(fileType, ": ", files[fileType], end=' ')
+    print(fileType, ": ", files[fileType])
 print()
 
 logfile.write("%s\n" % ("Parsing genecall files into CGC format..."))

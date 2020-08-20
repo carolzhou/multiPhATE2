@@ -5,7 +5,7 @@
 # Program Title:  multiPhate2.py (/multiPhate2/)
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last Update:  08 August 2020
+# Last Update:  18 August 2020
 #
 # Description: Script multiPhate.py runs an annotation pipeline (phate_runPipeline.py) over any
 #    number of genomes specified in the user's input configuration file (multPhate.config). It then
@@ -33,6 +33,12 @@
 #
 ################################################################
 
+#import datetime
+#myTime = datetime.datetime.now()
+#print("TESTING TESTING TESTING: Is multiPhate executing twice? ",myTime)
+#myTime = datetime.datetime.now()
+#print("TESTING TESTING TESTING: Is multiPhate executing yet again? ",myTime)
+
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
 # THIS CODE IS COVERED BY THE BSD LICENSE. SEE INCLUDED FILE BSD.PDF FOR DETAILS.
 
@@ -42,6 +48,7 @@ import sys, os, re, string, copy, time, datetime
 import subprocess
 import json
 from multiprocessing import Pool
+import platform
 
 # Because grep works differently in Python 3.x, and works differently on Mac OSX, need to set this environment
 # variable so that grep works correctly in SequenceAnnotation/phate_annotation.py:
@@ -54,6 +61,14 @@ if MAC_OSX:
     MAC_OSX_STRING = 'True'
 else:
     MAC_OSX_STRING = 'False'
+
+# CHECKPOINTS
+# Invoke a checkpoint if needed to jump to a later point in the processing.
+# Skip gene calling, and jump straight to the annotation module.
+CHECKPOINT_ANNOTATION = False 
+# Skip gene calling, annotation, and jump straight to the CGP module.
+# This assumes that the previous processing is complete, and all files are where expected. 
+CHECKPOINT_CGP = True  
 
 # Parallelism is now controlled in the user's configuration file, input to multiPhATE. 
 # Below are the default values for parameters hpc, threads, and blastThreads.
@@ -227,14 +242,15 @@ CGP_CODE                        = CGP_DIR_DEFAULT + CGP_CODE_NAME # absolute pat
 GENOMICS_CODE_NAME              = 'genomics_driver.py'   # top-level, driver program for running Genomics analysis
 GENOMICS_CODE                   = GENOMICS_DIR_DEFAULT + GENOMICS_CODE_NAME # absolute path of top-level, drive for Genomics analysis
 VOG_PROTEIN_HEADER_FILENAME     = "vog.protein.headers.lst"  # The headers from the vog.proteins.tagged.all.fa file (computed by multiPhate.py)
-VOG_PROTEIN_ANNOTATION_FILENAME = "vog.annotations.tsv"  # The annotations associated with VOG identifiers (downloaded from VOG server)
+VOG_ANNOTATION_FILENAME         = "vog.annotations.tsv"  # The annotations associated with VOG identifiers (downloaded from VOG server)
+PVOG_HEADER_FILENAME            = "pVOGs.headers.lst"
 
 # naming the custom gene caller
 # paths to subordinate codes; '' if installed globally (e.g., via conda)
 GENEMARKS_HOME              = '' # Available via license
 GLIMMER_HOME                = '' # Can install using Conda
 PRODIGAL_HOME               = '' # Can install using Conda
-PHANOTATE_HOME              = '' # not currently a conda package; acquire from github
+PHANOTATE_HOME              = '' # Install via pip3 
 HMMER_HOME                  = '' # Can install using Conda; HMMER includes jackhmmer, hmmbuild, hmmscan
 
 # blast parameters
@@ -456,7 +472,9 @@ p_genomeSpecies               = re.compile("genome_species='(.*)'")
 # GENOME INFORMATION
 p_genomeList                  = re.compile("Genome\sList")       # non-case-sensitive "Genome List"
 p_genomeNumber                = re.compile("Genome\s+(\d+)")     # genome number
-p_root                        = re.compile("([\w\d_-]+)\.fasta") # captures the root name of the fasta file (e.g., takes 'P2' from P2.fasta)
+#p_root                        = re.compile("([\w\d\_\-\.]+)\.fasta") # captures the root name of the fasta file (e.g., takes 'P2' from P2.fasta)
+#p_root                        = re.compile("([\w\d_-]+)\.fasta") # captures the root name of the fasta file (e.g., takes 'P2' from P2.fasta)
+p_root                        = re.compile("(.*)\.fasta") # captures the root name of the fasta file (e.g., takes 'P2' from P2.fasta)
 p_end                         = re.compile("END")
 
 # GENE CALLING
@@ -591,7 +609,7 @@ p_genemarkHome                = re.compile("genemark_home='(.*)'")
 p_hmmerHome                   = re.compile("hmmer_home='(.*)'")
 
 # PARALLELISM
-p_threads                     = re.compile("threads='(.*)'")
+p_threads                     = re.compile("^threads='(.*)'")
 p_hpc                         = re.compile("HPC='(.*)'")
 p_blastThreads                = re.compile("blast_threads='(.*)'")
 
@@ -1392,6 +1410,10 @@ for cLine in cLines:
     elif match_pvogsDBpath:
         if match_pvogsDBpath.group(1) != '':
             os.environ["PHATE_PVOGS_BLAST_HOME"] = match_pvogsDBpath.group(1)
+            PHATE_PVOG_BASE_DIR = os.path.dirname(match_pvogsDBpath.group(1)) + '/'
+            os.environ["PHATE_PVOG_BASE_DIR"] = PHATE_PVOG_BASE_DIR
+            os.environ["PHATE_PVOGS_HEADER_FILE"] = os.path.join(PHATE_PVOG_BASE_DIR,PVOG_HEADER_FILENAME)
+            print("TESTING: PHATE_PVOGS_HEADER_FILE is",os.environ["PHATE_PVOGS_HEADER_FILE"])
 
     elif match_vogsDBpath:   #*** To be deprecated
         if match_vogsDBpath.group(1) != '':
@@ -1407,7 +1429,7 @@ for cLine in cLines:
             PHATE_VOG_PROTEIN_BASE_DIR = os.path.dirname(match_vogProteinDBpath.group(1)) + '/'
             os.environ["PHATE_VOG_PROTEIN_BASE_DIR"]        = PHATE_VOG_PROTEIN_BASE_DIR 
             os.environ["PHATE_VOG_PROTEIN_HEADER_FILE"]     = os.path.join(PHATE_VOG_PROTEIN_BASE_DIR,VOG_PROTEIN_HEADER_FILENAME)
-            os.environ["PHATE_VOG_PROTEIN_ANNOTATION_FILE"] = os.path.join(PHATE_VOG_PROTEIN_BASE_DIR,VOG_PROTEIN_ANNOTATION_FILENAME)
+            os.environ["PHATE_VOG_ANNOTATION_FILE"] = os.path.join(PHATE_VOG_PROTEIN_BASE_DIR,VOG_ANNOTATION_FILENAME)
             # Create Vog Protein headers file
             try:
                 command = "grep '>' " + os.environ["PHATE_VOG_PROTEIN_BLAST_HOME"] + ' > ' + os.environ["PHATE_VOG_PROTEIN_HEADER_FILE"]
@@ -1499,6 +1521,7 @@ for cLine in cLines:
         value = match_pvogsHmmDBpath.group(1)
         if value != '':
             pvogsHmmDBpath = value
+        print("TESTING: Setting pvogs location:",pvogsHmmDBpath)
         os.environ["PHATE_PVOGS_HMM_HOME"] = pvogsHmmDBpath
 
     elif match_vogsHmmDBpath:
@@ -1565,8 +1588,11 @@ for cLine in cLines:
 
     elif match_threads:
         value = match_threads.group(1)
-        if value == 'ALL' or value == 'All' or value == 'all':
-            threads = value
+        #if value == 'ALL' or value == 'All' or value == 'all':
+        if value.lower() == 'all':
+            threads = 'ALL' 
+        elif value == '0':
+            threads = 0
         elif int(value) >= 1:
             threads = int(value) 
         else:
@@ -1815,10 +1841,16 @@ for genome in genomeList:
 
 ##### BEGIN MAIN ########################################################################################
 
+#########################################################################################################
+# PHATE ANNOTATION PIPELINE
+
 # For each genome, create a phate.json file for running phate_runPipeline.py
 
 nextJsonFile = ""
 jsonList = []  # List of json filenames
+LOG.write("%s%s\n" % ("List of genome is:",genomeList))
+if PHATE_MESSAGES:
+    print("multiPhate says, List of genomes is",genomeList)
 for genome in genomeList:
     match_root = re.search(p_root,genome["genomeFile"])
     if match_root:
@@ -1906,12 +1938,18 @@ for genome in genomeList:
             "customHmmDBname":customHmmDBname,
             "customHmmDBpath":customHmmDBpath,
             "blastThreads":blastThreads,
+            "checkpointAnnotation":CHECKPOINT_ANNOTATION,
+            "checkpointCGP":CHECKPOINT_CGP,
             }
 
     # Write next json file
     json.dump(parameters, NEXT_JSON)
 
     NEXT_JSON.close()
+
+LOG.write("%s%s\n" % ("List of json filenames is:",jsonList))
+if PHATE_MESSAGES:
+    print("multiPhate says, List of json filenames is",jsonList)
 
 ##### Run the pipeline (phate_runPipeline.py) over each genome;
 ##### The code below runs in serial;
@@ -1920,6 +1958,7 @@ for genome in genomeList:
 if not HPC:
     LOG.write("%s%s\n" % ("Processing genomes through PhATE. Begin processing at ",datetime.datetime.now()))
 
+# METHOD GUIDING PARALLEL EXECUTION OF PHATE
 # Run the phate pipeline over each genome, as specified in the multiPhate.config file
 def phate_threaded(jsonFile):
     print(f'multiPhate says, Running {jsonFile} on PID {os.getpid()}')
@@ -1933,22 +1972,42 @@ def phate_threaded(jsonFile):
     if not HPC:
         LOG.write("%s%s\n" % ("End PhATE processing at ",datetime.datetime.now()))
 
-# Set up to run processing in parallel on multiple threads
-if threads is 'ALL':
-    threads = os.cpu_count()
-elif threads > os.cpu_count():
-    threads = os.cpu_count()
+# Control Threading
+THREADING_ON = True
+if int(threads) == 0:
+    THREADING_ON = False
 
-#print(f'Using {THREADS} threads')
-print(f'Using {threads} threads')
+if THREADING_ON:
+    # THREADING
+    # Set up to run processing in parallel on multiple threads
+    if threads == 'ALL':
+        threads = os.cpu_count()
+    elif threads > os.cpu_count():
+        threads = os.cpu_count()
 
-#pool = Pool(int(THREADS))
-pool = Pool(int(threads))
-pool.map(phate_threaded, jsonList)
+    print(f'Using {threads} threads')
 
-pool.close()
+    if __name__ == '__main__':
+        pool = Pool(int(threads))
+        pool.map(phate_threaded, jsonList)
+        pool.close()
+else:
+    for jsonFile in jsonList:
+        if not HPC:
+            LOG.write("%s%s\n" % ("Running PhATE using genome json file ",jsonFile))
+        command = "python " + PHATE_BASE_DIR + PHATE_PIPELINE_CODE + " " + jsonFile
+        if not HPC:
+            LOG.write("%s%s\n" % ("Command is ",command))
+            LOG.write("%s%s\n" % ("Begin PhATE processing at ",datetime.datetime.now()))
+        if not CHECKPOINT_CGP:
+            result = os.system(command)
+        if not HPC:
+            LOG.write("%s%s\n" % ("End PhATE processing at ",datetime.datetime.now()))
 
-# Run the comparative genomics module to compare proteoms among the user's specified genomes
+##################################################################################################
+# COMPARATIVE GENOMICS
+# Run the comparative genomics module to compare proteomes among the user's specified genomes
+
 GFF_OUTFILE = "phate_sequenceAnnotation_main.gff"
 if runCGP and not translateOnly and (len(genomeList) > 1):
     if not HPC:
@@ -2070,7 +2129,9 @@ try:
     os.stat(JSON_DIR)
 except:
     os.mkdir(JSON_DIR)
+#print("TESTING: JSON_DIR is",JSON_DIR)
 command = "mv *.json " + JSON_DIR + '.'
+#print("TESTING: command is",command)
 result = os.system(command)
 
 if not HPC:

@@ -4,7 +4,7 @@
 #
 # Program Title:  phate_runPipeline.py ()
 #
-# Most recent update:  08 August 2020
+# Most recent update:  14 August 2020
 #
 # Description: Runs the phate annotation pipeline.  This code runs under Python 3.7, and requires
 #    dependent packages.
@@ -43,6 +43,8 @@ import json
 
 seqProgramSet = {'blastp','phmmer','jackhmmer'}  # codes for searches against sequence/blast databases
 hmmProgramSet = {'hmmscan'}                      # codes for hmm searches against hmm profile databases
+checkpointAnnotation = False                     # set by json parameter; controlled in multiPhate.py
+checkpointCGP = False                            # set by json parameter; controlled in multiPhate.py
 
 # Output file names 
 GENE_FILE              = 'gene.fnt'                              #
@@ -364,6 +366,8 @@ with open(jsonFile, 'r') as jsonParameters:
     customHmm                = parameters["customHmm"]
     customHmmDBname          = parameters["customHmmDBname"]
     customHmmDBpath          = parameters["customHmmDBpath"]
+    checkpointAnnotation     = parameters["checkpointAnnotation"]
+    checkpointCGP            = parameters["checkpointCGP"]
 
 jsonParameters.close()
 
@@ -477,6 +481,8 @@ if PHATE_MESSAGES == 'True':
     print("customHmm is", customHmm)
     print("customHmmDBname is", customHmmDBname)
     print("customHmmDBpath is", customHmmDBpath)
+    print("checkpointAnnotation is", checkpointAnnotation)
+    print("checkpointCGP is", checkpointCGP)
 
 RUNLOG.write("%s\n" % ("Input parameters:"))
 RUNLOG.write("%s%s\n" % ("   PIPELINE_INPUT_DIR: ", PIPELINE_INPUT_DIR))
@@ -548,6 +554,8 @@ RUNLOG.write("%s%s\n" % ("   customGeneDBpath is ",customGeneDBpath))
 RUNLOG.write("%s%s\n" % ("   customProteinBlast is ",customProteinBlast))
 RUNLOG.write("%s%s\n" % ("   customProteinDBname is ",customProteinDBname))
 RUNLOG.write("%s%s\n" % ("   customProteinDBpath is ",customProteinDBpath))
+RUNLOG.write("%s%s\n" % ("   checkpointAnnotation is ",checkpointAnnotation))
+RUNLOG.write("%s%s\n" % ("   checkpointCGP is ",checkpointCGP))
 
 # Open and check input file(s)
 
@@ -670,8 +678,9 @@ if PHATE_MESSAGES == 'True':
 RUNLOG.write("%s%s\n" % ("Calling the gene-call module. Command is ", command))
 
 # OS system matters; choose alternate system call if you get error message on this line
-result = os.system(command)
-#result = subprocess.check_output(command,shell=True)
+if not checkpointCGP and not checkpointAnnotation:
+    result = os.system(command)
+    #result = subprocess.check_output(command,shell=True)
 
 if PHATE_PROGRESS == 'True':
     print("phate_runPipeline says, Gene-call processing complete.")
@@ -844,7 +853,8 @@ if PHATE_PROGRESS == 'True':
 if PHATE_MESSAGES == 'True':
     print("phate_runPipeline says, command is,", command)
 RUNLOG.write("%s%s\n" % ("Calling the sequence annotation module. Command is ", command))
-result = os.system(command)
+if not checkpointCGP:
+    result = os.system(command)
 if PHATE_PROGRESS == 'True':
     print("phate_runPipeline says, Sequence annotation processing is complete.")
 RUNLOG.write("%s%s\n" % ("Sequence annotation processing complete at ", datetime.datetime.now()))

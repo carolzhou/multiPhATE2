@@ -3,7 +3,7 @@
 #
 # Programmer: Carol L. Ecale Zhou
 #
-# Most recent update: 16 June 2020
+# Most recent update: 15 August 2020
 # 
 # Module comprising data structures for organizing genome information
 # Note:  EMBOSS messes with fasta headers; therefore, I am putting minimal info in the header and using only '/'
@@ -66,8 +66,11 @@ annotationObj = phate_annotation.annotationRecord()
 fastaObj      = phate_fastaSequence.fasta()
 
 # Reverse complement
-#complements = string.maketrans('acgtrymkbdhvACGTRYMKBDHV', 'tgcayrkmvhdbTGCAYRKMVHDB') # Python 2
-complements = str.maketrans('acgtrymkbdhvACGTRYMKBDHV', 'tgcayrkmvhdbTGCAYRKMVHDB')     # Python 3
+MAKETRANS_OLD = False   # Differences in Python2 vs. Python3  (Python3.6 vs. Python 3.7???)
+if MAKETRANS_OLD:
+    complements = string.maketrans('acgtrymkbdhvACGTRYMKBDHV', 'tgcayrkmvhdbTGCAYRKMVHDB')  # Python 2
+else:
+    complements = str.maketrans('acgtrymkbdhvACGTRYMKBDHV', 'tgcayrkmvhdbTGCAYRKMVHDB')     # Python 3
 
 
 class genome(object):
@@ -373,9 +376,9 @@ class genome(object):
         annotationCount = len(self.annotationList)
         print(self.genomeType, "genome", self.name, self.genomeName, self.species)
         print("Number of contigs:", contigCount)
-        print("Names of contigs:", end=' ')
+        print("Names of contigs:")
         for fa in self.contigSet.fastaList:
-            print(fa.header, end=' ')
+            print(fa.header)
         print("  gene calls:", geneCount)
         print("  proteins:", proteinCount)
         print("  annotations:", annotationCount)

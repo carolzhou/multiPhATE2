@@ -222,7 +222,7 @@ for callSet in callerList:
     totalCalls += len(callSet.geneCallList)
 LOG_H.write("%s%s\n" % ("Total number of gene calls across callerList call sets is: ", totalCalls))
 if PHATE_MESSAGES:
-    print("CGC_main says, callerList is:", end=' ') 
+    print("CGC_main says, callerList is:") 
     for callSet in callerList:
         callSet.PrintAll_brief() 
 
