@@ -2,7 +2,7 @@
 # Module: phate_annotation.py
 # Programmer: Carol L. Ecale Zhou
 #
-# Latest update: 08 August 2020
+# Latest update: 20 August 2020
 #
 # Description: Module containing classes and methods for representing annotation results from various sources 
 #
@@ -42,6 +42,7 @@ DEBUG = True
 
 p_comment = re.compile('^#')
 
+#*** Replace will platform call(s)
 PHATE_MAC_OSX       = os.environ["PHATE_MAC_OSX"]
 if PHATE_MAC_OSX == 'True':
     MAC_OSX = True
@@ -60,9 +61,18 @@ VOG_HEADERS_FILE     = os.environ["PHATE_VOG_PROTEIN_HEADERS_FILE"]
 
 # Verbosity
 CLEAN_RAW_DATA = os.environ["PHATE_CLEAN_RAW_DATA"]
-PHATE_WARNINGS = os.environ["PHATE_PHATE_WARNINGS"]
-PHATE_MESSAGES = os.environ["PHATE_PHATE_MESSAGES"]
-PHATE_PROGRESS = os.environ["PHATE_PHATE_PROGRESS"]
+PHATE_WARNINGS_STRING = os.environ["PHATE_PHATE_WARNINGS"]
+PHATE_MESSAGES_STRING = os.environ["PHATE_PHATE_MESSAGES"]
+PHATE_PROGRESS_STRING = os.environ["PHATE_PHATE_PROGRESS"]
+PHATE_WARNINGS = False
+PHATE_MESSAGES = False
+PHATE_PROGRESS = False
+if PHATE_WARNINGS_STRING.lower() == 'true':
+    PHATE_WARNINGS = True
+if PHATE_MESSAGES_STRING.lower() == 'true':
+    PHATE_MESSAGES = True
+if PHATE_PROGRESS_STRING.lower() == 'true':
+    PHATE_PROGRESS = True
 
 # External links
 NCBI_TAXON_LINK = "https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id="
@@ -181,7 +191,7 @@ class annotationRecord(object):
         psatAnnotationList = []
         tempList = []; columns = []
 
-        if PHATE_MESSAGES == 'True':
+        if PHATE_MESSAGES:
             print("phate_annotation says, Recording PSAT annotations.")
 
         ### Capture lines corresponding to the gene
@@ -328,7 +338,7 @@ class annotationRecord(object):
                     if len(fields) > 1:
                         dbxref = fields[1]
                     else:
-                        if PHATE_WARNINGS == 'True':
+                        if PHATE_WARNINGS:
                             print("phate_annotation says, WARNING: no dbxref found for", self.name, "in database", database, "given line", line)
                     idList.append(dbxref)
         return idList
@@ -367,7 +377,7 @@ class annotationRecord(object):
                     infoString += ' | ' + info
                 dbxrefList.append(infoString) 
         else:
-            if PHATE_WARNINGS == 'True':
+            if PHATE_WARNINGS:
                 print("phate_annotation says, WARNING:  Unexpected name encountered in phate_annotation.py/getFigDescription:", self.name) 
         return dbxrefList 
 
@@ -495,10 +505,10 @@ class annotationRecord(object):
                 ncbiTaxonLink = NCBI_TAXON_LINK + taxID
                 ncbiTaxonList.append(ncbiTaxonLink)
             else:
-                if PHATE_WARNINGS == 'True':
+                if PHATE_WARNINGS:
                     print("phate_annotation says, WARNING: Unable to find database entry for accession:", accession)
         else:
-            if PHATE_WARNINGS == 'True':
+            if PHATE_WARNINGS:
                 print("phate_annotation says, WARNING: NCBI hit header has improper format or is missing:", self.name)
         return ncbiTaxonList
 
@@ -514,7 +524,7 @@ class annotationRecord(object):
         annotation = ""
 
         if self.name == "" or self.name == "none":
-            if PHATE_WARNINGS == 'True':
+            if PHATE_WARNINGS:
                 print("phate_annotation says, WARNING: No name for identification of dbxref in phate_annotation/link2databaseIdentifiers")
             return 
         else:
@@ -597,7 +607,7 @@ class annotationRecord(object):
                 dbxrefList = self.getECdescription4cazy(cazyAnnotationFile)
  
             else:
-                if PHATE_WARNINGS == 'True':
+                if PHATE_WARNINGS:
                     print("phate_annotation says, WARNING: Unrecognized database:", dbName) 
 
         for annotation in dbxrefList:
@@ -645,7 +655,7 @@ class annotationRecord(object):
                                     else:
                                         continue
                                 except:
-                                    if PHATE_WARNINGS == 'True':
+                                    if PHATE_WARNINGS:
                                         print("phate_annotation says, WARNING: No annotation found for dbxrefCode",dbxrefCode)
                 ANNOT_H.close()
             else:

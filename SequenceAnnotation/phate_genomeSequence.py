@@ -51,9 +51,19 @@ OUTPUT_DIR          = ""
 # Verbosity
 
 CLEAN_RAW_DATA   = os.environ["PHATE_CLEAN_RAW_DATA"]
-PHATE_WARNINGS   = os.environ["PHATE_PHATE_WARNINGS"]
-PHATE_MESSAGES   = os.environ["PHATE_PHATE_MESSAGES"]
-PHATE_PROGRESS   = os.environ["PHATE_PHATE_PROGRESS"]
+PHATE_WARNINGS_STRING = os.environ["PHATE_PHATE_WARNINGS"]
+PHATE_MESSAGES_STRING = os.environ["PHATE_PHATE_MESSAGES"]
+PHATE_PROGRESS_STRING = os.environ["PHATE_PHATE_PROGRESS"]
+PHATE_WARNINGS = False
+PHATE_MESSAGES = False
+PHATE_PROGRESS = False
+if PHATE_WARNINGS_STRING.lower() == 'true':
+    PHATE_WARNINGS = True
+if PHATE_MESSAGES_STRING.lower() == 'true':
+    PHATE_MESSAGES = True
+if PHATE_PROGRESS_STRING.lower() == 'true':
+    PHATE_PROGRESS = True
+
 
 DEBUG            = False
 #DEBUG           = True 
@@ -130,7 +140,7 @@ class genome(object):
             if fa.header == contig:
                 subSeq = fa.getSubsequence(int(start)-1,int(end)) #*** ???
             else:
-                if PHATE_WARNINGS == 'True':
+                if PHATE_WARNINGS:
                     print("phate_genomeSequence says, WARNING: fa.header", fa.header, "did not match contig", contig)
         return subSeq           
 
@@ -218,7 +228,7 @@ class genome(object):
                 #geneCallFile = geneCallInfo['geneCallFile']
                 geneCallFile = geneCallInfo['primaryCallsPathFile']
             else:
-                if PHATE_WARNINGS == 'True':
+                if PHATE_WARNINGS:
                     print("phate_genomeSequence says, WARNING: processGeneCalls(), no geneCall file provided")
                 return (0)
 
@@ -266,7 +276,7 @@ class genome(object):
                     newGene.end    = int(rightEnd)
                 else:
                     newGene.strand = 'x'
-                    if PHATE_WARNINGS == 'True':
+                    if PHATE_WARNINGS:
                         print("phate_genomeSequence says, WARNING/ERROR: anomalous strand setting in processGeneCalls, phate_genomeSequence module:", newGene.strand)
 
                 #*** BANDAID - to compensate for PHANOTATE sometimes starting gene at 0
@@ -346,7 +356,7 @@ class genome(object):
                 protein.addAnnotation(newPSAT)
                 PSAT_H.close()
         else:
-            if PHATE_WARNINGS == 'True':
+            if PHATE_WARNINGS:
                 print("phate_genomeSequence says, WARNING: First you need to set the PSAT filename in phate_genomeSequence object") 
         return 0
 
@@ -492,7 +502,7 @@ class genome(object):
 
     def printGenomeData2file_GFF(self,FILE_HANDLE):
         FILE_HANDLE.write("%s\n" % (GFF_COMMENT))
-        if PHATE_MESSAGES == 'True':
+        if PHATE_MESSAGES:
             print("phate_genomeSequence says, There are", len(self.geneSet.fastaList), "genes, and", len(self.proteinSet.fastaList), "proteins")
             print("phate_genomeSequence says, Writing data to GFF file")
 

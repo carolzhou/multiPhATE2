@@ -4,7 +4,7 @@
 #
 # Program Title:  phate_runPipeline.py ()
 #
-# Most recent update:  14 August 2020
+# Most recent update:  20 August 2020
 #
 # Description: Runs the phate annotation pipeline.  This code runs under Python 3.7, and requires
 #    dependent packages.
@@ -43,8 +43,7 @@ import json
 
 seqProgramSet = {'blastp','phmmer','jackhmmer'}  # codes for searches against sequence/blast databases
 hmmProgramSet = {'hmmscan'}                      # codes for hmm searches against hmm profile databases
-checkpointAnnotation = False                     # set by json parameter; controlled in multiPhate.py
-checkpointCGP = False                            # set by json parameter; controlled in multiPhate.py
+checkpointPhate = False                          # set by json parameter; controlled in multiPhate.py
 
 # Output file names 
 GENE_FILE              = 'gene.fnt'                              #
@@ -112,18 +111,31 @@ BLASTN_HIT_COUNT_DEFAULT      = os.environ["PHATE_BLASTN_HIT_COUNT_DEFAULT"]
 HMMER_HOME                    = os.environ["PHATE_HMMER_HOME"]
 
 # Global control: verbosity and error capture
-CLEAN_RAW_DATA                = os.environ["PHATE_CLEAN_RAW_DATA"]
-PHATE_WARNINGS                = os.environ["PHATE_PHATE_WARNINGS"]
-PHATE_MESSAGES                = os.environ["PHATE_PHATE_MESSAGES"]
-PHATE_PROGRESS                = os.environ["PHATE_PHATE_PROGRESS"]
+#CLEAN_RAW_DATA                = os.environ["PHATE_CLEAN_RAW_DATA"]
+PHATE_WARNINGS                = False
+PHATE_MESSAGES                = False
+PHATE_PROGRESS                = False
+PHATE_WARNINGS_STRING         = os.environ["PHATE_PHATE_WARNINGS"]
+PHATE_MESSAGES_STRING         = os.environ["PHATE_PHATE_MESSAGES"]
+PHATE_PROGRESS_STRING         = os.environ["PHATE_PHATE_PROGRESS"]
 PHATE_ERR                     = os.environ["PHATE_PHATE_ERR"]
 PHATE_OUT                     = os.environ["PHATE_PHATE_OUT"]
-CGC_WARNINGS                  = os.environ["PHATE_CGC_WARNINGS"]
-CGC_MESSAGES                  = os.environ["PHATE_CGC_MESSAGES"]
-CGC_PROGRESS                  = os.environ["PHATE_CGC_PROGRESS"]
-CGP_WARNINGS                  = os.environ["PHATE_CGP_WARNINGS"]
-CGP_MESSAGES                  = os.environ["PHATE_CGP_MESSAGES"]
-CGP_PROGRESS                  = os.environ["PHATE_CGP_PROGRESS"]
+#CGC_WARNINGS                  = os.environ["PHATE_CGC_WARNINGS"]
+#CGC_MESSAGES                  = os.environ["PHATE_CGC_MESSAGES"]
+#CGC_PROGRESS                  = os.environ["PHATE_CGC_PROGRESS"]
+#CGP_WARNINGS                  = os.environ["PHATE_CGP_WARNINGS"]
+#CGP_MESSAGES                  = os.environ["PHATE_CGP_MESSAGES"]
+#CGP_PROGRESS                  = os.environ["PHATE_CGP_PROGRESS"]
+
+# Adjust verbosity booleans according to environment veriables for local use.
+if PHATE_WARNINGS_STRING.lower() == 'true':
+    PHATE_WARNINGS = True
+
+if PHATE_MESSAGES_STRING.lower() == 'true':
+    PHATE_MESSAGES = True
+
+if PHATE_PROGRESS_STRING.lower() == 'true':
+    PHATE_PROGRESS = True
 
 # Constants 
 
@@ -366,8 +378,7 @@ with open(jsonFile, 'r') as jsonParameters:
     customHmm                = parameters["customHmm"]
     customHmmDBname          = parameters["customHmmDBname"]
     customHmmDBpath          = parameters["customHmmDBpath"]
-    checkpointAnnotation     = parameters["checkpointAnnotation"]
-    checkpointCGP            = parameters["checkpointCGP"]
+    checkpointPhate          = parameters["checkpointPhate"]
 
 jsonParameters.close()
 
@@ -404,12 +415,12 @@ else:
 
 if genomeType.lower() == 'phage' and primaryCallsFile != 'phanotate.cgc':
     if genomeType.lower() != 'superset' and genomeType.lower() != 'consensus' and genomeType.lower() != 'coregenome':
-        if PHATE_WARNINGS == 'True':
+        if PHATE_WARNINGS:
             print("phate_runPipeline says, WARNING: If genome type is phage, the primary gene-call file is usually phanotate.cgc! Yours is", primaryCallsFile)
         LOGFILE.write("%s%s\n" % ("WARNING:  User has selected genome type as phage, but primary gene-call file as ", primaryCallsFile))
         RUNLOG.write("%s%s\n" % ("WARNING:  User has selected genome type as phage, but primary gene-call file as ", primaryCallsFile))
 
-if PHATE_MESSAGES == 'True':
+if PHATE_MESSAGES:
     print("PIPELINE_INPUT_DIR is", PIPELINE_INPUT_DIR)
     print("PIPELINE_OUTPUT_DIR is", PIPELINE_OUTPUT_DIR)
     print("PIPELINE_OUTPUT_SUBDIR is", PIPELINE_OUTPUT_SUBDIR)
@@ -481,8 +492,7 @@ if PHATE_MESSAGES == 'True':
     print("customHmm is", customHmm)
     print("customHmmDBname is", customHmmDBname)
     print("customHmmDBpath is", customHmmDBpath)
-    print("checkpointAnnotation is", checkpointAnnotation)
-    print("checkpointCGP is", checkpointCGP)
+    print("checkpointPhate is", checkpointPhate)
 
 RUNLOG.write("%s\n" % ("Input parameters:"))
 RUNLOG.write("%s%s\n" % ("   PIPELINE_INPUT_DIR: ", PIPELINE_INPUT_DIR))
@@ -554,8 +564,7 @@ RUNLOG.write("%s%s\n" % ("   customGeneDBpath is ",customGeneDBpath))
 RUNLOG.write("%s%s\n" % ("   customProteinBlast is ",customProteinBlast))
 RUNLOG.write("%s%s\n" % ("   customProteinDBname is ",customProteinDBname))
 RUNLOG.write("%s%s\n" % ("   customProteinDBpath is ",customProteinDBpath))
-RUNLOG.write("%s%s\n" % ("   checkpointAnnotation is ",checkpointAnnotation))
-RUNLOG.write("%s%s\n" % ("   checkpointCGP is ",checkpointCGP))
+RUNLOG.write("%s%s\n" % ("   checkpointPhate is ",checkpointPhate))
 
 # Open and check input file(s)
 
@@ -573,7 +582,7 @@ RUNLOG.write("%s%s\n" % ("primaryCallsPathFile is ",primaryCallsPathFile))
 RUNLOG.write("%s%s\n" % ("geneFile is ",    geneFile))
 RUNLOG.write("%s%s\n" % ("proteinFile is ", proteinFile))
 
-if PHATE_PROGRESS == 'True':
+if PHATE_PROGRESS:
     print("phate_runPipeline says, Checking files...")
 RUNLOG.write("%s\n" % ("Checking files..."))
 fileError = False
@@ -599,14 +608,14 @@ jsonSave = outputDir + jsonFile
 command = "cp " + jsonFile + ' ' + jsonSave
 os.system(command)
 
-if PHATE_PROGRESS == 'True':
+if PHATE_PROGRESS:
     print("phate_runPipeline says, Configuration complete.")
 
 ##### BEGIN MAIN ########################################################################################
 
 ##### Run Gene-calling Module
 
-if PHATE_PROGRESS == 'True':
+if PHATE_PROGRESS:
     print("phate_runPipeline says, Preparing to run genecall module...")
 RUNLOG.write("%s\n" % ("Preparing to run genecall module..."))
 
@@ -671,18 +680,21 @@ if MULTIPLE_CALLERS:
         primaryCallsPathFile = PIPELINE_OUTPUT_SUBDIR + 'common_core.cgc' 
 
 command = "python " + GENECALL_CODE + ' ' + genomeFile + ' ' + param2 + ' ' + param3 + ' ' + primaryCallsPathFile
-if PHATE_PROGRESS == 'True':
+if PHATE_PROGRESS:
     print("phate_runPipeline says, Calling the gene-call module.")
-if PHATE_MESSAGES == 'True':
+if PHATE_MESSAGES:
     print("phate_runPipeline says, command is,", command)
 RUNLOG.write("%s%s\n" % ("Calling the gene-call module. Command is ", command))
 
 # OS system matters; choose alternate system call if you get error message on this line
-if not checkpointCGP and not checkpointAnnotation:
+if not checkpointPhate:
     result = os.system(command)
     #result = subprocess.check_output(command,shell=True)
+else:
+    if PHATE_PROGRESS:
+        print("phate_runPipeline says, Due to PhATE CHECKPOINT, Gene calling code will not be executed.")
 
-if PHATE_PROGRESS == 'True':
+if PHATE_PROGRESS:
     print("phate_runPipeline says, Gene-call processing complete.")
 RUNLOG.write("%s%s\n" % ("Gene-call processing complete at ", datetime.datetime.now()))
 
@@ -692,7 +704,7 @@ RUNLOG.write("%s\n" % ("Preparing to call sequence annotation module..."))
 
 # Construct command line parameter string
 
-if PHATE_PROGRESS == 'True':
+if PHATE_PROGRESS:
     print("phate_runPipeline says, Preparing command strings for homology searches...")
 
 # First, construct string listing the names of databases to be blasted
@@ -845,23 +857,22 @@ if translateOnly:
 else:
     command = commandRoot 
 
-if PHATE_MESSAGES == 'True':
+if PHATE_MESSAGES:
     print("phate_runPipeline says, command is ",command)
 # Communicate and execute
-if PHATE_PROGRESS == 'True':
+if PHATE_PROGRESS:
     print("phate_runPipeline says, Calling the sequence annotation module.")
-if PHATE_MESSAGES == 'True':
+if PHATE_MESSAGES:
     print("phate_runPipeline says, command is,", command)
 RUNLOG.write("%s%s\n" % ("Calling the sequence annotation module. Command is ", command))
-if not checkpointCGP:
-    result = os.system(command)
-if PHATE_PROGRESS == 'True':
+result = os.system(command)
+if PHATE_PROGRESS:
     print("phate_runPipeline says, Sequence annotation processing is complete.")
 RUNLOG.write("%s%s\n" % ("Sequence annotation processing complete at ", datetime.datetime.now()))
 
 ##### CLEAN UP
 
-if PHATE_PROGRESS == 'True':
+if PHATE_PROGRESS:
     print("phate_runPipeline says, Code completed at", datetime.datetime.now())
 OUTFILE.write("%s%s\n" %("Pipeline output is in output file created by code ",SEQANNOTATION_CODE))
 OUTFILE.close()

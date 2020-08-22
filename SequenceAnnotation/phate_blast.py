@@ -101,9 +101,18 @@ HIT_COUNT_MAX                 = int(os.environ["PHATE_HIT_COUNT_MAX"])    # Limi
 
 # Verbosity
 CLEAN_RAW_DATA                = os.environ["PHATE_CLEAN_RAW_DATA"]
-PHATE_WARNINGS                = os.environ["PHATE_PHATE_WARNINGS"]
-PHATE_MESSAGES                = os.environ["PHATE_PHATE_MESSAGES"]
-PHATE_PROGRESS                = os.environ["PHATE_PHATE_PROGRESS"]
+PHATE_WARNINGS_STRING         = os.environ["PHATE_PHATE_WARNINGS"]
+PHATE_MESSAGES_STRING         = os.environ["PHATE_PHATE_MESSAGES"]
+PHATE_PROGRESS_STRING         = os.environ["PHATE_PHATE_PROGRESS"]
+PHATE_WARNINGS = False
+PHATE_MESSAGES = False
+PHATE_PROGRESS = False
+if PHATE_WARNINGS_STRING.lower() == 'true':
+    PHATE_WARNINGS = True
+if PHATE_MESSAGES_STRING.lower() == 'true':
+    PHATE_MESSAGES = True
+if PHATE_PROGRESS_STRING.lower() == 'true':
+    PHATE_PROGRESS = True
 
 # Other configurables 
 
@@ -237,42 +246,42 @@ class multiBlast(object):
         elif(flavor.lower() == 'tblastx'):
             self.blastFlavor = 'tblastx'
         else:
-            if PHATE_WARNINGS == 'True':
+            if PHATE_WARNINGS:
                 print("phate_blast says, WARNING: Unrecognized or not-yet implemented blast flavor:", flavor)
 
     def setIdentityMin(self,identity):
         if (int(identity) >= 1) and (int(identity) <= 100):
             self.identityMin = int(identity)
         else:
-            if PHATE_WARNINGS == 'True':
+            if PHATE_WARNINGS:
                 print("phate_blast says, WARNING: Identity minimum should be from 1 to 100")
 
     def setIdentitySelect(self,identity):
         if (int(identity) >= 10) and (int(identity) <= 100):
             self.identitySelect = int(identity)
         else:
-            if PHATE_WARNINGS == 'True':
+            if PHATE_WARNINGS:
                 print("phate_blast says, WARNING: Identity select should be from 10 to 100. If this is insufficient, you may change constants in phate_blast.py.")
 
     def setEvalueMin(self,evalue):
         if (float(evalue) >= 0.0) and (float(evalue) <= 10):
             self.evalueMin = float(evalue)
         else:
-            if PHATE_WARNINGS == 'True':
+            if PHATE_WARNINGS:
                 print("phate_blast says, WARNING: Evalue minimum shold be from 0.0 to 10.0. If this is insufficient, you may change constants in phate_blast.py.")
 
     def setEvalueSelect(self,evalue):
         if (float(evalue) >= 0.0000001) and (float(evalue) <= 10.0):
             self.evalueSelect = float(evalue)
         else:
-            if PHATE_WARNINGS == 'True':
+            if PHATE_WARNINGS:
                 print("phate_blast says, WARNING: Evalue select should be from 0.0000001 to 10.0. If this is insufficient, you may change constants in phate_blast.py.")
 
     def setTopHitCount(self,number):
         if (int(number) >= 1 and int(number) <= HIT_COUNT_MAX):
             self.topHitCount = int(number)
         else:
-            if PHATE_WARNINGS == 'True':
+            if PHATE_WARNINGS:
                 print("phate_blast says, WARNING: You may capture from 1 to", HIT_COUNT_MAX, "hits per query. If this is insufficient, you may change HIT_COUNT_MAX in phate_blast.py.")
 
     def setOutputFormat(self,outfmt):
@@ -281,21 +290,21 @@ class multiBlast(object):
         elif outfmt == LIST:
             self.outputFormat = LIST 
         else:
-            if PHATE_WARNINGS == 'True':
+            if PHATE_WARNINGS:
                 print("phate_blast says, WARNING: Select from output formats", LIST, "or", XML)
 
     def setScoreEdge(self,scoreEdge):
         if scoreEdge > 0.0 and scoreEdge < SCORE_EDGE_MAX:
             self.scoreEdge = scoreEdge
         else:
-            if PHATE_WARNINGS == 'True':
+            if PHATE_WARNINGS:
                 print("phate_blast says, WARNING: Score edge should be between 0.0 and", SCORE_EDGE_MAX, "If this is insufficient, you may change SCORE_EDGE_MAX in phate_blast.py.")
 
     def setOverhang(self,overhang):
         if overhang > 0 and overhang < OVERHANG_MAX:
             self.overhang = overhang
         else:
-            if PHATE_WARNINGS == 'True':
+            if PHATE_WARNINGS:
                 print("phate_blast says, WARNING: Overhang should be between 0 and", OVERHANG_MAX, "If this is insufficient, you may change OVERHANG_MAX in phate_blast.py.")
 
     def setBlastThreads(self,blastThreads):
@@ -358,7 +367,7 @@ class multiBlast(object):
                 #" -sorthits " + str(HIT_SORT_CRITERION) + \
                 #" -sorthsps " + str(HSP_SORT_CRITERION)
         else:
-            if PHATE_WARNINGS == 'True':
+            if PHATE_WARNINGS:
                 print("phate_blast says, ERROR: blast flavor not currently supported: ", self.blastFlavor)
             return
         result = os.system(command)
@@ -569,13 +578,13 @@ class multiBlast(object):
                     # Add this completed annotation to growing list for this fasta
                     fasta.annotationList.append(newAnnotation)
             else:
-                if PHATE_MESSAGES == 'True':
+                if PHATE_MESSAGES:
                     print("phate_blast says, No hit found for query", fasta.blastHeader, "against", database)    
             outfileH.close 
 
         # Requested blast output format not supported
         else:
-            if PHATE_WARNINGS == 'True':
+            if PHATE_WARNINGS:
                 print("phate_blast says, WARNING: Output format", self.outputFormat, "not yet supported in phate_blast.py/blast1fasta(). Use blast out xml or list format for now.")
 
     # Run BLAST over a set of fasta sequences. This method calls blast1fasta for each sequence.
@@ -590,7 +599,7 @@ class multiBlast(object):
         elif dbType.lower() == "gene":
             GENE = True
         else:
-            if PHATE_WARNINGS == 'True':
+            if PHATE_WARNINGS:
                 print("phate_blast says, WARNING: unrecognized database type in runBlast:", dbType)
             return
                
@@ -602,7 +611,7 @@ class multiBlast(object):
                 database = NCBI_VIRUS_GENOME_BLAST_HOME
                 dbName = 'ncbiVirusGenome'
                 count = 0
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_blast says, Running NCBI blast:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
@@ -613,7 +622,7 @@ class multiBlast(object):
                 database = CUSTOM_GENOME_BLAST_HOME
                 dbName = 'customGenome'
                 count = 0
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_blast says, Running Custom Genome blast:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
@@ -625,7 +634,7 @@ class multiBlast(object):
                 database = REFSEQ_GENE_BLAST_HOME
                 dbName   = 'refseqGene'
                 count = 0
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_blast says, Running Refseq gene blast:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
@@ -636,14 +645,14 @@ class multiBlast(object):
                 database = VOG_GENE_BLAST_HOME
                 dbName   = 'vogGene'
                 count    = 0
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_blast says, Running VOG Gene blast:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
                     outfile = self.blastOutDir + self.blastFlavor + "_vogGene_" + str(count)
                     self.blast1fasta(fasta,outfile,database,dbName) 
 
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_blast says, Blasting completed.")
                     print("phate_blast says, Collecting and saving VOG Gene sequences corresponding to blast hit(s)")
 
@@ -675,7 +684,7 @@ class multiBlast(object):
                 database = CUSTOM_GENE_BLAST_HOME
                 dbName   = 'customGene'
                 count    = 0
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_blast says, Running Custom Gene blast:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
@@ -687,104 +696,104 @@ class multiBlast(object):
                 database = NR_BLAST_HOME
                 dbName   = 'nr'
                 count = 0
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_blast says, Running NR blast:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
                     outfile = self.blastOutDir + self.blastFlavor + "_nr_" + str(count)
                     self.blast1fasta(fasta,outfile,database,dbName)  
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_blast says, NR blasting completed.")
 
             if self.NCBI_VIRUS_PROTEIN_BLAST:  
                 database = NCBI_VIRUS_PROTEIN_BLAST_HOME
                 dbName   = 'ncbiVirusProtein'
                 count = 0
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_blast says, Running NCBI_VIRUS_PROTEIN blast:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
                     outfile = self.blastOutDir + self.blastFlavor + "_ncbiVirProt_" + str(count)
                     self.blast1fasta(fasta,outfile,database,dbName) 
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_blast says, NCBI Virus Protein blasting completed.")
 
             if self.REFSEQ_PROTEIN_BLAST:
                 database = REFSEQ_PROTEIN_BLAST_HOME
                 dbName   = 'refseqProtein'
                 count = 0
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_blast says, Running Refseq protein blast:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
                     outfile = self.blastOutDir + self.blastFlavor + "_refseqProtein_" + str(count)
                     self.blast1fasta(fasta,outfile,database,dbName) 
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_blast says, Refseq Protein blasting completed.")
 
             if self.PHANTOME_BLAST:
                 database = PHANTOME_BLAST_HOME
                 dbName   = 'phantome'
                 count = 0 
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_blast says, Running PHANTOME blast:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
                     outfile = self.blastOutDir + self.blastFlavor + "_phantome_" +str(count)
                     self.blast1fasta(fasta,outfile,database,dbName)
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_blast says, Phantome blasting completed.")
 
             if self.KEGG_VIRUS_BLAST: 
                 database = KEGG_VIRUS_BLAST_HOME
                 dbName   = 'kegg'
                 count = 0
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_blast says, Running KEGG blast:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
                     outfile = self.blastOutDir + self.blastFlavor + "_kegg_" + str(count)
                     self.blast1fasta(fasta,outfile,database,dbName)
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_blast says, Kegg blasting completed.")
 
             if self.SWISSPROT_BLAST: 
                 database = SWISSPROT_BLAST_HOME
                 dbName   = 'swissprot'
                 count = 0
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_blast says, Running Swissprot blast:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
                     outfile = self.blastOutDir + self.blastFlavor + "_swissprot_" + str(count)
                     self.blast1fasta(fasta,outfile,database,dbName)  
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_blast says, Swissprot blasting completed.")
 
             if self.PHAGE_ENZYME_BLAST: 
                 database = PHAGE_ENZYME_BLAST_HOME
                 dbName   = 'phageEnzyme'
                 count = 0
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_blast says, Running phageEnzyme blast:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
                     outfile = self.blastOutDir + self.blastFlavor + "_phageEnz_" + str(count)
                     self.blast1fasta(fasta,outfile,database,dbName) 
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_blast says, Phage Enzyme blasting completed.")
 
             if self.PVOGS_BLAST:  
                 database = PVOGS_BLAST_HOME
                 dbName   = 'pVOGs'
                 count = 0
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_blast says, Running pVOGs blast:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
                     outfile = self.blastOutDir + self.blastFlavor + "_pvog_" + str(count)
                     self.blast1fasta(fasta,outfile,database,dbName)
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_blast says, Blasting completed.")
                     print("phate_blast says, Collecting and saving pVOG sequences corresponding to blast hit(s)")
 
@@ -816,14 +825,14 @@ class multiBlast(object):
                 database = VOGS_BLAST_HOME
                 dbName   = 'VOGs'
                 count = 0
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_blast says, Running VOGs blast:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
                     outfile = self.blastOutDir + self.blastFlavor + "_vog_" + str(count)
                     self.blast1fasta(fasta,outfile,database,dbName)
 
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_blast says, Blasting completed.")
                     print("phate_blast says, Collecting and saving VOG sequences corresponding to blast hit(s)")
 
@@ -855,14 +864,14 @@ class multiBlast(object):
                 database = VOG_PROTEIN_BLAST_HOME
                 dbName   = 'vogProtein'
                 count = 0
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_blast says, Running VOG Protein blast:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
                     outfile = self.blastOutDir + self.blastFlavor + "_vogProtein_" + str(count)
                     self.blast1fasta(fasta,outfile,database,dbName)
 
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_blast says, Blasting completed.")
                     print("phate_blast says, Collecting and saving VOG Protein sequences corresponding to blast hit(s)")
 
@@ -894,13 +903,13 @@ class multiBlast(object):
                 database = CAZY_BLAST_HOME
                 dbName   = 'cazy'
                 count = 0
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_blast says, Running CAZy blast:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
                     outfile = self.blastOutDir + self.blastFlavor + "_cazy_" + str(count)
                     self.blast1fasta(fasta,outfile,database,dbName) 
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_blast says, Blasting completed.")
                     print("phate_blast says, Collecting and saving CAZy EC numbers and descriptions corresponding to blast hit(s)")
 
@@ -908,13 +917,13 @@ class multiBlast(object):
                 database = CUSTOM_PROTEIN_BLAST_HOME
                 dbName   = 'customProtein'
                 count = 0
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_blast says, Running Custom Protein blast:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
                     outfile = self.blastOutDir + self.blastFlavor + "_customProtein_" + str(count)
                     self.blast1fasta(fasta,outfile,database,dbName) 
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_blast says, Custom Protein blasting completed.")
 
         if CLEAN_RAW_DATA == 'True':
@@ -963,7 +972,7 @@ class multiBlast(object):
                 VOGsequence = VOGsequence + nextLine
 
     def cleanBlastOutDir(self):  # Remove temporary files from BLAST_OUT_DIR
-        if PHATE_PROGRESS == 'True':
+        if PHATE_PROGRESS:
             print("phate_blast says, cleanBlastOutDir(): Removing raw blast output files")
         command = "ls " + self.blastOutDir
         proc = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)

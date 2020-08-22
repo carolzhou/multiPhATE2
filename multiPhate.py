@@ -5,7 +5,7 @@
 # Program Title:  multiPhate2.py (/multiPhate2/)
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last Update:  18 August 2020
+# Last Update:  21 August 2020
 #
 # Description: Script multiPhate.py runs an annotation pipeline (phate_runPipeline.py) over any
 #    number of genomes specified in the user's input configuration file (multPhate.config). It then
@@ -33,11 +33,16 @@
 #
 ################################################################
 
-#import datetime
-#myTime = datetime.datetime.now()
-#print("TESTING TESTING TESTING: Is multiPhate executing twice? ",myTime)
-#myTime = datetime.datetime.now()
-#print("TESTING TESTING TESTING: Is multiPhate executing yet again? ",myTime)
+import datetime
+import time
+
+TEST_NUMBER = 5 
+timeLog = "./time.log"
+TIME_LOG = open(timeLog,'a')
+startTime = datetime.datetime.now()
+TIME_LOG.write("%s%s%s\n" % ("TEST_NUMBER ",TEST_NUMBER,": specialty DBs + NCBIvirProt; all searches; 0 threads; 1 blast thread; 9 genomes"))
+TIME_LOG.write("%s%s\n" % ("Starting multiPhate processing at ",startTime))
+timeStart = time.time()
 
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
 # THIS CODE IS COVERED BY THE BSD LICENSE. SEE INCLUDED FILE BSD.PDF FOR DETAILS.
@@ -63,25 +68,37 @@ else:
     MAC_OSX_STRING = 'False'
 
 # CHECKPOINTS
-# Invoke a checkpoint if needed to jump to a later point in the processing.
-# Skip gene calling, and jump straight to the annotation module.
-CHECKPOINT_ANNOTATION = False 
-# Skip gene calling, annotation, and jump straight to the CGP module.
-# This assumes that the previous processing is complete, and all files are where expected. 
-CHECKPOINT_CGP = True  
+# Below are defaults (all False). Checkpoints are modified by the user in the multiphate.config file,
+# and set as parameters are read in (see below). Invoke a checkpoint when wanting to jump to a later point
+# in multiPhATE processing.
+#
+# Skip gene calling, and jump straight to the phate annotation module.
+# This assumes that the gene.fnt and protein.faa files are present in each genome's subdirectory
+CHECKPOINT_PHATE = False 
+# Skip gene calling, PhATE annotation, and jump straight to the CGP (Compare Gene Profiles) module.
+# This assumes that the previous processing is complete, and all files are where expected.a
+# Requisite files:  genome.fasta in PipelineInput/ and phate_sequenceAnnotation.gff in genome's PipelineOutput/subdirectory.
+CHECKPOINT_CGP = False 
+# Skip gene calling, annotation, and CGP, and jump straight to the Genomics module.
+# Requisite data:  All NxN comparisons are complete, in the Results_... directories under PipelineOutput/CGP/ directory.
+CHECKPOINT_GENOMICS = False
 
+# PARALLELISM
 # Parallelism is now controlled in the user's configuration file, input to multiPhATE. 
-# Below are the default values for parameters hpc, threads, and blastThreads.
-# 1) If you are running multiPhATE on a high-performance computing (HPC) system (e.g., using SLURM), you will need to mute the multiPhate log.
+# Below are the default values for parameters hpc, phate threads, blastThreads, and cgpThreads.
+# If you are running multiPhATE on a high-performance computing (HPC) system (e.g., using SLURM), you will need to mute the multiPhate log.
 # Set HPC = True to prevent multiPhATE from writing the multiPhate.log file, as each process attempting to write to this one file will cause
 # contention for I/O.
 HPC = False  # write to log
 # HPC = True  # mute the log
 # Set THREADS to 'ALL' to use all available processors, or to an integer to limit number of parallel processes
 #THREADS = 'ALL'
-THREADS = 1
+THREADS = 0 
 # Set the number of blast threads that blast+ will invoke
 BLAST_THREADS = 1
+# Set the number of threads for parallelizing CompareGeneProfiles. Ideally this is N*(N-1)/2, where N = number of input genomes.
+CGP_THREADS = 0
+
 # 2) If you are running under a linux system, set PHATE_OUT and PHATE_ERR to 'True'. This will capture standard errors to files. Cannot
 # guarantee this will work under other operating systems.
 PHATE_OUT = 'False'
@@ -218,6 +235,7 @@ customHmmDBpath          = 'pathNotSet'
 threads                  = THREADS        # Value should be a positive integer or ALL
 hpc                      = HPC            # True or False
 blastThreads             = BLAST_THREADS  # positive integer
+cgpThreads               = CGP_THREADS    # positive integer
 
 # Constants; defaults will apply if not specified in config file
 # Leave all this stuff alone!
@@ -329,10 +347,12 @@ os.environ["PHATE_PVOGS_HEADER_FILE"]               = os.environ["PHATE_PVOGS_BA
 os.environ["PHATE_VOGS_BASE_DIR"]                   = DATABASE_DIR_DEFAULT + "VOGs/"
 os.environ["PHATE_VOGS_BLAST_HOME"]                 = os.environ["PHATE_VOGS_BASE_DIR"] + "VOGs.faa"
 os.environ["PHATE_VOGS_ANNOTATION_FILE"]            = os.environ["PHATE_VOGS_BASE_DIR"] + "vog.annotations.tsv"
+os.environ["PHATE_VOG_ANNOTATION_FILE"]             = os.environ["PHATE_VOGS_BASE_DIR"] + "vog.annotations.tsv"
 os.environ["PHATE_VOG_GENE_BLAST_HOME"]             = os.environ["PHATE_VOGS_BASE_DIR"] + "VOG_genes.fnt"      #*** FIX
 os.environ["PHATE_VOG_PROTEIN_BLAST_HOME"]          = os.environ["PHATE_VOGS_BASE_DIR"] + "VOG_protein.faa"
 os.environ["PHATE_VOG_PROTEIN_BASE_DIR"]            = os.environ["PHATE_VOGS_BASE_DIR"]
 os.environ["PHATE_VOG_PROTEIN_HEADERS_FILE"]        = ""
+os.environ["PHATE_VOG_PROTEIN_HEADER_FILE"]        = ""
 os.environ["PHATE_VOG_PROTEIN_ANNOTATION_FILE"]     = ""
 os.environ["PHATE_PHANTOME_BASE_DIR"]               = DATABASE_DIR_DEFAULT + "Phantome/"
 os.environ["PHATE_PHANTOME_BLAST_HOME"]             = os.environ["PHATE_PHANTOME_BASE_DIR"] + "Phantome_Phage_genes.faa"
@@ -350,6 +370,7 @@ os.environ["PHATE_UNIPROT_BASE_DIR"]                = DATABASE_DIR_DEFAULT + "Un
 os.environ["PHATE_UNIPROT_BLAST_HOME"]              = os.environ["PHATE_UNIPROT_BASE_DIR"] + "uniprot"
 os.environ["PHATE_NR_BLAST_BASE_DIR"]               = DATABASE_DIR_DEFAULT + "NR/"
 os.environ["PHATE_NR_BLAST_HOME"]                   = os.environ["PHATE_NR_BLAST_BASE_DIR"] + "nr"
+os.environ["PHATE_CAZY_BASE_DIR"]                   = DATABASE_DIR_DEFAULT + "CAZY/" 
 os.environ["PHATE_CAZY_BLAST_BASE_DIR"]             = DATABASE_DIR_DEFAULT + "CAZY/"
 os.environ["PHATE_CAZY_BLAST_HOME"]                 = os.environ["PHATE_CAZY_BLAST_BASE_DIR"] + "cazy.faa"
 os.environ["PHATE_CAZY_ANNOTATION_PATH"]            = ""  # read from config file
@@ -472,8 +493,6 @@ p_genomeSpecies               = re.compile("genome_species='(.*)'")
 # GENOME INFORMATION
 p_genomeList                  = re.compile("Genome\sList")       # non-case-sensitive "Genome List"
 p_genomeNumber                = re.compile("Genome\s+(\d+)")     # genome number
-#p_root                        = re.compile("([\w\d\_\-\.]+)\.fasta") # captures the root name of the fasta file (e.g., takes 'P2' from P2.fasta)
-#p_root                        = re.compile("([\w\d_-]+)\.fasta") # captures the root name of the fasta file (e.g., takes 'P2' from P2.fasta)
 p_root                        = re.compile("(.*)\.fasta") # captures the root name of the fasta file (e.g., takes 'P2' from P2.fasta)
 p_end                         = re.compile("END")
 
@@ -612,6 +631,12 @@ p_hmmerHome                   = re.compile("hmmer_home='(.*)'")
 p_threads                     = re.compile("^threads='(.*)'")
 p_hpc                         = re.compile("HPC='(.*)'")
 p_blastThreads                = re.compile("blast_threads='(.*)'")
+p_cgpThreads                  = re.compile("cgp_threads='(.*)'")
+
+# CHECKPOINTING
+p_checkpoint_phate            = re.compile("checkpoint_phate='(.*)'")
+p_checkpoint_cgp              = re.compile("checkpoint_cgp='(.*)'")
+p_checkpoint_genomics         = re.compile("checkpoint_genomics='(.*)'")
 
 # VERBOSTIY
 p_phateWarnings               = re.compile("phate_warnings='(.*)'")
@@ -864,6 +889,12 @@ for cLine in cLines:
     match_threads                   = re.search(p_threads,cLine)
     match_hpc                       = re.search(p_hpc,cLine)
     match_blastThreads              = re.search(p_blastThreads,cLine)
+    match_cgpThreads                = re.search(p_cgpThreads,cLine)
+
+    # checkpointing
+    match_checkpointPhate           = re.search(p_checkpoint_phate,cLine)
+    match_checkpointCGP             = re.search(p_checkpoint_cgp,cLine)
+    match_checkpointGenomics        = re.search(p_checkpoint_genomics,cLine)
 
     # verbosity
     match_phateWarnings             = re.search(p_phateWarnings,cLine)
@@ -992,7 +1023,7 @@ for cLine in cLines:
         elif value.lower() == 'no' or value.lower() == 'false' or value.lower() == 'off' or value == '':
             translateOnly = False
         else:
-            if PHATE_WARNINGS == 'True':
+            if PHATE_WARNINGS:
                 print("multiPhate says, WARNING: Invalid string following translate_only parameter in config file:", value)
             if not HPC:
                 LOGFILE.write("%s%s\n" % ("Invalid string following translate_only parameter in config file: ", value))
@@ -1024,7 +1055,7 @@ for cLine in cLines:
         elif value.lower() == 'custom':
             primaryCalls = 'custom'
         else:
-            if PHATE_WARNINGS == 'True':
+            if PHATE_WARNINGS:
                 print("multiPhate says, WARNING: Invalid string for primary calls in config file:", value)
         if primaryCalls == 'glimmer2' or primaryCalls == 'glimmer3':
             primaryCallsFile = 'glimmer' + '.cgc'
@@ -1413,7 +1444,6 @@ for cLine in cLines:
             PHATE_PVOG_BASE_DIR = os.path.dirname(match_pvogsDBpath.group(1)) + '/'
             os.environ["PHATE_PVOG_BASE_DIR"] = PHATE_PVOG_BASE_DIR
             os.environ["PHATE_PVOGS_HEADER_FILE"] = os.path.join(PHATE_PVOG_BASE_DIR,PVOG_HEADER_FILENAME)
-            print("TESTING: PHATE_PVOGS_HEADER_FILE is",os.environ["PHATE_PVOGS_HEADER_FILE"])
 
     elif match_vogsDBpath:   #*** To be deprecated
         if match_vogsDBpath.group(1) != '':
@@ -1521,7 +1551,6 @@ for cLine in cLines:
         value = match_pvogsHmmDBpath.group(1)
         if value != '':
             pvogsHmmDBpath = value
-        print("TESTING: Setting pvogs location:",pvogsHmmDBpath)
         os.environ["PHATE_PVOGS_HMM_HOME"] = pvogsHmmDBpath
 
     elif match_vogsHmmDBpath:
@@ -1608,6 +1637,34 @@ for cLine in cLines:
         value = match_blastThreads.group(1)
         if int(value) >= 1:
             blastThreads = int(value)
+
+    elif match_cgpThreads:
+        value = match_cgpThreads.group(1)
+        if value.lower() == 'all':
+            cgpThreads = 'MAX' 
+        elif value == '0':
+            cgpThreads = 0
+        elif int(value) >= 1:
+            cgpThreads = int(value) 
+        else:
+            cgpThreads = 1
+
+    ##### CHECKPOINTING #####
+
+    elif match_checkpointPhate:
+        value = match_checkpointPhate.group(1)
+        if value.lower() == 'true' or value.lower() == 'yes' or value.lower() == 'on':
+            CHECKPOINT_PHATE = True
+
+    elif match_checkpointCGP:
+        value = match_checkpointCGP.group(1)
+        if value.lower() == 'true' or value.lower() == 'yes' or value.lower() == 'on':
+            CHECKPOINT_CGP = True
+
+    elif match_checkpointGenomics:
+        value = match_checkpointGenomics.group(1)
+        if value.lower() == 'true' or value.lower() == 'yes' or value.lower() == 'on':
+            CHECKPOINT_GENOMICS = True
 
     ##### VERBOSITY #####
 
@@ -1833,6 +1890,9 @@ if not HPC: # Skip logging if running in high-throughput, else multiPhate.log fi
     LOG.write("%s%s\n" % ("   cgp messages is set to ",os.environ["PHATE_CGP_MESSAGES"]))
     LOG.write("%s%s\n" % ("   cgp progress is set to ",os.environ["PHATE_CGP_PROGRESS"]))
     LOG.write("%s%s\n" % ("   clean raw data is set to ",os.environ["PHATE_CLEAN_RAW_DATA"]))
+    LOG.write("%s%s\n" % ("   CHECKPOINT_PHATE is",CHECKPOINT_PHATE))
+    LOG.write("%s%s\n" % ("   CHECKPOINT_CGP is",CHECKPOINT_CGP))
+    LOG.write("%s%s\n" % ("   CHECKPOINT_GENOMICS is",CHECKPOINT_GENOMICS))
     LOG.write("%s%s\n" % ("Number of genomes to be processed: ",len(genomeList)))
     LOG.write("%s\n" % ("List of genomes to be processed:"))
 for genome in genomeList:
@@ -1938,8 +1998,7 @@ for genome in genomeList:
             "customHmmDBname":customHmmDBname,
             "customHmmDBpath":customHmmDBpath,
             "blastThreads":blastThreads,
-            "checkpointAnnotation":CHECKPOINT_ANNOTATION,
-            "checkpointCGP":CHECKPOINT_CGP,
+            "checkpointPhate":CHECKPOINT_PHATE,
             }
 
     # Write next json file
@@ -1961,7 +2020,7 @@ if not HPC:
 # METHOD GUIDING PARALLEL EXECUTION OF PHATE
 # Run the phate pipeline over each genome, as specified in the multiPhate.config file
 def phate_threaded(jsonFile):
-    print(f'multiPhate says, Running {jsonFile} on PID {os.getpid()}')
+    #print(f'multiPhate says, Running {jsonFile} on PID {os.getpid()}')
     if not HPC:
         LOG.write("%s%s\n" % ("Running PhATE using genome json file ",jsonFile))
     command = "python " + PHATE_BASE_DIR + PHATE_PIPELINE_CODE + " " + jsonFile
@@ -1984,9 +2043,9 @@ if THREADING_ON:
         threads = os.cpu_count()
     elif threads > os.cpu_count():
         threads = os.cpu_count()
-
-    print(f'Using {threads} threads')
-
+    if PHATE_PROGRESS:
+        #print(f'multiPhate says, Using {threads} threads')
+        pass
     if __name__ == '__main__':
         pool = Pool(int(threads))
         pool.map(phate_threaded, jsonList)
@@ -1999,13 +2058,16 @@ else:
         if not HPC:
             LOG.write("%s%s\n" % ("Command is ",command))
             LOG.write("%s%s\n" % ("Begin PhATE processing at ",datetime.datetime.now()))
-        if not CHECKPOINT_CGP:
+        if not CHECKPOINT_CGP and not CHECKPOINT_GENOMICS:
             result = os.system(command)
+        else:
+            if PHATE_PROGRESS:
+                print("multiPhate says, Due to CGP or Genomics CHECKPOINT, PhATE pipeline will not be executed.")
         if not HPC:
             LOG.write("%s%s\n" % ("End PhATE processing at ",datetime.datetime.now()))
 
 ##################################################################################################
-# COMPARATIVE GENOMICS
+# COMPARE GENE PROFILES and COMPARATIVE GENOMICS
 # Run the comparative genomics module to compare proteomes among the user's specified genomes
 
 GFF_OUTFILE = "phate_sequenceAnnotation_main.gff"
@@ -2036,11 +2098,20 @@ if runCGP and not translateOnly and (len(genomeList) > 1):
         print ("multiPhate says, ERROR preparing CompareGeneProfiles configuration file")
 
     # Run CompareGeneProfiles
+    genomeCount = len(genomeList)
+    maxCGPthreads = (genomeCount * (genomeCount - 1))/2 
+    if cgpThreads >= int(maxCGPthreads):
+        cgpThreads = int(maxCGPthreads)
+
     try:
-        command = "python " + CGP_CODE + ' ' + CGP_CONFIG_FILE
+        command = "python " + CGP_CODE + ' ' + CGP_CONFIG_FILE + ' ' + str(cgpThreads)
         if PHATE_MESSAGES:
             print("multiPhate says, command is:", command)
-        result = os.system(command)
+        if not CHECKPOINT_GENOMICS:
+            result = os.system(command)
+        else:
+            if PHATE_PROGRESS:
+                print("multiPhate says, Due to Genomics CHECKPOINT, CompareGeneProfiles code will not be executed.")
     except:
         if not HPC:
             LOG.write("%s\n" % ("ERROR: Problem running CompareGeneProfiles"))
@@ -2063,7 +2134,11 @@ if runCGP and not translateOnly and (len(genomeList) > 1):
                 print ("multiPhate says, Removing previous CGP Results_ directories")
             try:
                 command = "rm -r " + CGP_RESULTS_DIR + "Results_* "
-                result = os.system(command)
+                if not CHECKPOINT_GENOMICS:
+                    result = os.system(command)
+                else:
+                    if PHATE_PROGRESS:
+                        print("multiPhate says, Due to Genomics CHECKPOINT, refraining from clearning previous Results_ directories.")
             except:
                 if PHATE_WARNINGS:
                     print("multiPhate says, Failure in removing previous CGP Results directories")
@@ -2103,7 +2178,7 @@ if translateOnly == True:
 
 # Override
 #runGenomics = False
-if runGenomics:
+if runGenomics and (len(genomeList) > 1):
     if PHATE_PROGRESS:
         print("multiPhate says, Performing gene-correspondence analysis.")
 
@@ -2129,9 +2204,7 @@ try:
     os.stat(JSON_DIR)
 except:
     os.mkdir(JSON_DIR)
-#print("TESTING: JSON_DIR is",JSON_DIR)
 command = "mv *.json " + JSON_DIR + '.'
-#print("TESTING: command is",command)
 result = os.system(command)
 
 if not HPC:
@@ -2140,3 +2213,9 @@ if not HPC:
 
 if PHATE_MESSAGES:
     print("multiPhate says, Processing complete. Thank you for using multiPhATE2.")
+
+endTime = datetime.datetime.now()
+TIME_LOG.write("%s%s\n" % ("Completed multiPhate processing at ",endTime))
+elapsedTime_h = (time.time() - timeStart)/3600 
+elapsedTime_m = (time.time() - timeStart)/60 
+TIME_LOG.write("%s%5d%s%3d%s\n" % ("Elapsed time is ",elapsedTime_m," minutes, or ",elapsedTime_h," hours."))

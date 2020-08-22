@@ -65,12 +65,22 @@ VOG_SEQUENCES                        = os.environ["PHATE_VOG_PROTEIN_BLAST_HOME"
 VOG_ANNOTATIONS                      = os.environ["PHATE_VOG_ANNOTATION_FILE"]
 
 # Verbosity and output/error capture
-CLEAN_RAW_DATA                       = os.environ["PHATE_CLEAN_RAW_DATA"]
-PHATE_WARNINGS                       = os.environ["PHATE_PHATE_WARNINGS"]
-PHATE_MESSAGES                       = os.environ["PHATE_PHATE_MESSAGES"]
-PHATE_PROGRESS                       = os.environ["PHATE_PHATE_PROGRESS"]
-PHATE_ERR                            = os.environ["PHATE_PHATE_ERR"]
-PHATE_OUT                            = os.environ["PHATE_PHATE_OUT"]
+CLEAN_RAW_DATA        = os.environ["PHATE_CLEAN_RAW_DATA"]
+PHATE_ERR             = os.environ["PHATE_PHATE_ERR"]
+PHATE_OUT             = os.environ["PHATE_PHATE_OUT"]
+PHATE_WARNINGS_STRING = os.environ["PHATE_PHATE_WARNINGS"]
+PHATE_MESSAGES_STRING = os.environ["PHATE_PHATE_MESSAGES"]
+PHATE_PROGRESS_STRING = os.environ["PHATE_PHATE_PROGRESS"]
+PHATE_WARNINGS = False
+PHATE_MESSAGES = False
+PHATE_PROGRESS = False
+if PHATE_WARNINGS_STRING.lower() == 'true':
+    PHATE_WARNINGS = True
+if PHATE_MESSAGES_STRING.lower() == 'true':
+    PHATE_MESSAGES = True
+if PHATE_PROGRESS_STRING.lower() == 'true':
+    PHATE_PROGRESS = True
+
 
 # Other configurables 
 
@@ -171,7 +181,7 @@ class multiProfile(object):
         if (int(number) >= 1 and int(number) <= HIT_COUNT_MAX):
             self.topHitCount = int(number)
         else:
-            if PHATE_WARNINGS == 'True':
+            if PHATE_WARNINGS:
                 print("phate_profile says, WARNING: You may capture from 1 to", HIT_COUNT_MAX, "hits per query. If this is insufficient, you may change HIT_COUNT_MAX in phate_blast.py.")
 
     def setOutputFormat(self,outfmt):
@@ -182,7 +192,7 @@ class multiProfile(object):
         elif outfmt == TBL or str(outfmt) == str(TBL) or outfmt.lower() == 'tbl':
             self.outputFormat = TBL 
         else:
-            if PHATE_WARNINGS == 'True':
+            if PHATE_WARNINGS:
                 print("phate_profiles says, WARNING: Only acceptable output format is TBL or", TBL) 
 
     def setGeneCallDir(self,geneCallDir):
@@ -200,7 +210,6 @@ class multiProfile(object):
 
     def getDescription4pvog(self,pvogID):
         description = ""; words = []
-        print("TESTING: opening PVOG_HEADERS:",PVOG_HEADERS)
         headers_h = open(PVOG_HEADERS,'r')
         hLines = headers_h.read().splitlines()
         for hLine in hLines:
@@ -319,7 +328,7 @@ class multiProfile(object):
         # Parse XML-, LIST-, or TBL-formatted hmm output #*** Is XML format available?  
 
         if self.outputFormat == XML or self.outputFormat == LIST:
-            if PHATE_WARNINGS == 'True':
+            if PHATE_WARNINGS:
                 print("phate_profile says, WARNING: Only TBL format is currently being used for hmmscan output parsing; setting as TBL.")
             self.outputFormat = TBL
 
@@ -468,7 +477,7 @@ class multiProfile(object):
                             hit["hitDomainList"].append(newDomainDataSet)
                             FOUND = True
                     if not FOUND:
-                        if PHATE_WARNINGS == 'True':
+                        if PHATE_WARNINGS:
                             print("phate_profile says, WARNING: sequence data object not found for domain object", targetName)
 
             # Close HMM output files
@@ -519,12 +528,12 @@ class multiProfile(object):
                     # Add this completed annotation to growing list for this fasta
                     fasta.annotationList.append(newAnnotation)
             else:
-                if PHATE_MESSAGES == 'True':
+                if PHATE_MESSAGES:
                     print("phate_profiles says, No Profile hit found for query", fasta.blastHeader, "against", database)    
 
         # Requested Hmm/Profile output format not supported
         else:
-            if PHATE_WARNINGS == 'True':
+            if PHATE_WARNINGS:
                 print("phate_profile says, WARNING: Output format", self.outputFormat, "not yet supported in phate_profile.py/profile1fasta(). Use TBL format for now.")
 
     def runProfile(self,fastaSet,dbType="protein"): # fastaSet is a phate_fastaSequence.multiFasta object
@@ -538,7 +547,7 @@ class multiProfile(object):
         elif dbType.lower() == "gene":
             GENE = True
         else:
-            if PHATE_WARNINGS == 'True':
+            if PHATE_WARNINGS:
                 print("phate_profile says, WARNING: unrecognized database type in runProfile:", dbType)
             return
                
@@ -546,7 +555,7 @@ class multiProfile(object):
         database = ''
 
         if GENOME:
-            if PHATE_WARNINGS == 'True':
+            if PHATE_WARNINGS:
                 print("phate_profile says, WARNING:  Currently genome HMM/profile search is not supported.")
 
         if GENE:
@@ -554,7 +563,7 @@ class multiProfile(object):
                 database = REFSEQ_GENE_PROFILE_DB_HOME # same database as blast uses
                 dbName   = 'refseqGene'
                 count = 0
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_profile says: Running Refseq gene hmm/profile search:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
@@ -566,7 +575,7 @@ class multiProfile(object):
                 database = NR_PROFILE_DB_HOME 
                 dbName   = 'nr'
                 count = 0
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_profile says: Running NR hmm/profile search:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
@@ -577,7 +586,7 @@ class multiProfile(object):
                 database = NCBI_VIRUS_PROTEIN_PROFILE_DB_HOME 
                 dbName   = 'ncbiVirusProteinHmm'
                 count = 0
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_profile says: Running NCBI_VIRUS_PROTEIN hmm/profile search:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
@@ -588,7 +597,7 @@ class multiProfile(object):
                 database = REFSEQ_PROTEIN_PROFILE_DB_HOME 
                 dbName   = 'refseqProteinHmm'
                 count = 0
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_profile says: Running Refseq protein hmm/profile search:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
@@ -599,7 +608,7 @@ class multiProfile(object):
                 database = PHANTOME_PROFILE_DB_HOME # same database as blast uses
                 dbName   = 'phantomeProfile'
                 count = 0 
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_profile says: Running PHANTOME hmm/profile search:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
@@ -610,7 +619,7 @@ class multiProfile(object):
                 database = KEGG_VIRUS_PROFILE_DB_HOME # same database as blast uses
                 dbName   = 'keggProfile'
                 count = 0
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_profile says: Running KEGG hmm/profile search:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
@@ -621,7 +630,7 @@ class multiProfile(object):
                 database = SWISSPROT_PROFILE_DB_HOME # same database as blast uses
                 dbName   = 'swissprotProfile'
                 count = 0
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_profile says: Running Swissprot hmm/profile search:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
@@ -632,7 +641,7 @@ class multiProfile(object):
                 database = PHAGE_ENZYME_PROFILE_DB_HOME 
                 dbName   = 'phageEnzProfile'
                 count = 0
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_profile says: Running phage enzyme hmm/profile search:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
@@ -644,14 +653,14 @@ class multiProfile(object):
                 pVOGseqDB = PVOG_SEQUENCES
                 dbName   = 'pVOGsHmm'
                 count = 0
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_profile says: Running pVOGs hmm/profile search:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
                     outfile = self.proteinProfileOutDir + self.profileProgram + "_pvogHmm_" + str(count)
                     self.profile1fasta(fasta,outfile,database,dbName)
 
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_profile says: pVOGs hmm/profile search complete.")
                     print("phate_profile says: Collecting and saving pVOG sequences corresponding to hmm/profile hit(s)")
 
@@ -684,7 +693,7 @@ class multiProfile(object):
                                         self.writeVOGsequences2file(outfilePVOG_h,pVOGlines,pVOG)                  # followed by the pVOG group
                                         outfilePVOG_h.close()
                                 else:
-                                    if PHATE_WARNINGS == 'True':
+                                    if PHATE_WARNINGS:
                                         print("phate_profiles says, WARNING: unexpected pVOG identifier:", pVOG)        
 
             if self.VOGS_PROFILE:  
@@ -692,14 +701,14 @@ class multiProfile(object):
                 VOGseqDB = VOG_SEQUENCES
                 dbName   = 'VOGsHmm'
                 count = 0
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_profile says: Running VOGs hmm/profile search:", database, dbName)
                 for fasta in fastaSet.fastaList:
                     count += 1
                     outfile = self.proteinProfileOutDir + self.profileProgram + "_vogHmm_" + str(count)
                     self.profile1fasta(fasta,outfile,database,dbName)
 
-                if PHATE_PROGRESS == 'True':
+                if PHATE_PROGRESS:
                     print("phate_profile says: VOGs hmm/profile search complete.")
                     print("phate_profile says: Collecting and saving VOG sequences corresponding to hmm/profile hit(s)")
 
@@ -732,11 +741,11 @@ class multiProfile(object):
                                         self.writeVOGsequences2file(outfileVOG_h,VOGlines,VOG)                  # followed by the VOG group
                                         outfileVOG_h.close()
                                 else:
-                                    if PHATE_WARNINGS == 'True':
+                                    if PHATE_WARNINGS:
                                         print("phate_profiles says, WARNING: unexpected VOG identifier:", VOG)        
 
         if CLEAN_RAW_DATA == 'True':
-            if PHATE_PROGRESS == 'True':
+            if PHATE_PROGRESS:
                 print("phate_profile says: Removing raw data files.")
             self.cleanProfileOutDir()
 

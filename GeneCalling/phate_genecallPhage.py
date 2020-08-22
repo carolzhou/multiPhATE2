@@ -4,7 +4,7 @@
 #
 # Programmers: Jeff Kimbrel, Carol Zhou
 #
-# Last update: 15 August 2020
+# Last update: 20 August 2020
 #
 # Description: Single command to run PHANOTATE, Prodigal, Glimmer and GeneMarkS on a fasta file
 #
@@ -49,9 +49,18 @@ phanotatePath = os.environ["PHATE_PHANOTATE_PATH"]
 cgcPath       = os.environ["PHATE_CGC_PATH"]
 
 # Verbosity
-PHATE_MESSAGES = os.environ["PHATE_PHATE_MESSAGES"]
-PHATE_WARNINGS = os.environ["PHATE_PHATE_WARNINGS"]
-PHATE_PROGRESS = os.environ["PHATE_PHATE_PROGRESS"]
+PHATE_MESSAGES = False
+PHATE_WARNINGS = False
+PHATE_PROGRESS = False
+PHATE_MESSAGES_STRING = os.environ["PHATE_PHATE_MESSAGES"]
+PHATE_WARNINGS_STRING = os.environ["PHATE_PHATE_WARNINGS"]
+PHATE_PROGRESS_STRING = os.environ["PHATE_PHATE_PROGRESS"]
+if PHATE_MESSAGES_STRING.lower() == 'true':
+    PHATE_MESSAGES = True
+if PHATE_WARNINGS_STRING.lower() == 'true':
+    PHATE_WARNINGS = True
+if PHATE_PROGRESS_STRING.lower() == 'true':
+    PHATE_PROGRESS = True
 
 # Data Structures
 
@@ -63,10 +72,10 @@ files = {
 
 # Input Parameters
 
-if PHATE_MESSAGES == 'True':
+if PHATE_MESSAGES:
     print("phate_genecallPhage says, There are", len(sys.argv), "input parameters:", sys.argv)
 if len(sys.argv) == 1:
-    if PHATE_WARNINGS == 'True':
+    if PHATE_WARNINGS:
         print("phate_genecallPhage says, Usage: /usr/local/bin/python3.4 annotatePhage.py fastaFile.fa outFolder", "Exiting now.")
     exit(0)
 
@@ -108,7 +117,7 @@ logfilefullpath = outputFolder + "phate_genecallPhage.log"
 logfile = open(logfilefullpath,"w")
 logfile.write("%s%s\n" % ("Input parameters are:",sys.argv))
 workingFolder = os.getcwd()
-if PHATE_MESSAGES == 'True':
+if PHATE_MESSAGES:
     print("workingFolder is", workingFolder)
 if not os.path.exists(outputFolder):
     os.mkdir(outputFolder)
@@ -160,7 +169,7 @@ class geneCall:
 ########## FUNCTIONS ##########
 
 def systemCall(command):
-    if PHATE_MESSAGES == 'True':
+    if PHATE_MESSAGES:
         print("\nSYSTEM CALL: ", command)
     logfile.write("%s%s\n" % ("command is ",command))
     os.system(command)
@@ -188,7 +197,7 @@ def processProdigal(line):
 
         ID = getProdigalId(lineSplit[8])
 
-        if PHATE_MESSAGES == 'True':
+        if PHATE_MESSAGES:
             print("phate_genecallPhage says,  ID=",ID,"method=",method,"contig=",contig,"start/stop=",start,'/',stop,"strand=",strand,"score=",score)
         geneCall(ID, method, contig, start, stop, strand, score)
         callCounts['prodigal'] += 1
@@ -338,7 +347,7 @@ def Convert_cgc2gff(cgcFile,gffFile):
                 start = str(rightEnd)
                 end   = str(leftEnd) 
             else:
-                if PHATE_WARNINGS == 'True':
+                if PHATE_WARNINGS:
                     print("phate_genecallPhage says, WARNING: Unexpected strand:", strand)
             GFF_H.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (seqid,source,seqType,start,end,strand,phase,attributes))
         elif match_caller:
@@ -355,9 +364,9 @@ def Convert_cgc2gff(cgcFile,gffFile):
 ## This will be addressed in version 3 (https://github.com/hyattpd/Prodigal/issues/11)
 
 if PRODIGAL_CALLS:
-    if PHATE_PROGRESS == 'True':
+    if PHATE_PROGRESS:
         print("phate_genecallPhage says, running Prodigal.")
-    if PHATE_MESSAGES == 'True':
+    if PHATE_MESSAGES:
         print("\n########## Prodigal ##########")
     logfile.write("%s\n" % ("Processing Prodigal"))
 
@@ -389,9 +398,9 @@ else:
 logfile.write("%s\n" % ("Preparing to process Glimmer calls"))
 logfile.write("%s%s\n" % ("GLIMMER_CALLS is ",GLIMMER_CALLS))
 if GLIMMER_CALLS:
-    if PHATE_PROGRESS == 'True':
+    if PHATE_PROGRESS:
         print("phate_genecallPhage says, running Glimmer.")
-    if PHATE_MESSAGES == 'True':
+    if PHATE_MESSAGES:
         print("\n########## Glimmer ##########")
     logfile.write("%s\n" % ("Processing Glimmer"))
     logfile.write("%s%s\n" % ("glimmerPath is ",glimmerPath))
@@ -434,9 +443,9 @@ else:
 logfile.write("%s\n" % ("Preparing to process Genemarks calls"))
 logfile.write("%s%s\n" % ("GENEMARKS_CALLS is ",GENEMARKS_CALLS))
 if GENEMARKS_CALLS:
-    if PHATE_PROGRESS == 'True':
+    if PHATE_PROGRESS:
         print("phate_genecallPhage says, running GeneMarkS.")
-    if PHATE_MESSAGES == 'True':
+    if PHATE_MESSAGES:
         print("\n########## GeneMarkS ##########")
     logfile.write("%s\n" % ("Processing GeneMarkS"))
 
@@ -457,9 +466,9 @@ logfile.write("%s\n" % ("Preparing to process PHANOTATE calls"))
 logfile.write("%s%s\n" % ("PHANOTATE_CALLS is ",PHANOTATE_CALLS))
 
 if PHANOTATE_CALLS:
-    if PHATE_PROGRESS == 'True':
+    if PHATE_PROGRESS:
         print("phate_genecallPhage says, running Phanotate.")
-    if PHATE_MESSAGES == 'True':
+    if PHATE_MESSAGES:
         print("########## PHANOTATE ##########")
     logfile.write("%s\n" % ("Processing PHANOTATE"))
 
@@ -483,9 +492,9 @@ logfile.write("%s%s\n" % ("customCallsCgc is ",customCallsCgc))
 
 # Custom calls must be provided in gff format. Calls need only be converted to cgc format.
 if CUSTOM_CALLS:
-    if PHATE_PROGRESS == 'True':
+    if PHATE_PROGRESS:
         print("phate_genecallPhage says, custom calls need to be converted to cgc format.")
-    if PHATE_MESSAGES == 'True':
+    if PHATE_MESSAGES:
         print("\n######## CUSTOM CALLS #########")
     try:
         errorMsg = Convert_gff2cgc(customCallsGff,customCallsCgc)
@@ -497,7 +506,7 @@ if CUSTOM_CALLS:
 
 ########## RESULTS ##########
 
-if PHATE_MESSAGES == 'True':
+if PHATE_MESSAGES:
     print("\n########## RESULTS ##########")
 logfile.write("%s\n" % ("Preparing results"))
 results.write("ID\tSTART\tSTOP\tSTRAND\tSCORE\tMETHOD\tCONTIG\n")
@@ -508,7 +517,7 @@ for gene in geneCall.geneCallList:
 results.close
 
 logfile.write("%s\n" % ("Printing tallied genecall method call counts..."))
-if PHATE_MESSAGES == 'True':
+if PHATE_MESSAGES:
     for method in callCounts:
         print((method + ": " + str(callCounts[method])))
 print()

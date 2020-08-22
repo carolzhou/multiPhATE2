@@ -99,9 +99,18 @@ p_startCodon = re.compile('atg')  # standard start codon sequence (recall: stori
 # Verbosity
 
 CLEAN_RAW_DATA  = os.environ["PHATE_CLEAN_RAW_DATA"]
-PHATE_WARNINGS  = os.environ["PHATE_PHATE_WARNINGS"]
-PHATE_MESSAGES  = os.environ["PHATE_PHATE_MESSAGES"]
-PHATE_PROGRESS  = os.environ["PHATE_PHATE_PROGRESS"]
+PHATE_WARNINGS_STRING = os.environ["PHATE_PHATE_WARNINGS"]
+PHATE_MESSAGES_STRING = os.environ["PHATE_PHATE_MESSAGES"]
+PHATE_PROGRESS_STRING = os.environ["PHATE_PHATE_PROGRESS"]
+PHATE_WARNINGS = False
+PHATE_MESSAGES = False
+PHATE_PROGRESS = False
+if PHATE_WARNINGS_STRING.lower() == 'true':
+    PHATE_WARNINGS = True
+if PHATE_MESSAGES_STRING.lower() == 'true':
+    PHATE_MESSAGES = True
+if PHATE_PROGRESS_STRING.lower() == 'true':
+    PHATE_PROGRESS = True
 
 #######################################################################################
 
@@ -162,7 +171,7 @@ class fasta(object):
         if gi != "" and int(gi) > 0: 
             giString = "gi\|" + gi + "\|"
         else:
-            if PHATE_WARNINGS == 'True':
+            if PHATE_WARNINGS:
                 print("phate_fastaSequence says, WARNING: problem with gi",str(gi))
                 return(0)
         for record in SeqIO.parse(nrLocation,"fasta"):
@@ -187,7 +196,7 @@ class fasta(object):
                     self.parentSequenceLength = len(self.parentSequence)
                 else:
                     self.parentSequenceLength = -99   #***
-                    if PHATE_WARNINGS == 'True':
+                    if PHATE_WARNINGS:
                         print("phate_fastaSequence says, WARNING: sequence not entered for parent")
             if "parentName" in list(geneData.keys()):
                 self.parentName = geneData["parentName"]
@@ -302,7 +311,7 @@ class fasta(object):
         elif headerType == 'custom':
             return ('>' + self.customHeader)
         else:
-            if PHATE_WARNINGS == 'True':
+            if PHATE_WARNINGS:
                 print("phate_fastaSequence says, WARNING: Invalid header type:", hdrType, "--Choose full, clean, trunc, short, compound, blast")
 
     def getStartCodon(self):
@@ -611,7 +620,7 @@ class multiFasta(object):
             match_string2header = re.search(searchString,fasta.header)
             if match_string2header:
                 return(fasta)
-        if PHATE_WARNINGS == 'True':
+        if PHATE_WARNINGS:
             print("phate_fastaSequence says, WARNING: Fasta not found for", searchString)
         return(0)
 
@@ -692,7 +701,7 @@ class multiFasta(object):
 
     def addFastasFromFile(self,mtype):
         if self.filename == "unknown" or self.filename == '':
-            if PHATE_WARNINGS == 'True':
+            if PHATE_WARNINGS:
                 print("phate_fastaSequence says, WARNING: First you must set the filename in addFastasFromFile()")
         else:
             fastaFile = open(self.filename,"r")

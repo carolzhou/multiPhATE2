@@ -20,7 +20,7 @@ THIS CODE IS COVERED BY THE BSD LICENSE. SEE INCLUDED FILE BSD-3.pdf FOR DETAILS
 10) PhATE now runs blastp and hmm search against the CAZy database.
 11) The Refseq Gene database is no longer supported by multiPhATE. Refseq Gene has been replaced with the VOG gene database.
 12) multiPhATE now supports parallelism using pthreads and by distributing blast+.
-13) multiPhATE uses checkpoints to re-start processing at intermediate stages of the computation (ie, after gene calling, after PhATE processing).
+13) multiPhATE uses checkpoints to re-start processing at intermediate stages of the computation (ie, after gene calling, PhATE, CGP).
 
 #### ABOUT THE MULTI-PHATE PIPELINE DRIVER
 
@@ -103,18 +103,24 @@ Here you may specify custom sequence databases for searching at the genome, gene
 If you are configuring multiPhATE to annotate at least two phage genomes, you may opt to run the CompareGeneProfiles (CGP) and Genomics modules by setting CGP to 'true'. For meaningful results, it is  recommended that relatively similar genomes be compared using these analyses. Although there is no theoretical limit to the number of genome that can be compared, it is recommended that the user run at least three, and it is advised to test drive this analysis with up to a dozen or so genomes to determine how much compute time and memory might be required, before running very large numbers of genomes (as the algorithm is n2).
 
 10) Parallelism.
-multiPhATE can be parallelized in several ways. First, the user may specify the number of blast threads to be requested when running blast+. Next, multiPhATE suppors pthreads. How this may be handled is hardware dependent, but on most systems you should be able to select "ALL" to maximize usage of threads. Using threads will parallelize the PhATE annotation processes launched by multiPhATE. Lastly, any number of multiPhATE processes may be distributed across a compute cluster. In this case, the user must prepare the hardware-dependent scripts to launch the jobs. Selecting HPC='true' will turn off multiPhATE-level logging, so that the various multiPhATE processes do not compete for IO and clash in writing to a common log.
+multiPhATE can be parallelized in several ways. First, the user may specify the number of blast threads to be requested when running blast+. Next, multiPhATE suppors pthreads. How this may be handled is hardware dependent, but on most systems you should be able to select "ALL" to maximize usage of threads. Using threads will parallelize the PhATE annotation processes launched by multiPhATE. Lastly, any number of multiPhATE processes may be distributed across a compute cluster. In this case, the user must prepare the hardware-dependent scripts to launch the jobs. Selecting HPC='true' will turn off multiPhATE-level logging, so that the various multiPhATE processes do not compete for IO and clash in writing to a common log. Note that when running multiPhATE2 in this manner on a compute cluster (HPC mode), the CGP/Genomics modules should not be run until all PhATE processes have returned, which means that it will be necessary for the user to verify completion of PhATE processes, and impose a checkpoint at CGP in order to resume processing of the remainder of the code (see section on checkpointing). 
 
-11) Verbosity:
+11) Checkpointing.
+This advanced feature allows the user to re-start computations at 3 stages in multiPhATE2 processing. Select the point at which you wish to re-start computations by setting that checkpoint to 'true'. See the section on checkpointing (above) for more information about when to use checkpointing.
+
+12) Verbosity:
 You may up- or down-regulate verbosity in the multiPhate.config file, under "# VERBOSITY". This includes an option to clean the (voluminous) raw blast and hmm search data from the output directories. It is suggested that clean_raw_data, and phate_progress be set to 'true'. The phate_warnings and phate_messages, when set to 'true', will generate voluminous output; set these to 'true' only when trouble-shooting the pipeline. 
 
-12) See INSTALLATION AND SET-UP CHECKLIST below.
+Lastly, see INSTALLATION AND SET-UP CHECKLIST below.
 
 
 #### PIPELINE EXECUTION
 
 Run the PhATE pipeline at the command line by passing your multiPhate.config file as an argument to the multiPhate.py pipeline driver script, as follows: `$ python multiPhate.py multiPhate.config`
 
+#### HOW TO USE CHECKPOINTING
+
+Checkpointing is provided at three stages of multiPhATE2 processing: 1) After completion of gene finding and before PhATE processing (phate checkpointing), and 2) After completion of PhATE annotation, before execution of the CGP module (CGP checkpointing), and after CGP processing and before the Genomics module (genomics checkpointing). In order for annotation checkpointing to work, the PhATE pipeline must have successfully completed for all input genomes. Likewise, in order for CGP checkpointing to work, the genome.fasta files must exist in the PipelineInput/ folder, and the phate_sequenceAnnotation.gff files must exist in the PipelineOutput/ folder for all input genomes, and before Genomics checkpointing, all Results_nnn directories created by the CGP module must be in place. Invoking checkpointing involves setting the checkpoint parameters in your multiPhATE.config file:  turn CHECKPOINT_PHATE, CHECKPOINT_CGP, or CHECKPOINT_GENOMICS to 'true'. Checkpointing can be used at any stage when troubleshooting multiPhATE2; checkpointing allows the user to skip earlier stages of processing (saving time), and troubleshooting a later stage. In addition, checkpointing at the Genomics module allows the user to run the module any number of times, using the same prerequisite data outputs, in order to modify parameters that specificy stringency with which gene correspondences are determined, and, ultimately, a core genome is computed. Thus, if checkpointing at the Genomics module, the genomics.config file can be modified to override default sequence identity and coverage values. To re-run CGP with custom parameters, invoke multiPhATE in the usual manner:  python multiPhate.py <yourRunName>.config.
 
 #### SUPPORTING DATABASES
 
@@ -291,6 +297,7 @@ Note that genemarks and phanotate are not available as conda packages, so these 
 * The dbPrep_getDBs.py script can become out of date as 3rd party database providers modify their data or its location. Kindly notify the developers by submitting an issue on the github project page if you encounter problems in downloading with dbPrep_getDBs.py.
 * Are you installing on a remote server and your console keeps timing out and getting disconnected before dbPrep_getDBs.py finishes a download? The script can be modified as a workaround for this problem. Edit the dbPrep_getDBs.py file as follows: set INTERACTIVE to False, and set REMOTE to True and VERBOSE to True (note: these words are case sensitive). Running dbPrep_getDBs.py in REMOTE mode will require that you pre-set the databases you want downloaded. Scroll down to the comment that says, "Pre-set download instructions; skip user input", and set the databases you want to True.
 * In running blast with fewer than 5 hits, you will see the following warning message:  "Examining 5 or more matches is recommended". This message is generated by recent versions of blast+. You can ignore this message, or simply set the number of matches to 5 or more in your config file.
+* Issue:  The default settings in the Genomics module are to stringent for my genome set. Solution:  Use checkpointing (see above) to re-run the Genomics analysis. You may input a configuration file (genomics.config) to set identity and coverage values. Re-run any number of times, until you are satisfied with the results of the Genomics module.
 
 #### RUNNING PHATE AS AN "EMBARASSINGLY PARALLEL" CODE
 

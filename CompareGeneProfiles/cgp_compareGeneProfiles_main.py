@@ -6,7 +6,7 @@
 # compareGeneProfiles_main.py
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last update: 05 June 2020
+# Last update: 20 August 2020
 #
 # This program compares the gene calls from 2 genomes and identifies genes that 
 # match, are similar, or are unique in each genome. This code is a re-write of

@@ -5,7 +5,7 @@
 # cgp_driver.py - command-line version 1.0.0 (/multiPhATE2/)
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last update: 12 April 2020
+# Last update: 21 August 2020
 #
 # This script inputs a config file, cgpNxN.config, which lists the
 # base directory containing input fasta and annotation files for
@@ -61,7 +61,7 @@ if PHATE_WARNINGS_STRING.lower() == 'true':
 # Set environmental variables for CGP's dependent codes
 os.environ["CGP_CODE_BASE_DIR"] = CODE_BASE_DIR
 
-ACCEPTABLE_ARG_COUNT = (2,) #  
+ACCEPTABLE_ARG_COUNT = (3,) #  
 
 HELP_STRING = "This code is a wrapper for running the compareGeneProfiles pipeline over several genome comparisons.\nInput the fully qualified pathname to the project directory where the code should execute.\n"
 
@@ -85,6 +85,7 @@ LOGFILE.write("%s%s\n" % ("Begin log file at ",today.read()))
 in_configFilename    = "cgpNxN.config"
 cgpm_configFilename = "cgp_wrapper.config"
 cgpm_configFile = ""
+cgpThreads = 0  # By default, no parallel execution of CGP code
 
 ##### Get command-line arguments
 if PHATE_PROGRESS:
@@ -105,6 +106,8 @@ if argCount in ACCEPTABLE_ARG_COUNT:
         exit(0)
     # If not a help string, argument should be absolute path to input configuration file 
     in_configFile = sys.argv[1]
+    if len(sys.argv) >= 3:
+        cgpThreads    = sys.argv[2]
 else:
     print (USAGE_STRING)
     exit(0)
@@ -138,7 +141,7 @@ today = os.popen('date')
 LOGFILE.write("%s%s\n" % ("Executing Step 2 at ",today.read()))
 if PHATE_PROGRESS:
     print ("cgp_driver says, Executing Step 2...")
-command = "python " + COMPARE_GENE_PROFILES_WRAPPER_CODE + " " + projectDirectory
+command = "python " + COMPARE_GENE_PROFILES_WRAPPER_CODE + " " + projectDirectory + ' ' + cgpThreads
 LOGFILE.write("%s%s\n" % ("Running command: ",command))
 os.system(command)
 if PHATE_PROGRESS:

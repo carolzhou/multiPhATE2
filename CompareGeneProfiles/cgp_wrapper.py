@@ -5,7 +5,7 @@
 # CGPMwrapper.py (/multiPhATE2/)
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last Update: 12 April 2020
+# Last Update: 21 August 2020
 #
 # This script uses a config file to run compareGeneProfiles.py
 # using the designated input files.  Specifically, the config file
@@ -55,6 +55,7 @@
 import sys, os, re, string, copy
 import time
 from subprocess import call
+from multiprocessing import Pool
 
 ##### CONFIGURABLES
 CODE_BASE_DIR = os.environ["CGP_CODE_BASE_DIR"]
@@ -84,7 +85,7 @@ LOGFILE.write("%s\n" % ("Begin CGPMwrapper log file"))
 
 #### CONSTANTS
 
-ACCEPTABLE_ARG_COUNT = (2,) # "help" or user project directory absolute path expected
+ACCEPTABLE_ARG_COUNT = (3,) # "help" or user project directory absolute path expected
 
 HELP_STRING = "This code is a wrapper for conveniently running compareGeneProfiles_main.py over several genome comparisons.\n"
 
@@ -96,6 +97,8 @@ USAGE_STRING = "Usage:  cgp_wrapper.py <userDirectory>"
 
 projectDirectory = ""  # user's project directory, passed by calling code (i.e., CGPMdriver.py)
 configFile = "cgp_wrapper.config"  # needs to be prepended with user's project directory
+cgpThreads = 0
+THREADING_ON = False
 
 ##### Get command-line arguments
 
@@ -120,9 +123,18 @@ if argCount in ACCEPTABLE_ARG_COUNT:
     else:
         projectDirectory = sys.argv[1]
         LOGFILE.write("%s%s\n" % ("Project directory is ", projectDirectory))
+        if len(sys.argv) >= 3:
+            cgpThreads = sys.argv[2]
+            print("TESTING: cgpThreads parameter value is",cgpThreads)
 else:
     print (USAGE_STRING)
     exit(0)
+
+##### Threading
+print("TESTING: before converting cgpThreads:",cgpThreads)
+
+if int(float(cgpThreads)) >= 1:
+    THREADING_ON = True
 
 ##### Parse config file; construct lists of BASE_DIRS and FILES
 
@@ -168,27 +180,55 @@ for i in list(range(0, numLines)):
 CONFIG_FILE.close()
 LOGFILE.write("%s%s\n" % ("inFileList is:",inFileList))
 
+##### Threading method 
+def phate_threaded(command):
+    print(f'cgp_wrapper says, Running {command} on PID {os.getpid()}')
+    result = os.system(command)
+
 ##### For each set, execute compareGeneProfiles_main.py
 
 currentTime = int(time.time())
 LOGFILE.write("%s%s\n" % ("Executing compareGeneProfiles_main.py at ",currentTime))
 if PHATE_PROGRESS:
     print ("cgp_wrapper says, Executing compareGeneProfiles_main.py....")
-count = 0
-for fileSet in inFileList:
-    count += 1
-    directory = fileSet["dir"]
-    genome1   = fileSet["g1"]; genome1 = os.path.join(directory, genome1)  # Need to prepend project dir to get full path
-    genome2   = fileSet["g2"]; genome2 = os.path.join(directory, genome2)
-    annot1    = fileSet["a1"]; annot1  = os.path.join(directory, annot1)
-    annot2    = fileSet["a2"]; annot2  = os.path.join(directory, annot2)
-    LOGFILE.write("%s\n" % ("Calling compareGeneProfiles_main.py with the following input parameters:\n"))
-    LOGFILE.write("%s%s\n" % ("-g1 genome1: ",genome1))
-    LOGFILE.write("%s%s\n" % ("-g2 genome2: ",genome2))
-    LOGFILE.write("%s%s\n" % ("-a1 annot1:  ",annot1))
-    LOGFILE.write("%s%s\n" % ("-a2 annot2:  ",annot2))
-    LOGFILE.write("%s%s\n" % ("-d  userDir: ",projectDirectory))
-    call(["python",COMPARE_GENE_PROFILES_CODE,"-g1",genome1,"-g2",genome2,"-a1",annot1,"-a2",annot2,"-d",projectDirectory])
+
+if THREADING_ON:
+    count = 0; commandList = []
+    for fileSet in inFileList:
+        count += 1
+        directory = fileSet["dir"]
+        genome1   = fileSet["g1"]; genome1 = os.path.join(directory, genome1)  # Need to prepend project dir to get full path
+        genome2   = fileSet["g2"]; genome2 = os.path.join(directory, genome2)
+        annot1    = fileSet["a1"]; annot1  = os.path.join(directory, annot1)
+        annot2    = fileSet["a2"]; annot2  = os.path.join(directory, annot2)
+        #LOGFILE.write("%s\n" % ("Calling compareGeneProfiles_main.py with the following input parameters:\n"))
+        #LOGFILE.write("%s%s\n" % ("-g1 genome1: ",genome1))
+        #LOGFILE.write("%s%s\n" % ("-g2 genome2: ",genome2))
+        #LOGFILE.write("%s%s\n" % ("-a1 annot1:  ",annot1))
+        #LOGFILE.write("%s%s\n" % ("-a2 annot2:  ",annot2))
+        #LOGFILE.write("%s%s\n" % ("-d  userDir: ",projectDirectory))
+        nextCommand = "python " + COMPARE_GENE_PROFILES_CODE + " -g1 " + genome1 + " -g2 " + genome2 + " -a1 " + annot1 + " -a2 " + annot2 + " -d " + projectDirectory
+        commandList.append(nextCommand)
+        #call(["python",COMPARE_GENE_PROFILES_CODE,"-g1",genome1,"-g2",genome2,"-a1",annot1,"-a2",annot2,"-d",projectDirectory])
+    pool = Pool(int(cgpThreads))
+    pool.map(phate_threaded, commandList)
+    pool.close() 
+else:
+    count = 0
+    for fileSet in inFileList:
+        count += 1
+        directory = fileSet["dir"]
+        genome1   = fileSet["g1"]; genome1 = os.path.join(directory, genome1)  # Need to prepend project dir to get full path
+        genome2   = fileSet["g2"]; genome2 = os.path.join(directory, genome2)
+        annot1    = fileSet["a1"]; annot1  = os.path.join(directory, annot1)
+        annot2    = fileSet["a2"]; annot2  = os.path.join(directory, annot2)
+        LOGFILE.write("%s\n" % ("Calling compareGeneProfiles_main.py with the following input parameters:\n"))
+        LOGFILE.write("%s%s\n" % ("-g1 genome1: ",genome1))
+        LOGFILE.write("%s%s\n" % ("-g2 genome2: ",genome2))
+        LOGFILE.write("%s%s\n" % ("-a1 annot1:  ",annot1))
+        LOGFILE.write("%s%s\n" % ("-a2 annot2:  ",annot2))
+        LOGFILE.write("%s%s\n" % ("-d  userDir: ",projectDirectory))
+        call(["python",COMPARE_GENE_PROFILES_CODE,"-g1",genome1,"-g2",genome2,"-a1",annot1,"-a2",annot2,"-d",projectDirectory])
 
 currentTime = int(time.time())
 LOGFILE.write("%s%s%s%s\n" % ("Execution complete. ",count," jobs completed at ",currentTime))

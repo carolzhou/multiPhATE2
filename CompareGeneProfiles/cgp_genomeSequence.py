@@ -1,7 +1,7 @@
 ###############################################################
 # Module: cgp_genomeSequence.py
 # Programmer: Carol L. Ecale Zhou
-# Last Update: 15 August 2020
+# Last Update: 20 August 2020
 # 
 # Module comprising data structures for organizing genome information
 # Note:  EMBOSS messes with fasta headers; therefore, I am putting minimal info in the header and using only '/'
@@ -55,10 +55,10 @@ PHATE_PROGRESS_STRING   = os.environ["PHATE_PHATE_PROGRESS"]
 PHATE_MESSAGES_STRING   = os.environ["PHATE_PHATE_MESSAGES"]
 PHATE_WARNINGS_STRING   = os.environ["PHATE_PHATE_WARNINGS"]
 
-CLEAN_RAW_DATA = 'False'
-PHATE_PROGRESS = 'False'
-PHATE_MESSAGES = 'False'
-PHATE_WARNINGS = 'False'
+CLEAN_RAW_DATA = False
+PHATE_PROGRESS = False
+PHATE_MESSAGES = False
+PHATE_WARNINGS = False
 
 if CLEAN_RAW_DATA_STRING.lower() == 'true':
     CLEAN_RAW_DATA = True
