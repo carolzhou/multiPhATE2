@@ -2,7 +2,7 @@
 # Module: phate_fastaSequence.py
 # Programmer: Carol L. Ecale Zhou
 #
-# Date of last update:  21 July 2020
+# Date of last update:  15 August 2020
 # 
 # Module containing classes and methods for representing a multi-fasta sequence and associated methods
 # Classes and methods: 
@@ -361,10 +361,10 @@ class fasta(object):
         print("Order in multi-fasta list:", self.order)
         print("Truncation:               ", self.truncation)
         print("Start codon count:        ", self.startCodonCount)
-        print("Codon start locations:", end=' ')
+        print("Codon start locations:")
         if self.codonStartLocs:
             for location in self.codonStartLocs:
-                print("   ", location, end=' ')
+                print("   ", location)
             print('\n')
         else:
             print("none")

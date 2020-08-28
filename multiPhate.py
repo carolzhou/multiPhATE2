@@ -37,10 +37,12 @@ import datetime
 import time
 
 TEST_NUMBER = 5 
+MESSAGE = ": specialty DBs + NCBIvirProt; all searches; 0 threads; 1 blast threads; 9 genomes"
+
 timeLog = "./time.log"
 TIME_LOG = open(timeLog,'a')
 startTime = datetime.datetime.now()
-TIME_LOG.write("%s%s%s\n" % ("TEST_NUMBER ",TEST_NUMBER,": specialty DBs + NCBIvirProt; all searches; 0 threads; 1 blast thread; 9 genomes"))
+TIME_LOG.write("%s%s%s\n" % ("TEST_NUMBER ",TEST_NUMBER,MESSAGE))
 TIME_LOG.write("%s%s\n" % ("Starting multiPhate processing at ",startTime))
 timeStart = time.time()
 
