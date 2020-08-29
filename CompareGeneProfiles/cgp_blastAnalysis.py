@@ -368,6 +368,11 @@ class homology(object):  # holds comparative information between 2 gene/protein 
             g2length     = seqLength2[hit.subjectHeader]
             g1Contig     = seqContig1[hit.queryHeader]
             g2Contig     = seqContig2[hit.subjectHeader]
+            if g1length == 0 or g2length == 0:
+                print("TESTING: Zero length encountered.")
+                print("TESTING: g1Contig is",g1Contig,", g1length is",g1length,", g2Contig is",g2Contig,", g2length is",g2length)
+                print("TESTING: hit is:")
+                hit.printAll()
             (g1coverage,g2coverage) = hit.computeCoverage(g1length,g2length)
             sortPosition = qStart   # start position of query gene/protein, relative to genome1
             hitLine = [sortPosition,"genome1_mutual",hit.queryStart,hit.queryEnd,hit.subjectStart,hit.subjectEnd,hit.identity,hit.evalue,"query",hit.queryHeader,g1Contig,qAnnotations,qStart,qEnd,qStrand,"subject",hit.subjectHeader,g2Contig,sAnnotations,sStart,sEnd,sStrand,g1coverage,g2coverage,hit.alignmentLength,hit.gapopens,g1segment,g1length,g2segment,g2length]

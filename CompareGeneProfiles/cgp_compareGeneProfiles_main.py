@@ -183,6 +183,8 @@ reportFile   = ""     # Contains binary genome comparison data
 summaryFile  = ""     # Contains summary data pertaining to binary comparison
 paralogFile  = ""     # Contains list of paralogs detected
 logFile      = ""     # script log
+tempGeneFile        = ""
+tempTranslationFile = ""
 
 errorLog = os.path.join(CODE_BASE_DIR, "compareGeneProfiles_main.err") # error log (records prior to script main body)
 
@@ -401,8 +403,14 @@ def Translate2protein(kvargs):
     translation = ""
     geneSequence = ""
     geneticCode = BACTERIAL_CODE
-    tempGeneFile        = "./tempGeneSequence.txt"
-    tempTranslationFile = "./tempTranslation.txt"
+    #if SERVER:
+    #    OUT_DIR = os.path.join(files["projectDirectory"], "Results_" + dateTime + "/")  #
+    #else:
+    #    OUT_DIR = "./"
+    #tempGeneFile        = "./tempGeneSequence.txt"
+    #tempTranslationFile = "./tempTranslation.txt"
+    tempGeneFile        = os.path.join(OUT_DIR,"tempGeneSequence.txt")
+    tempTranslationFile = os.path.join(OUT_DIR,"tempTranslation.txt")
     if isinstance(kvargs,dict):
         if "geneSequence" in list(kvargs.keys()):
             geneSequence = kvargs["geneSequence"]
@@ -416,6 +424,7 @@ def Translate2protein(kvargs):
         print("cgp_compareGeneProfiles_main says, ERROR: Cannot open temporary gene file,",tempGeneFile)
         return "ERROR" 
     command = PHATE_EMBOSS_HOME + "transeq" + " -sequence " + tempGeneFile + " -outseq " + tempTranslationFile + " -table " + str(geneticCode) 
+    print("TESTING: Translating. command is,",command)
     result = os.system(command)
     PROT_H = open(tempTranslationFile,"r")
     fLines = PROT_H.read().splitlines()
@@ -551,8 +560,8 @@ if PHATE_PROGRESS:
     print ("  baseDir is", files["baseDir"])
 
 # Prepend file names with baseDir; ""/no change if not provided:
-files["genomeFile1"] = os.path.join(files["baseDir"], files["genomeFile1"])
-files["genomeFile2"] = os.path.join(files["baseDir"], files["genomeFile2"])
+files["genomeFile1"]     = os.path.join(files["baseDir"], files["genomeFile1"])
+files["genomeFile2"]     = os.path.join(files["baseDir"], files["genomeFile2"])
 files["annotationFile1"] = os.path.join(files["baseDir"], files["annotationFile1"])
 files["annotationFile2"] = os.path.join(files["baseDir"], files["annotationFile2"])
 
@@ -585,19 +594,26 @@ if fileError:
 dateTime = str(datetime.datetime.now().time()) # need time down to sub-seconds 
 today    = os.popen('date')
 if SERVER:
-    OUT_DIR = os.path.join(files["projectDirectory"], "Results_" + dateTime + "/")  #
+    #OUT_DIR = os.path.join(files["projectDirectory"], "Results_" + dateTime + "/")  #
+    newTime = re.sub(':','',dateTime)
+    OUT_DIR = os.path.join(files["projectDirectory"], "Results_" + newTime + "/")  #
 else:
     OUT_DIR = "./"
 
 if PHATE_MESSAGES:
     print ("cgp_compareGeneProfiles_main says, Making directory", OUT_DIR)
+
 command = "mkdir " + OUT_DIR
 os.system(command)
-outFile      = os.path.join(OUT_DIR, OUT_FILE)     # Contains misc output
-reportFile   = os.path.join(OUT_DIR, REPORT_FILE)  # Contains binary genome comparison data
-summaryFile  = os.path.join(OUT_DIR, SUMMARY_FILE) # Contains summary data pertaining to binary comparison
-paralogFile  = os.path.join(OUT_DIR, PARALOG_FILE) # Contains list of paralogs detected
-logFile      = os.path.join(OUT_DIR, LOG_FILE)
+outFile             = os.path.join(OUT_DIR, OUT_FILE)     # Contains misc output
+reportFile          = os.path.join(OUT_DIR, REPORT_FILE)  # Contains binary genome comparison data
+summaryFile         = os.path.join(OUT_DIR, SUMMARY_FILE) # Contains summary data pertaining to binary comparison
+paralogFile         = os.path.join(OUT_DIR, PARALOG_FILE) # Contains list of paralogs detected
+logFile             = os.path.join(OUT_DIR, LOG_FILE)
+tempGeneFile        = os.path.join(OUT_DIR,"tempGeneSequence.txt")
+tempTranslationFile = os.path.join(OUT_DIR,"tempTranslation.txt")
+print("TESTING: tempGeneFile is",tempGeneFile)
+print("TESTING: tempTranslationFile is",tempTranslationFile)
 
 LOG          = open(logFile,"w")
 LOG.write("%s%s\n" % ("Begin script log ",today.read()))
@@ -605,7 +621,7 @@ LOG.write("%s%s\n" % ("Result directory suffix is ",dateTime))
 
 # Record to log and keep in touch with user 
 
-LOG.write("%s\n" % ("Parameters are: "))
+LOG.write("%s\n"   % ("Parameters are: "))
 LOG.write("%s%s\n" % ("genome file #1: ",files["genomeFile1"]))
 LOG.write("%s%s\n" % ("genome file #2: ",files["genomeFile2"]))
 LOG.write("%s%s\n" % ("annotation file #1: ",files["annotationFile1"]))

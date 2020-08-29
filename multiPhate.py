@@ -5,7 +5,7 @@
 # Program Title:  multiPhate2.py (/multiPhate2/)
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last Update:  21 August 2020
+# Last Update:  28 August 2020
 #
 # Description: Script multiPhate.py runs an annotation pipeline (phate_runPipeline.py) over any
 #    number of genomes specified in the user's input configuration file (multPhate.config). It then
@@ -36,8 +36,8 @@
 import datetime
 import time
 
-TEST_NUMBER = 5 
-MESSAGE = ": specialty DBs + NCBIvirProt; all searches; 0 threads; 1 blast threads; 9 genomes"
+TEST_NUMBER = '5_min'
+MESSAGE = ": Phantome; blastp; 9 phate threads; 2 blast threads; 36 cgp threads; 9 genomes"
 
 timeLog = "./time.log"
 TIME_LOG = open(timeLog,'a')

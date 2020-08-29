@@ -5,7 +5,7 @@
 # CGPMwrapper.py (/multiPhATE2/)
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last Update: 21 August 2020
+# Last Update: 28 August 2020
 #
 # This script uses a config file to run compareGeneProfiles.py
 # using the designated input files.  Specifically, the config file
@@ -58,8 +58,8 @@ from subprocess import call
 from multiprocessing import Pool
 
 ##### CONFIGURABLES
-CODE_BASE_DIR = os.environ["CGP_CODE_BASE_DIR"]
-PHATE_PIPELINE_OUTPUT_DIR = os.environ["PHATE_PIPELINE_OUTPUT_DIR"]
+CODE_BASE_DIR              = os.environ["CGP_CODE_BASE_DIR"]
+PHATE_PIPELINE_OUTPUT_DIR  = os.environ["PHATE_PIPELINE_OUTPUT_DIR"]
 COMPARE_GENE_PROFILES_CODE = os.path.join(CODE_BASE_DIR, "cgp_compareGeneProfiles_main.py")  # use current stable version or modify constant
 
 # Set messaging booleans
@@ -132,9 +132,9 @@ else:
 
 ##### Threading
 print("TESTING: before converting cgpThreads:",cgpThreads)
-
 if int(float(cgpThreads)) >= 1:
     THREADING_ON = True
+print("TESTING: THREADING_ON is",THREADING_ON)
 
 ##### Parse config file; construct lists of BASE_DIRS and FILES
 
@@ -172,7 +172,7 @@ for i in list(range(0, numLines)):
         nextFiles["a1"] = fLines[i]
     elif i%7 == 4:
         nextFiles["a2"] = fLines[i]
-    elif i%7== 5:
+    elif i%7 == 5:
         nextFiles["cdir"] = fLines[i]
     elif i%7 == 6:
         inFileList.append(nextFiles)
@@ -181,7 +181,7 @@ CONFIG_FILE.close()
 LOGFILE.write("%s%s\n" % ("inFileList is:",inFileList))
 
 ##### Threading method 
-def phate_threaded(command):
+def cgp_threaded(command):
     print(f'cgp_wrapper says, Running {command} on PID {os.getpid()}')
     result = os.system(command)
 
@@ -201,18 +201,11 @@ if THREADING_ON:
         genome2   = fileSet["g2"]; genome2 = os.path.join(directory, genome2)
         annot1    = fileSet["a1"]; annot1  = os.path.join(directory, annot1)
         annot2    = fileSet["a2"]; annot2  = os.path.join(directory, annot2)
-        #LOGFILE.write("%s\n" % ("Calling compareGeneProfiles_main.py with the following input parameters:\n"))
-        #LOGFILE.write("%s%s\n" % ("-g1 genome1: ",genome1))
-        #LOGFILE.write("%s%s\n" % ("-g2 genome2: ",genome2))
-        #LOGFILE.write("%s%s\n" % ("-a1 annot1:  ",annot1))
-        #LOGFILE.write("%s%s\n" % ("-a2 annot2:  ",annot2))
-        #LOGFILE.write("%s%s\n" % ("-d  userDir: ",projectDirectory))
         nextCommand = "python " + COMPARE_GENE_PROFILES_CODE + " -g1 " + genome1 + " -g2 " + genome2 + " -a1 " + annot1 + " -a2 " + annot2 + " -d " + projectDirectory
         commandList.append(nextCommand)
-        #call(["python",COMPARE_GENE_PROFILES_CODE,"-g1",genome1,"-g2",genome2,"-a1",annot1,"-a2",annot2,"-d",projectDirectory])
-    pool = Pool(int(cgpThreads))
-    pool.map(phate_threaded, commandList)
-    pool.close() 
+    cgp_pool = Pool(int(float(cgpThreads)))
+    cgp_pool.map(cgp_threaded, commandList)
+    cgp_pool.close() 
 else:
     count = 0
     for fileSet in inFileList:
