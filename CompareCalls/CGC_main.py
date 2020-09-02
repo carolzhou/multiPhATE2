@@ -6,6 +6,8 @@
 #
 # Programmer: Carol Zhou
 #
+# Last Update: 30 August 2020
+#
 # Description:  Accepts a list of input files, each comprising a set of
 #    gene calls from a given gene caller program (e.g., Prodigal, Glimmer,
 #    GeneMark, RAST, PHANOTATE, custom).  Outputs comparisons accross the gene calls. 
@@ -67,9 +69,6 @@ OUT_FILE  = CODE_BASE + ".out"  # ??? other output?
 CGC_FILE  = CODE_BASE + ".gff"  # CGC summary file - list of total gene calls in gff format
 
 infile = ""
-#LOG_H = open(LOG_FILE,"w")
-#OUT_H = open(OUT_FILE,"w")
-#CGC_H = open(CGC_FILE,"w")  # CGC summary file - list of total gene calls in gff format
 
 # Output files for CGC processing
 SUPERSET_FILE   = ""
@@ -108,8 +107,6 @@ if argCount > 1:
     # First param is log=<logFile>, 2nd is gff=<gffFile>, 3rd is super=<supersetFile>, 4th is consensus=<consensusFile>
     # remaining params are genecall files to compare
     if PHATE_PIPELINE:
-        #LOG_H.close()  # close default log; open log in designated subdir
-        #CGC_H.close()  # close default cgc out file; open cgc out file in designated subdir
         if argCount > 5:
             match_log        = re.search(p_log,        sys.argv[1])
             match_cgc        = re.search(p_cgc,        sys.argv[2])
@@ -294,7 +291,6 @@ LOG_H.write("%s\n" % ("Printing gene-call superset, consensus, and common_core i
 if PHATE_PROGRESS:
     print("CGC_main says, printing GFF formatted gene-call file....")
 
-#compareGCs.PrintGenecalls2file_gff(GFF,"superset")
 compareGCs.PrintGenecalls2file_cgc(SUPERSET_H,"superset")
 compareGCs.PrintGenecalls2file_cgc(CONSENSUS_H,"consensus")
 compareGCs.PrintGenecalls2file_cgc(COMMONCORE_H,"common_core")

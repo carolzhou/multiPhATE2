@@ -2,7 +2,7 @@
 # Module: phate_annotation.py
 # Programmer: Carol L. Ecale Zhou
 #
-# Latest update: 20 August 2020
+# Latest update: 30 August 2020
 #
 # Description: Module containing classes and methods for representing annotation results from various sources 
 #
@@ -57,7 +57,7 @@ PVOGS_BASE_DIR       = os.environ["PHATE_PVOGS_BASE_DIR"]
 VOGS_BASE_DIR        = os.environ["PHATE_VOGS_BASE_DIR"]
 CAZY_ANNOTATION_PATH = os.environ["PHATE_CAZY_ANNOTATION_PATH"]
 VOG_ANNOTATION_FILE  = os.environ["PHATE_VOG_ANNOTATION_FILE"]
-VOG_HEADERS_FILE     = os.environ["PHATE_VOG_PROTEIN_HEADERS_FILE"]
+VOG_HEADERS_FILE     = os.environ["PHATE_VOG_PROTEIN_HEADER_FILE"]
 
 # Verbosity
 CLEAN_RAW_DATA = os.environ["PHATE_CLEAN_RAW_DATA"]
@@ -693,10 +693,6 @@ class annotationRecord(object):
         for annot in self.annotationList:
             annotationString += annot
             annotationString += ' | '
-        #tabLine = self.source + '\t' + self.method + '\t' + self.annotationType + '\t' + self.category + '\t'
-        #tabLine += str(self.start) + '-' + str(self.end) + '/' + self.strand + '\t'
-        #tabLine += self.name + '\t' + self.description + '\t' + annotationString
-        #print(tabLine)
         print("source:",self.source,"method:",self.method,"annotationType:",self.annotationType,"category:",self.category)
         print("start:",self.start,"end:",self.end,"strand:",self.strand,"name:",self.name,"description:",self.description)
         print("annotationString:",annotationString)

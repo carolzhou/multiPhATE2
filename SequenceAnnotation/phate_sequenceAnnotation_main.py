@@ -10,7 +10,7 @@
 #
 # Programmer: CEZhou
 #
-# Latest Update: 20 August 2020
+# Latest Update: 30 August 2020
 # Version 1.5
 #
 ################################################################
@@ -89,10 +89,7 @@ REFSEQ_GENE_BLAST_HOME        = os.environ["PHATE_REFSEQ_GENE_BLAST_HOME"]
 PVOGS_BASE_DIR                = os.environ["PHATE_PVOGS_BASE_DIR"]
 PVOGS_BLAST_HOME              = os.environ["PHATE_PVOGS_BLAST_HOME"]
 VOGS_BASE_DIR                 = os.environ["PHATE_VOGS_BASE_DIR"]
-VOGS_BLAST_HOME               = os.environ["PHATE_VOGS_BLAST_HOME"]
-#VOG_GENE_BASE_DIR             = os.environ["PHATE_VOG_GENE_BASE_DIR"]
 VOG_GENE_BLAST_HOME           = os.environ["PHATE_VOG_GENE_BLAST_HOME"]
-#VOG_PROTEIN_BASE_DIR          = os.environ["PHATE_VOG_PROTEIN_BASE_DIR"]
 VOG_PROTEIN_BLAST_HOME        = os.environ["PHATE_VOG_PROTEIN_BLAST_HOME"]
 PHANTOME_BASE_DIR             = os.environ["PHATE_PHANTOME_BASE_DIR"]
 PHANTOME_BLAST_HOME           = os.environ["PHATE_PHANTOME_BLAST_HOME"]
@@ -655,24 +652,6 @@ for i in range(0,argCount):
             if match_hmmscan:
                 HMMSCAN = True       # search hmm profile dB(s) with hmm program
 
-    #if match_customDatabasePathParam:  # custom database paths and names
-    #    if i < argCount:
-    #        value = argList[i+1]
-    #        paramSet = value.split('^')
-    #        for parameter in paramSet:
-    #            match_customGenomeDBpath  = re.search(p_customGenomeDBpath,parameter)
-    #            match_customGeneDBpath    = re.search(p_customGeneDBpath,parameter)
-    #            match_customProteinDBpath = re.search(p_customProteinDBpath,parameter)
-    #            match_customHmmDBpath     = re.search(p_customHmmDBpath,parameter)
-    #            if match_customGenomeDBpath:
-    #                (tag, customGenomeDBpath, customGenomeDBname) = parameter.split(':') 
-    #            elif match_customGeneDBpath:
-    #                (tag, customGeneDBpath, customGeneDBname) = parameter.split(':')
-    #            elif match_customProteinDBpath:
-    #                (tag, customProteinDBpath,customProteinDBname) = parameter.split(':') 
-    #            elif match_customHmmDBpath:
-    #                (tag, customHmmDBpath, customHmmDBname) = parameter.split(':') 
-
 # Blast or Hmm search of blast or sequence databases
 # Set local booleans: if any one database has been selected, then user intends to process
 blastOutputDir = ''
@@ -869,7 +848,6 @@ if PHATE_MESSAGES:
     print("  protein file is", infile_protein)
     print("  genome type is", genomeType)
     print("  genome name is", genomeName)
-    #print("  contigName is", contigName)
     print("  genomeSpecies is", genomeSpecies)
     print("  blastp identity is", blastpIdentity)
     print("  blastn identity is", blastnIdentity)

@@ -6,7 +6,7 @@
 # compareGeneProfiles_main.py
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last update: 20 August 2020
+# Last update: 30 August 2020
 #
 # This program compares the gene calls from 2 genomes and identifies genes that 
 # match, are similar, or are unique in each genome. This code is a re-write of
@@ -159,6 +159,8 @@ ACCEPTABLE_ARG_COUNT = (2,3,9,11) # 2 if "help", "input", or "interactive"; 9 if
 
 GENETIC_CODE    = 11 # bacterial, by default
 BLAST_IDENTITY  = 60 
+BLASTN_IDENTITY = os.environ["CGP_BLASTN"] 
+BLASTP_IDENTITY = os.environ["CGP_BLASTP"] 
 SCORE_EDGE      = 0.05
 MAX_TARGET_SEQS = 1
 OVERHANG        = 0.25
@@ -195,8 +197,9 @@ extensionString = ""       # for capturing file extension string
 
 ##### DATA STRUCTURES
 
+# Parameters set as defaults unless assigned by user in multiphate config file (via os.environ)
 parameters = { # data structure for input to class methods; defaults as indicated
-"geneMatchIdentity"                      : 95, 
+"geneMatchIdentity"                      : os.environ["CGP_BLASTN"], #95, 
 "geneMatchCoverage"                      : 95,
 "geneSimilarityIdentity"                 : 60,
 "geneSimilarityCoverage"                 : 75,
@@ -204,7 +207,7 @@ parameters = { # data structure for input to class methods; defaults as indicate
 "domainMatchCoverage"                    : 45,
 "domainSimilarityIdentity"               : 60,
 "domainSimilarityCoverage"               : 45,
-"paralogMatchIdentity"                   : 60,  
+"paralogMatchIdentity"                   : os.environ["CGP_BLASTN"], #60,  
 "paralogMatchCoverage"                   : 60,  
 "paralogSimilarityIdentity"              : 60,
 "paralogSimilarityCoverage"              : 75,
@@ -213,14 +216,14 @@ parameters = { # data structure for input to class methods; defaults as indicate
 "paralogDomainSimilarityIdentity"        : 60,
 "paralogDomainSimilarityCoverage"        : 45,
 "proteinMatchIdentity"                   : 95, 
-"proteinMatchCoverage"                   : 95,
+"proteinMatchCoverage"                   : os.environ["CGP_BLASTP"], #95,
 "proteinSimilarityIdentity"              : 60,
 "proteinSimilarityCoverage"              : 75,
 "proteinDomainMatchIdentity"             : 95,
 "proteinDomainMatchCoverage"             : 45,
 "proteinDomainSimilarityIdentity"        : 60,
 "proteinDomainSimilarityCoverage"        : 45,
-"proteinParalogMatchIdentity"            : 60,  
+"proteinParalogMatchIdentity"            : os.environ["CGP_BLASTP"], #60,  
 "proteinParalogMatchCoverage"            : 60,  
 "proteinParalogSimilarityIdentity"       : 60,
 "proteinParalogSimilarityCoverage"       : 75,
@@ -403,12 +406,7 @@ def Translate2protein(kvargs):
     translation = ""
     geneSequence = ""
     geneticCode = BACTERIAL_CODE
-    #if SERVER:
-    #    OUT_DIR = os.path.join(files["projectDirectory"], "Results_" + dateTime + "/")  #
-    #else:
-    #    OUT_DIR = "./"
-    #tempGeneFile        = "./tempGeneSequence.txt"
-    #tempTranslationFile = "./tempTranslation.txt"
+    # Write tempe gene/translation files in specific subdirectory, to avoid clashes when running in parallel
     tempGeneFile        = os.path.join(OUT_DIR,"tempGeneSequence.txt")
     tempTranslationFile = os.path.join(OUT_DIR,"tempTranslation.txt")
     if isinstance(kvargs,dict):
@@ -424,7 +422,6 @@ def Translate2protein(kvargs):
         print("cgp_compareGeneProfiles_main says, ERROR: Cannot open temporary gene file,",tempGeneFile)
         return "ERROR" 
     command = PHATE_EMBOSS_HOME + "transeq" + " -sequence " + tempGeneFile + " -outseq " + tempTranslationFile + " -table " + str(geneticCode) 
-    print("TESTING: Translating. command is,",command)
     result = os.system(command)
     PROT_H = open(tempTranslationFile,"r")
     fLines = PROT_H.read().splitlines()
@@ -548,9 +545,9 @@ else:
 
 if SERVER:
     OUT_DIR      = os.path.join(files["projectDirectory"], OUT_DIR)
-    reportFile   = os.path.join(OUT_DIR, "compareGeneProfiles_main.report")
-    profilesFile = os.path.join(OUT_DIR, "compareGeneProfiles_main.out")
-    paralogFile  = os.path.join(OUT_DIR, "compareGeneProfiles_main.paralogs")
+    reportFile   = os.path.join(OUT_DIR, REPORT_FILE)
+    profilesFile = os.path.join(OUT_DIR, OUT_FILE)
+    paralogFile  = os.path.join(OUT_DIR, PARALOG_FILE)
     logFile      = os.path.join(OUT_DIR, LOG_FILE)
 
 if PHATE_PROGRESS:
@@ -594,8 +591,7 @@ if fileError:
 dateTime = str(datetime.datetime.now().time()) # need time down to sub-seconds 
 today    = os.popen('date')
 if SERVER:
-    #OUT_DIR = os.path.join(files["projectDirectory"], "Results_" + dateTime + "/")  #
-    newTime = re.sub(':','',dateTime)
+    newTime = re.sub(':','',dateTime) # Remove ':' from dir name (else EMBOSS has trouble)
     OUT_DIR = os.path.join(files["projectDirectory"], "Results_" + newTime + "/")  #
 else:
     OUT_DIR = "./"
@@ -612,8 +608,6 @@ paralogFile         = os.path.join(OUT_DIR, PARALOG_FILE) # Contains list of par
 logFile             = os.path.join(OUT_DIR, LOG_FILE)
 tempGeneFile        = os.path.join(OUT_DIR,"tempGeneSequence.txt")
 tempTranslationFile = os.path.join(OUT_DIR,"tempTranslation.txt")
-print("TESTING: tempGeneFile is",tempGeneFile)
-print("TESTING: tempTranslationFile is",tempTranslationFile)
 
 LOG          = open(logFile,"w")
 LOG.write("%s%s\n" % ("Begin script log ",today.read()))
@@ -903,16 +897,18 @@ if PHATE_PROGRESS:
 # Prepare parameters for blast
 
 blastArgs = {
-    "query"         : "",
-    "subject"       : "",
-    "mtype"         : "nucl",
-    "evalue"        : EVALUE, 
-    "identity"      : BLAST_IDENTITY,
-    "scoreEdge"     : SCORE_EDGE,
-    "maxTargetSeqs" : MAX_TARGET_SEQS,
-    "overhang"      : OVERHANG,
-    "outputFormat"  : OUTPUT_FORMAT, 
-    "outfile"       : ""
+    "query"          : "",
+    "subject"        : "",
+    "mtype"          : "nucl",
+    "evalue"         : EVALUE, 
+    "identity"       : BLAST_IDENTITY,
+    "blastnIdentity" : BLASTN_IDENTITY,
+    "blastpIdentity" : BLASTP_IDENTITY,
+    "scoreEdge"      : SCORE_EDGE,
+    "maxTargetSeqs"  : MAX_TARGET_SEQS,
+    "overhang"       : OVERHANG,
+    "outputFormat"   : OUTPUT_FORMAT, 
+    "outfile"        : ""
 }
 
 if PHATE_PROGRESS:
@@ -933,7 +929,7 @@ blastArgs["query"]   = files["geneFile1"]
 blastArgs["subject"] = files["geneFile2"]
 blastArgs["maxTargetSeqs"] = 1 
 outfile = OUT_DIR + files["geneFile1_root"] + "_" + files["geneFile2_root"] + "_" + "blastn_" +\
-    str(blastArgs["evalue"]) + "_" + str(blastArgs["identity"]) + ".out"
+    str(blastArgs["evalue"]) + "_" + str(blastArgs["blastnIdentity"]) + ".out"
 if PHATE_PROGRESS:
     print("cpg_compareGeneProfiles_main says, genome1-genome2 outfile is",outfile)
 blastArgs["outfile"] = outfile
@@ -951,7 +947,7 @@ blastArgs["query"]   = files["geneFile2"]
 blastArgs["subject"] = files["geneFile1"]
 blastArgs["maxTargetSeqs"] = MAX_TARGET_SEQS 
 outfile = OUT_DIR + files["geneFile2_root"] + "_" + files["geneFile1_root"] + "_" + "blastn_" +\
-    str(blastArgs["evalue"]) + "_" + str(blastArgs["identity"]) + ".out"
+    str(blastArgs["evalue"]) + "_" + str(blastArgs["blastnIdentity"]) + ".out"
 if PHATE_MESSAGES:
     print("cpg_compareGeneProfiles_main says, genome2-genome1 outfile is",outfile)
 blastArgs["outfile"] = outfile
@@ -969,7 +965,7 @@ blastArgs["query"]   = files["geneFile1"]
 blastArgs["subject"] = files["geneFile1"]
 blastArgs["maxTargetSeqs"] = PARALOG_MAX 
 outfile = OUT_DIR + files["geneFile1_root"] + "_" + files["geneFile1_root"] + "_" + "blastn_" +\
-    str(blastArgs["evalue"]) + "_" + str(blastArgs["identity"]) + ".out"
+    str(blastArgs["evalue"]) + "_" + str(blastArgs["blastnIdentity"]) + ".out"
 blastArgs["outfile"] = outfile
 files["g1_g1_blastn"] = outfile
 if BLAST_ON:
@@ -985,7 +981,7 @@ blastArgs["query"]   = files["geneFile2"]
 blastArgs["subject"] = files["geneFile2"]
 blastArgs["maxTargetSeqs"] = PARALOG_MAX 
 outfile = OUT_DIR + files["geneFile2_root"] + "_" + files["geneFile2_root"] + "_" + "blastn_" +\
-    str(blastArgs["evalue"]) + "_" + str(blastArgs["identity"]) + ".out"
+    str(blastArgs["evalue"]) + "_" + str(blastArgs["blastnIdentity"]) + ".out"
 blastArgs["outfile"] = outfile
 files["g2_g2_blastn"] = outfile
 if BLAST_ON:
@@ -1007,8 +1003,8 @@ if PROTEIN:
     blastArgs["query"]   = files["proteinFile1"]
     blastArgs["subject"] = files["proteinFile2"]
     blastArgs["maxTargetSeqs"] = MAX_TARGET_SEQS 
-    outfile = OUT_DIR + files["protFile1_root"] + "_" + files["protFile2_root"] + "_" + "blastn_" +\
-        str(blastArgs["evalue"]) + "_" + str(blastArgs["identity"]) + ".out"
+    outfile = OUT_DIR + files["protFile1_root"] + "_" + files["protFile2_root"] + "_" + "blastp_" +\
+        str(blastArgs["evalue"]) + "_" + str(blastArgs["blastpIdentity"]) + ".out"
     blastArgs["outfile"] = outfile
     files["g1_g2_blastp"] = outfile
     if BLAST_ON:
@@ -1023,8 +1019,8 @@ if PROTEIN:
     blastArgs["query"]   = files["proteinFile2"]
     blastArgs["subject"] = files["proteinFile1"]
     blastArgs["maxTargetSeqs"] = MAX_TARGET_SEQS 
-    outfile = OUT_DIR + files["protFile2_root"] + "_" + files["protFile1_root"] + "_" + "blastn_" +\
-        str(blastArgs["evalue"]) + "_" + str(blastArgs["identity"]) + ".out"
+    outfile = OUT_DIR + files["protFile2_root"] + "_" + files["protFile1_root"] + "_" + "blastp_" +\
+        str(blastArgs["evalue"]) + "_" + str(blastArgs["blastpIdentity"]) + ".out"
     blastArgs["outfile"] = outfile
     files["g2_g1_blastp"] = outfile
     if BLAST_ON:
@@ -1039,8 +1035,8 @@ if PROTEIN:
     blastArgs["query"]   = files["proteinFile1"]
     blastArgs["subject"] = files["proteinFile1"]
     blastArgs["maxTargetSeqs"] = PARALOG_MAX 
-    outfile = OUT_DIR + files["protFile1_root"] + "_" + files["protFile1_root"] + "_" + "blastn_" +\
-        str(blastArgs["evalue"]) + "_" + str(blastArgs["identity"]) + ".out"
+    outfile = OUT_DIR + files["protFile1_root"] + "_" + files["protFile1_root"] + "_" + "blastp_" +\
+        str(blastArgs["evalue"]) + "_" + str(blastArgs["blastpIdentity"]) + ".out"
     blastArgs["outfile"] = outfile
     files["g1_g1_blastp"] = outfile
     if BLAST_ON:
@@ -1055,8 +1051,8 @@ if PROTEIN:
     blastArgs["query"]   = files["proteinFile2"]
     blastArgs["subject"] = files["proteinFile2"]
     blastArgs["maxTargetSeqs"] = PARALOG_MAX 
-    outfile = OUT_DIR + files["protFile2_root"] + "_" + files["protFile2_root"] + "_" + "blastn_" +\
-        str(blastArgs["evalue"]) + "_" + str(blastArgs["identity"]) + ".out"
+    outfile = OUT_DIR + files["protFile2_root"] + "_" + files["protFile2_root"] + "_" + "blastp_" +\
+        str(blastArgs["evalue"]) + "_" + str(blastArgs["blastpIdentity"]) + ".out"     #*** But blastp does not accept identity parameter !!!
     blastArgs["outfile"] = outfile
     files["g2_g2_blastp"] = outfile
     if BLAST_ON:

@@ -5,7 +5,7 @@
 # CGC_parser.py
 #
 # Programmer:  Carol Zhou
-# Last update:  07 August 2020
+# Last update:  30 August 2020
 #
 # Description:  This code inputs the name of a gene caller plus
 #    the gene-caller's output file, and outputs a properly formatted
@@ -265,7 +265,6 @@ def ProcessGenemark(fLines,OUT):
                 return
             if contig == '':
                 contig = 'unknown'  # Contig name may be absent in input file
-            #TMPFILE.write("%s\t%s\t%s\t%s\t%s\t%s\t%si\t%s\n" % (geneNo,strand,leftEnd,rightEnd,length,contig,protein))
             if USER_OUT_PROVIDED:
                 USER_OUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (geneNo,strand,leftEnd,rightEnd,length,contig,protein))
             else:
@@ -280,8 +279,7 @@ def ProcessGlimmer(fLines,OUT):
     p_contigLine = re.compile('^>(.*)')
 
     if GLIMMER3:
-        #p_dataLine   = re.compile('orf(\d+)\s+(\d+)\s+(\d+)\s+([+-])\d\s+([\d\.]+)')
-        p_dataLine   = re.compile('orf(\d+)\s+(\d+)\s+(\d+)\s+([+-])\d\s+([\d\.]+)')
+        p_dataLine = re.compile('orf(\d+)\s+(\d+)\s+(\d+)\s+([+-])\d\s+([\d\.]+)')
     else:
         p_dataLine = re.compile('\s+(\d+)\s+(\d+)\s+(\d+)\s+\[([+-])\d\sL=\s*(\d+)\sr=.*\]') 
 

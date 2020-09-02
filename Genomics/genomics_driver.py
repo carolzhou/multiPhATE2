@@ -10,7 +10,7 @@
 #
 # Programmer:  C. E. Zhou
 #
-# Latest update:  05 May 2020
+# Latest update:  30 August 2020
 # multiPhATE2 v. 1.5
 #
 ########################################################################################
@@ -46,9 +46,9 @@ if PHATE_PROGRESS_STRING.lower() == 'true':
     PHATE_PROGRESS = True
 
 # Override
-PHATE_PROGRESS = True
-PHATE_MESSAGES = True
-PHATE_WARNINGS = True
+#PHATE_PROGRESS = True
+#PHATE_MESSAGES = True
+#PHATE_WARNINGS = True
 
 # Environmental Variables
 GENOMICS_RESULTS_DIR = os.environ["PHATE_GENOMICS_RESULTS_DIR"]

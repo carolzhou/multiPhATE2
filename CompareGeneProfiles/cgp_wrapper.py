@@ -125,16 +125,14 @@ if argCount in ACCEPTABLE_ARG_COUNT:
         LOGFILE.write("%s%s\n" % ("Project directory is ", projectDirectory))
         if len(sys.argv) >= 3:
             cgpThreads = sys.argv[2]
-            print("TESTING: cgpThreads parameter value is",cgpThreads)
+            #print("TESTING: cgpThreads parameter value is",cgpThreads)
 else:
     print (USAGE_STRING)
     exit(0)
 
 ##### Threading
-print("TESTING: before converting cgpThreads:",cgpThreads)
 if int(float(cgpThreads)) >= 1:
     THREADING_ON = True
-print("TESTING: THREADING_ON is",THREADING_ON)
 
 ##### Parse config file; construct lists of BASE_DIRS and FILES
 

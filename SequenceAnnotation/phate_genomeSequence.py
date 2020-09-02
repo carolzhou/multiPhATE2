@@ -223,9 +223,7 @@ class genome(object):
                     geneCaller = 'superset'
                 elif match_custom:
                     geneCaller = 'custom'
-            #if 'geneCallFile' in geneCallInfo:
             if 'primaryCallsPathFile' in geneCallInfo:
-                #geneCallFile = geneCallInfo['geneCallFile']
                 geneCallFile = geneCallInfo['primaryCallsPathFile']
             else:
                 if PHATE_WARNINGS:
@@ -343,12 +341,10 @@ class genome(object):
 
     def recordPSATannotations(self):
         if self.PSATparamsOK():
-            #print "There are this many proteins in self.proteinSet.fastaList:", len(self.proteinSet.fastaList)
             count = 0
             for protein in self.proteinSet.fastaList: 
                 PSAT_H = open(self.psat["fileName"],"r")
                 count += 1
-                #print "Evaluting protein number", count
                 newPSAT = copy.deepcopy(annotationObj)
                 newPSAT.setPSATparameters(self.psat["jobID"],self.psat["jobName"],self.psat["fileName"],self.outputDir)
                 #*** NOTE: may need to adjust header type

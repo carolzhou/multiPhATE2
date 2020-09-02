@@ -3,7 +3,7 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Most recent update: 03 June 2020
+# Most recent update: 30 August 2020
 #
 # Module comprising classes and data structures for comparing genomes
 #
@@ -306,7 +306,6 @@ class comparison(object):
                 print("genomics_compareGenomes says, Parsing report file",reportFile,"for mutual and singular best hits, and loners.")
             self.loadBestHits(genome1,genome2,reportFile)
             self.loadParalogs(paralogFile)
-
         return
 
     def findGenomes(self,directory):
@@ -948,8 +947,6 @@ class comparison(object):
                         # Clean up
                         FASTA_FILE_H.close()
                         ANNOT_FILE_H.close()
-
-                        # Get annotations for this reference protein
         return
 
     def getGeneFile(self,genomeName):
@@ -1680,12 +1677,6 @@ class paralogSet(object):
         return
 
     #===== PARALOG PRINT METHODS
-
-    def x_printReport2file(self,FILE_H):
-        return
-
-    def x_printReport(self):
-        return
 
     def printAll2file(self,FILE_H):
         FILE_H.write("%s%s\n" % ("paralogType:",self.paralogType))

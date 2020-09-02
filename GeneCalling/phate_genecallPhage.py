@@ -125,7 +125,6 @@ logfile.write("%s%s\n" % ("output folder is ", outputFolder))
 logfile.write("%s%s\n" % ("working folder is ", workingFolder))
 resultsFile = outputFolder + "results.txt"
 results = open(resultsFile,"w")
-#files = {'Results File' : resultsFile}  #*** CHECK THIS
 logfile.write("%s%s\n" % ("results file is ",resultsFile))
 logfile.write("%s%s\n" % ("GENEMARKS_CALLS is ",GENEMARKS_CALLS))
 logfile.write("%s%s\n" % ("PRODIGAL_CALLS is ",PRODIGAL_CALLS))

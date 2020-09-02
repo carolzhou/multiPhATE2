@@ -1,7 +1,7 @@
 #############################################
 # Module: blastAnalysis.py
 # Programmer:  Carol L. Ecale Zhou
-# Date of last update:  06 July 2020
+# Date of last update:  01 September 2020
 #
 # Module comprising data structures and methods for blasting the genes and proteins
 #    of two genome objects and comparing the gene profiles and the nt and aa levels.
@@ -32,7 +32,7 @@
 #         makeBlastDB
 #         performBlast
 #
-
+#####################################################################################################
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
 # THIS CODE IS COVERED BY THE BSD LICENSE. SEE INCLUDED FILE BSD.PDF FOR DETAILS.
 
@@ -64,39 +64,41 @@ if PHATE_WARNINGS_STRING.lower() == 'true':
 DEBUG = True
 #DEBUG = False
 
+IDENTITY_CUTOFF = int(os.environ["CGP_IDENTITY_CUTOFF"])
+
 # Default values used if user- or program-defined defaults not provided
-GENE_MATCH_IDENTITY_DEFAULT = 95
+GENE_MATCH_IDENTITY_DEFAULT = 60 
 GENE_MATCH_COVERAGE_DEFAULT = 60 
 GENE_SIMILARITY_IDENTITY_DEFAULT = 60
-GENE_SIMILARITY_COVERAGE_DEFAULT = 75
-DOMAIN_MATCH_IDENTITY_DEFAULT = 95
-DOMAIN_MATCH_COVERAGE_DEFAULT = 45
+GENE_SIMILARITY_COVERAGE_DEFAULT = 60 
+DOMAIN_MATCH_IDENTITY_DEFAULT = 60 
+DOMAIN_MATCH_COVERAGE_DEFAULT = 60 
 DOMAIN_SIMILARITY_IDENTITY_DEFAULT = 60
-DOMAIN_SIMILARITY_COVERAGE_DEFAULT = 45
-PARALOG_MATCH_IDENTITY_DEFAULT = 10             #
-PARALOG_MATCH_COVERAGE_DEFAULT = 10             #
+DOMAIN_SIMILARITY_COVERAGE_DEFAULT = 60 
+PARALOG_MATCH_IDENTITY_DEFAULT = 60             #
+PARALOG_MATCH_COVERAGE_DEFAULT = 60             #
 PARALOG_SIMILARITY_IDENTITY_DEFAULT = 60
-PARALOG_SIMILARITY_COVERAGE_DEFAULT = 75
-PARALOG_DOMAIN_MATCH_IDENTITY_DEFAULT = 95
-PARALOG_DOMAIN_MATCH_COVERAGE_DEFAULT = 45
+PARALOG_SIMILARITY_COVERAGE_DEFAULT = 60 
+PARALOG_DOMAIN_MATCH_IDENTITY_DEFAULT = 60 
+PARALOG_DOMAIN_MATCH_COVERAGE_DEFAULT = 60 
 PARALOG_DOMAIN_SIMILARITY_IDENTITY_DEFAULT = 60
-PARALOG_DOMAIN_SIMILARITY_COVERAGE_DEFAULT = 45
-PROTEIN_MATCH_IDENTITY_DEFAULT = 95
-PROTEIN_MATCH_COVERAGE_DEFAULT = 95
+PARALOG_DOMAIN_SIMILARITY_COVERAGE_DEFAULT = 60 
+PROTEIN_MATCH_IDENTITY_DEFAULT = 60 
+PROTEIN_MATCH_COVERAGE_DEFAULT = 60 
 PROTEIN_SIMILARITY_IDENTITY_DEFAULT = 60
-PROTEIN_SIMILARITY_COVERAGE_DEFAULT = 75
-PROTEIN_DOMAIN_MATCH_IDENTITY_DEFAULT = 95
-PROTEIN_DOMAIN_MATCH_COVERAGE_DEFAULT = 45
+PROTEIN_SIMILARITY_COVERAGE_DEFAULT = 60 
+PROTEIN_DOMAIN_MATCH_IDENTITY_DEFAULT = 60 
+PROTEIN_DOMAIN_MATCH_COVERAGE_DEFAULT = 60 
 PROTEIN_DOMAIN_SIMILARITY_IDENTITY_DEFAULT = 60
-PROTEIN_DOMAIN_SIMILARITY_COVERAGE_DEFAULT = 45
-PROTEIN_PARALOG_MATCH_IDENTITY_DEFAULT = 10      #
-PROTEIN_PARALOG_MATCH_COVERAGE_DEFAULT = 10      # 
+PROTEIN_DOMAIN_SIMILARITY_COVERAGE_DEFAULT = 60 
+PROTEIN_PARALOG_MATCH_IDENTITY_DEFAULT = 60      #
+PROTEIN_PARALOG_MATCH_COVERAGE_DEFAULT = 60      # 
 PROTEIN_PARALOG_SIMILARITY_IDENTITY_DEFAULT = 60 
-PROTEIN_PARALOG_SIMILARITY_COVERAGE_DEFAULT = 75
-PROTEIN_PARALOG_DOMAIN_MATCH_IDENTITY_DEFAULT = 95
-PROTEIN_PARALOG_DOMAIN_MATCH_COVERAGE_DEFAULT = 45
+PROTEIN_PARALOG_SIMILARITY_COVERAGE_DEFAULT = 60 
+PROTEIN_PARALOG_DOMAIN_MATCH_IDENTITY_DEFAULT = 60 
+PROTEIN_PARALOG_DOMAIN_MATCH_COVERAGE_DEFAULT = 60 
 PROTEIN_PARALOG_DOMAIN_SIMILARITY_IDENTITY_DEFAULT = 60
-PROTEIN_PARALOG_DOMAIN_SIMILARITY_COVERAGE_DEFAULT = 45
+PROTEIN_PARALOG_DOMAIN_SIMILARITY_COVERAGE_DEFAULT = 60 
 
 p_comment = re.compile('^#')
 
@@ -106,7 +108,9 @@ class hit(object):
     def __init__(self):
         self.queryHeader     = ""
         self.subjectHeader   = ""
-        self.identity        = ""
+        self.identity        = 0 
+        #self.blastnIdentity  = os.environ["CGP_BLASTN"] 
+        #self.blastpIdentity  = os.environ["CGP_BLASTP"]
         self.alignmentLength = 0
         self.mismatches      = None
         self.gapopens        = None
@@ -140,6 +144,8 @@ class hit(object):
         print ("subject:", self.subjectHeader)
         print ("hit type:", self.hitType)
         print ("identity:", self.identity)
+        #print ("blastnIdentity:", self.blastnIdentity)
+        #print ("blastpIdentity:", self.blastpIdentity)
         print ("alignment length:", self.alignmentLength)
         print ("mismatches:", self.mismatches)
         print ("gapopens:", self.gapopens)
@@ -154,6 +160,8 @@ class hit(object):
         FILE_HANDLE.write("%s%s%s" % ("subject:",self.subjectHeader,"\n"))
         FILE_HANDLE.write("%s%s%s" % ("hit type:",self.hitType,"\n"))
         FILE_HANDLE.write("%s%s%s" % ("identity:",self.identity,"\n"))
+        #FILE_HANDLE.write("%s%s%s" % ("blastnIdentity:",self.blastnIdentity,"\n"))
+        #FILE_HANDLE.write("%s%s%s" % ("blastpIdentity:",self.blastpIdentity,"\n"))
         FILE_HANDLE.write("%s%s%s" % ("alignment length:",self.alignmentLength,"\n"))
         FILE_HANDLE.write("%s%s%s" % ("mismatches:",self.mismatches,"\n"))
         FILE_HANDLE.write("%s%s%s" % ("gapopens:",self.gapopens,"\n"))
@@ -168,6 +176,8 @@ class hit(object):
         FILE_HANDLE.write("%s%s%s" % ("subject:",self.subjectHeader,"\t"))
         FILE_HANDLE.write("%s%s%s" % ("hit type:",self.hitType,"\t"))
         FILE_HANDLE.write("%s%s%s" % ("identity:",self.identity,"\t"))
+        #FILE_HANDLE.write("%s%s%s" % ("blastnIdentity:",self.blastnIdentity,"\t"))
+        #FILE_HANDLE.write("%s%s%s" % ("blastpIdentity:",self.blastpIdentity,"\t"))
         FILE_HANDLE.write("%s%s%s" % ("alignment length:",self.alignmentLength,"\t"))
         FILE_HANDLE.write("%s%s%s" % ("mismatches:",self.mismatches,"\t"))
         FILE_HANDLE.write("%s%s%s" % ("gapopens:",self.gapopens,"\t"))
@@ -313,13 +323,6 @@ class homology(object):  # holds comparative information between 2 gene/protein 
         #########################################################################################
 
         ##### Set up data structures for quick access to annotations and sequence lengths
-        #seqAnnot1  = {}   # key = header, value = annotations, for genome1 genes/proteins
-        #seqAnnot2  = {}   # ditto, for genome2
-        #seqLength1 = {}   # key = header, value = length of sequence for genome1 genes/proteins
-        #seqLength2 = {}   # ditto, for genome2
-        #seqContig1 = {}   # key = header, value = parent sequence (ie, contig name) for genome1 gene
-
-        ##### Set up data structures for quick access to annotations and sequence lengths
         seqAnnot1  = {}   # key = header, value = annotations, for genome1 genes/proteins
         seqAnnot2  = {}   # ditto, for genome2
         seqLength1 = {}   # key = header, value = length of sequence for genome1 genes/proteins
@@ -369,9 +372,9 @@ class homology(object):  # holds comparative information between 2 gene/protein 
             g1Contig     = seqContig1[hit.queryHeader]
             g2Contig     = seqContig2[hit.subjectHeader]
             if g1length == 0 or g2length == 0:
-                print("TESTING: Zero length encountered.")
-                print("TESTING: g1Contig is",g1Contig,", g1length is",g1length,", g2Contig is",g2Contig,", g2length is",g2length)
-                print("TESTING: hit is:")
+                print("WARNING: Zero length encountered.")
+                print("WARNING: g1Contig is",g1Contig,", g1length is",g1length,", g2Contig is",g2Contig,", g2length is",g2length)
+                print("WARNING: hit is:")
                 hit.printAll()
             (g1coverage,g2coverage) = hit.computeCoverage(g1length,g2length)
             sortPosition = qStart   # start position of query gene/protein, relative to genome1
@@ -757,7 +760,9 @@ class blast(object):
                 newHit.subjectEnd      = fields[9]
                 newHit.evalue          = fields[10]
                 newHit.bitscore        = fields[11]
-                newHitList.append(newHit)
+                #newHitList.append(newHit)   #*** TESTING: IDENTITY CUTOFF
+                if int(float(newHit.identity)) >= IDENTITY_CUTOFF:
+                    newHitList.append(newHit)
         HIT_FILE.close()
         return(newHitList)
 
@@ -810,6 +815,14 @@ class blast(object):
             identity = str(kvargs["identity"])
         else:
             identity = str(50)              # default
+        if "blastnIdentity" in kvargs.keys():
+            blastnIdentity = str(kvargs["blastnIdentity"])
+        else:
+            blastnIdentity = str(50)              # default
+        if "blastpIdentity" in kvargs.keys():
+            blastpIdentity = str(kvargs["blastpIdentity"])
+        else:
+            blastpIdentity = str(50)              # default
         if "scoreEdge" in kvargs.keys():    # Best hit score edge
             scoreEdge = str(kvargs["scoreEdge"])
         else:
@@ -835,7 +848,7 @@ class blast(object):
         if mtype == "nucl" or mtype == "nt" or mtype == "gene" or mtype == "nucleotide":
             command = "blastn -query " + query + " -out " + outfile + " -task blastn -db " + subject + \
                 " -evalue " + evalue + " -best_hit_score_edge " + scoreEdge + " -best_hit_overhang " + \
-                overhang + " -outfmt " + outputFormat + " -perc_identity " + identity + \
+                overhang + " -outfmt " + outputFormat + " -perc_identity " + blastnIdentity + \
                 " -max_target_seqs " + maxTargetSeqs + " -max_hsps 1"
         elif mtype == "prot" or mtype == "aa" or mtype == "protein" or mtype == "peptide":
             command = "blastp -query " + query + " -out " + outfile + " -task blastp -db " + subject + \

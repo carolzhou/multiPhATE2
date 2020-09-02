@@ -412,7 +412,6 @@ class Comparison(object):
         geneNo = 0
         start = '0'; end = '0'; strand = 'x' 
         phase = '.'; attributes = '.'; score = '.'
-        #protein = 'unknown'
 
         # Superset genes are a non-redundant list of gene calls from all callers
         if dataSet.lower() == 'superset':    

@@ -6,7 +6,7 @@
 #
 # Programmer:  Carol Zhou
 #
-# Last Update:  16 August 2020
+# Last Update:  30 August 2020
 # 
 # Classes and Methods:
 #    multiBlast
@@ -67,7 +67,6 @@ NCBI_VIRUS_PROTEIN_BLAST_HOME = os.environ["PHATE_NCBI_VIRUS_PROTEIN_BLAST_HOME"
 REFSEQ_PROTEIN_BLAST_HOME     = os.environ["PHATE_REFSEQ_PROTEIN_BLAST_HOME"]
 REFSEQ_GENE_BLAST_HOME        = os.environ["PHATE_REFSEQ_GENE_BLAST_HOME"]
 PVOGS_BLAST_HOME              = os.environ["PHATE_PVOGS_BLAST_HOME"]
-VOGS_BLAST_HOME               = os.environ["PHATE_VOGS_BLAST_HOME"]    #*** To be deprecated
 VOG_GENE_BLAST_HOME           = os.environ["PHATE_VOG_GENE_BLAST_HOME"]
 VOG_PROTEIN_BLAST_HOME        = os.environ["PHATE_VOG_PROTEIN_BLAST_HOME"]
 VOG_ANNOTATION_FILE           = os.environ["PHATE_VOG_ANNOTATION_FILE"]
@@ -217,8 +216,8 @@ class multiBlast(object):
                 self.PHANTOME_BLAST = paramset["phantomeBlast"]
             if 'pvogsBlast' in list(paramset.keys()):
                 self.PVOGS_BLAST = paramset["pvogsBlast"]
-            if 'vogsBlast' in list(paramset.keys()):  #*** To be deprecated
-                self.VOGS_BLAST = paramset["vogsBlast"]
+            #if 'vogsBlast' in list(paramset.keys()):  #*** To be deprecated
+            #    self.VOGS_BLAST = paramset["vogsBlast"]
             if 'vogGeneBlast' in list(paramset.keys()):
                 self.VOG_GENE_BLAST = paramset["vogGeneBlast"]
             if 'vogProteinBlast' in list(paramset.keys()):
@@ -434,7 +433,6 @@ class multiBlast(object):
             for hit in root.getiterator('Hit'):  
                 # reset
                 speciesList = []; doPrint = False
-                #queryFrom = 0; queryTo = 0; span = 0; percentIdentity = 0
                 querySeq = ""; subjectSeq = ""; hitDefline = ""
                 # increment
                 count += 1

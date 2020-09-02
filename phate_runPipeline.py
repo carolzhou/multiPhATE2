@@ -71,7 +71,6 @@ REFSEQ_GENE_BLAST_HOME        = os.environ["PHATE_REFSEQ_GENE_BLAST_HOME"]
 PVOGS_BASE_DIR                = os.environ["PHATE_PVOGS_BASE_DIR"]
 PVOGS_BLAST_HOME              = os.environ["PHATE_PVOGS_BLAST_HOME"]
 VOGS_BASE_DIR                 = os.environ["PHATE_VOGS_BASE_DIR"]
-VOGS_BLAST_HOME               = os.environ["PHATE_VOGS_BLAST_HOME"]
 PHANTOME_BASE_DIR             = os.environ["PHATE_PHANTOME_BASE_DIR"]
 PHANTOME_BLAST_HOME           = os.environ["PHATE_PHANTOME_BLAST_HOME"]
 PHAGE_ENZYME_BASE_DIR         = os.environ["PHATE_PHAGE_ENZYME_BASE_DIR"] 
@@ -111,7 +110,6 @@ BLASTN_HIT_COUNT_DEFAULT      = os.environ["PHATE_BLASTN_HIT_COUNT_DEFAULT"]
 HMMER_HOME                    = os.environ["PHATE_HMMER_HOME"]
 
 # Global control: verbosity and error capture
-#CLEAN_RAW_DATA                = os.environ["PHATE_CLEAN_RAW_DATA"]
 PHATE_WARNINGS                = False
 PHATE_MESSAGES                = False
 PHATE_PROGRESS                = False
@@ -120,12 +118,6 @@ PHATE_MESSAGES_STRING         = os.environ["PHATE_PHATE_MESSAGES"]
 PHATE_PROGRESS_STRING         = os.environ["PHATE_PHATE_PROGRESS"]
 PHATE_ERR                     = os.environ["PHATE_PHATE_ERR"]
 PHATE_OUT                     = os.environ["PHATE_PHATE_OUT"]
-#CGC_WARNINGS                  = os.environ["PHATE_CGC_WARNINGS"]
-#CGC_MESSAGES                  = os.environ["PHATE_CGC_MESSAGES"]
-#CGC_PROGRESS                  = os.environ["PHATE_CGC_PROGRESS"]
-#CGP_WARNINGS                  = os.environ["PHATE_CGP_WARNINGS"]
-#CGP_MESSAGES                  = os.environ["PHATE_CGP_MESSAGES"]
-#CGP_PROGRESS                  = os.environ["PHATE_CGP_PROGRESS"]
 
 # Adjust verbosity booleans according to environment veriables for local use.
 if PHATE_WARNINGS_STRING.lower() == 'true':
@@ -248,7 +240,6 @@ glimmerCalls             = False
 genemarksCalls           = False
 customGeneCalls          = False
 customGeneCallerName     = 'unknown' # Set in user's config file (e.g., "custom" or "rast")
-#customGeneCallerOutfile  = 'unknown'
 primaryCalls             = 'unknown' 
 primaryCallsFile         = 'unknown'
 blastpSearch             = False
@@ -264,7 +255,7 @@ ncbiVirusProteinBlast    = False
 refseqGeneBlast          = False
 refseqProteinBlast       = False
 pvogsBlast               = False
-vogsBlast                = False #*** To be deprecated
+#vogsBlast                = False #*** To be deprecated
 vogGeneBlast             = False
 vogProteinBlast          = False
 phantomeBlast            = False
@@ -323,7 +314,6 @@ with open(jsonFile, 'r') as jsonParameters:
     genemarksCalls           = parameters["genemarksCalls"]
     customGeneCalls          = parameters["customGeneCalls"]
     customGeneCallerName     = parameters["customGeneCallerName"]
-    #customGeneCallerOutfile  = parameters["customGeneCallerOutfile"]
     primaryCalls             = parameters["primaryCalls"]
     primaryCallsFile         = parameters["primaryCallsFile"]
     blastpSearch             = parameters["blastpSearch"]
@@ -384,9 +374,7 @@ jsonParameters.close()
 
 # Capture user's configured values
 #
-#PIPELINE_OUTPUT_SUBDIR = PIPELINE_OUTPUT_DIR + outputSubdir 
 PIPELINE_OUTPUT_SUBDIR = os.path.join(PIPELINE_OUTPUT_DIR,outputSubdir) 
-#runLog = PIPELINE_OUTPUT_SUBDIR + "runPhATE.log"
 runLog = os.path.join(PIPELINE_OUTPUT_SUBDIR,"runPhATE.log")
 LOGFILE.write("%s%s\n" % ("PIPELINE_OUTPUT_SUBDIR is ",PIPELINE_OUTPUT_SUBDIR))
 GENOME_FILE = genomeName + '.fasta' 
@@ -441,7 +429,6 @@ if PHATE_MESSAGES:
     print("primaryCallsFile is", primaryCallsFile)
     print("customGeneCalls is", customGeneCalls)
     print("customGeneCallerName is", customGeneCallerName)
-    #print("customGeneCallerOutfile is", customGeneCallerOutfile)
     print("primaryCalls is", primaryCalls) 
     print("blastpSearch is", blastpSearch)
     print("phmmerSearch is", phmmerSearch)
@@ -514,7 +501,6 @@ RUNLOG.write("%s%s\n" % ("   primaryCalls is ",primaryCalls))
 RUNLOG.write("%s%s\n" % ("   primaryCallsFile is ",primaryCallsFile))
 RUNLOG.write("%s%s\n" % ("   customGeneCalls is ",customGeneCalls))
 RUNLOG.write("%s%s\n" % ("   customGeneCallerName is ",customGeneCallerName))
-#RUNLOG.write("%s%s\n" % ("   customGeneCallerOutfile is ",customGeneCallerOutfile))
 RUNLOG.write("%s%s\n" % ("   blastpSearch is ",blastpSearch))
 RUNLOG.write("%s%s\n" % ("   phmmerSearch is ",phmmerSearch))
 RUNLOG.write("%s%s\n" % ("   jackhmmerSearch is ",jackhmmerSearch))
@@ -527,8 +513,8 @@ RUNLOG.write("%s%s\n" % ("   ncbiVirusGenomeBlast is ",ncbiVirusGenomeBlast))
 RUNLOG.write("%s%s\n" % ("   ncbiVirusProteinBlast is ",ncbiVirusProteinBlast))
 RUNLOG.write("%s%s\n" % ("   refseqProteinBlast is ",refseqProteinBlast))
 RUNLOG.write("%s%s\n" % ("   refseqGeneBlast is ",refseqGeneBlast))
-RUNLOG.write("%s%s\n" % ("   pvogsBlast is ",pvogsBlast))   #*** To be deprecated
-RUNLOG.write("%s%s\n" % ("   vogsBlast is ",vogsBlast))
+RUNLOG.write("%s%s\n" % ("   pvogsBlast is ",pvogsBlast))  
+#RUNLOG.write("%s%s\n" % ("   vogsBlast is ",vogsBlast))
 RUNLOG.write("%s%s\n" % ("   vogGeneBlast is ",vogGeneBlast))
 RUNLOG.write("%s%s\n" % ("   vogProteinBlast is ",vogProteinBlast))
 RUNLOG.write("%s%s\n" % ("   phantomeBlast is ",phantomeBlast))
@@ -643,7 +629,6 @@ if phanotateCalls:
 
 if customGeneCalls: 
     customCallFile  = outputSubdir.rstrip('/') + ".custom.gff"  # This is what the user should have named it
-    #customPhateFile = "phate_custom.gff" 
     customPhateFile = customCallFile 
     source      = os.path.join(PIPELINE_INPUT_DIR,    customCallFile)
     destination = os.path.join(PIPELINE_OUTPUT_SUBDIR,customPhateFile)
@@ -658,10 +643,6 @@ if customGeneCalls:
             exit(0)
     geneCallerCount += 1
     param3 += "custom_"
-    # If the user selected 'custom' as the primary calls, then reset to the custom calls pathfile
-    #if primaryCalls == 'custom': 
-    #    #primaryCallsPathFile = destination 
-    #    primaryCallsPathFile = "custom.cgc" 
 
 if geneCallerCount >= 2:
     MULTIPLE_CALLERS = True
@@ -720,8 +701,8 @@ if refseqGeneBlast:
     blastDatabaseParameterString += '_refseqGene'
 if pvogsBlast:
     blastDatabaseParameterString += '_pvogs'
-if vogsBlast:
-    blastDatabaseParameterString += '_Vogs'  #*** to be deprecated
+#if vogsBlast:
+#    blastDatabaseParameterString += '_Vogs'  #*** to be deprecated
 if vogGeneBlast:
     blastDatabaseParameterString += '_vogGene'
 if vogProteinBlast:
@@ -806,18 +787,6 @@ profileProgramParameterString = ''  # hmm programs to run against sequence datab
 if hmmscan:
     profileProgramParameterString  += '_hmmscan'
 
-"""
-customDatabasePathParameterString = ''
-if customGenomeDBpath != '':
-    customDatabasePathParameterString += '^customGenomeDBpath:'  + customGenomeDBpath  + ':' + customGenomeDBname
-if customGeneDBpath != '':
-    customDatabasePathParameterString += '^customGeneDBpath:'    + customGeneDBpath    + ':' + customGeneDBname
-if customProteinDBpath != '':
-    customDatabasePathParameterString += '^customProteinDBpath:' + customProteinDBpath + ':' + customProteinDBname
-if customHmmDBpath != '':
-    customDatabasePathParameterString += '^customHmmDBpath:'     + customHmmDBpath     + ':' + customHmmDBname
-"""
-
 # Set empty strings (so parameter is passed regardless, not as '')
 if blastProgramParameterString == '':
     blastProgramParameterString = 'none'
@@ -833,8 +802,6 @@ if profileProgramParameterString == '':
     profileProgramParameterString = 'none'
 if profileDatabaseParameterString == '':
     profileDatabaseParameterString = 'none'
-#if customDatabasePathParameterString == '':
-#    customDatabasePathParameterString = 'none'
 
 commandRoot1  = "python " + SEQANNOTATION_CODE      + " -o " + outputDir  # code and output direction
 commandRoot2  = " -G "    + genomeFile              + " -g " + geneFile             + " -p " + proteinFile   # genome files
@@ -846,9 +813,7 @@ commandRoot7  = " -B "    + blastProgramParameterString   + " -b " + blastDataba
 commandRoot8  = " -M "    + hmmProgramParameterString     + " -m " + seqDatabaseParameterString              # hmm search of hmm profile database(s)
 commandRoot9  = " -R "    + profileProgramParameterString + " -r " + profileDatabaseParameterString          # program and databases for hmm search
 commandRoot10 = " -z "    + blastThreadsParameterString
-#commandRoot11 = " -C "    + customDatabasePathParameterString
 commandRootA  = commandRoot1 + commandRoot2 + commandRoot3 + commandRoot4 + commandRoot5  + commandRoot6
-#commandRoot   = commandRootA + commandRoot7 + commandRoot8 + commandRoot9 + commandRoot10 + commandRoot11
 commandRoot   = commandRootA + commandRoot7 + commandRoot8 + commandRoot9 + commandRoot10
 
 # As appropriate, append additional parameters

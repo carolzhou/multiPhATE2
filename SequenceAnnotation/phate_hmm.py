@@ -44,8 +44,7 @@ NCBI_VIRUS_PROTEIN_HMM_HOME   = os.environ["PHATE_NCBI_VIRUS_PROTEIN_BLAST_HOME"
 REFSEQ_PROTEIN_HMM_HOME       = os.environ["PHATE_REFSEQ_PROTEIN_BLAST_HOME"]
 REFSEQ_GENE_HMM_HOME          = os.environ["PHATE_REFSEQ_GENE_BLAST_HOME"]
 PVOGS_HMM_HOME                = os.environ["PHATE_PVOGS_BLAST_HOME"]
-VOGS_HMM_HOME                 = os.environ["PHATE_VOGS_BLAST_HOME"]   #*** To be deprecated
-VOGS_ANNOTATION_FILE          = os.environ["PHATE_VOGS_ANNOTATION_FILE"]
+VOGS_ANNOTATION_FILE          = os.environ["PHATE_VOG_ANNOTATION_FILE"]
 VOG_GENE_HMM_HOME             = os.environ["PHATE_VOG_GENE_BLAST_HOME"]
 VOG_PROTEIN_HMM_HOME          = os.environ["PHATE_VOG_PROTEIN_BLAST_HOME"]
 PHANTOME_HMM_HOME             = os.environ["PHATE_PHANTOME_BLAST_HOME"]
@@ -77,7 +76,6 @@ if PHATE_MESSAGES_STRING.lower() == 'true':
     PHATE_MESSAGES = True
 if PHATE_PROGRESS_STRING.lower() == 'true':
     PHATE_PROGRESS = True
-
 
 # Other configurables 
 
