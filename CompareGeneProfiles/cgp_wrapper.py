@@ -5,7 +5,7 @@
 # CGPMwrapper.py (/multiPhATE2/)
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last Update: 28 August 2020
+# Last Update: 01 September 2020
 #
 # This script uses a config file to run compareGeneProfiles.py
 # using the designated input files.  Specifically, the config file
@@ -201,9 +201,12 @@ if THREADING_ON:
         annot2    = fileSet["a2"]; annot2  = os.path.join(directory, annot2)
         nextCommand = "python " + COMPARE_GENE_PROFILES_CODE + " -g1 " + genome1 + " -g2 " + genome2 + " -a1 " + annot1 + " -a2 " + annot2 + " -d " + projectDirectory
         commandList.append(nextCommand)
-    cgp_pool = Pool(int(float(cgpThreads)))
-    cgp_pool.map(cgp_threaded, commandList)
-    cgp_pool.close() 
+    print("TESTING: in cgp_wrapper, testing for __main__")
+    if __name__ == '__main__':
+        LOGFILE.write("%s%s" % ("cgp_wrapper / __main__: List of commands: ",commandList))
+        cgp_pool = Pool(int(float(cgpThreads)))
+        cgp_pool.map(cgp_threaded, commandList)
+        cgp_pool.close() 
 else:
     count = 0
     for fileSet in inFileList:
