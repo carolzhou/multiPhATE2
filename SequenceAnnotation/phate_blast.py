@@ -369,7 +369,10 @@ class multiBlast(object):
             if PHATE_WARNINGS:
                 print("phate_blast says, ERROR: blast flavor not currently supported: ", self.blastFlavor)
             return
-        result = os.system(command)
+        try:
+            result = os.system(command)
+        except:
+            print("ERROR: Blast process failed for command ", command)
 
         # Capture result(s) and store as an annotation object for this fasta; Coded for -outfmt 7
 

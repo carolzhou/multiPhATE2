@@ -37,8 +37,16 @@
 import datetime
 import time
 
-TEST_NUMBER = '8'
-MESSAGE = ": Phantome; blastp; 9 phate threads; 2 blast threads; 36 cgp threads; 9 genomes"
+TEST_NUMBER = '0'
+#MESSAGE = ": allDBs; allSearches; 9 phate processes; 10 blast threads; 36 cgp processes; 9 genomes"
+#MESSAGE = ": specialtyDBs; allSearches; 7 phate processes; 4 blast threads; 0 cgp processes; 6 genomes"
+#MESSAGE = ": specialtyDBs; allSearches; 3 phate processes; 4 blast threads; 0 cgp processes; 3 genomes"
+#MESSAGE = ": specialtyDBs; allSearches; 0 phate processes; 4 blast threads; 0 cgp processes; 1 genome"
+#MESSAGE = ": gene-calling only; 0 phate processes; 0 blast threads; 0 cgp processes; 1/7 genomes"
+#MESSAGE = ": gene-calling only; 0 phate processes; 0 blast threads; 0 cgp processes; test genome"
+#MESSAGE = ": cgp only; 0 phate processes; 4 blast threads; 21 cgp processes; 7 genomes"
+#MESSAGE = ": genomics only; 7 genomes"
+MESSAGE = ""
 
 timeLog = "./time.log"
 TIME_LOG = open(timeLog,'a')

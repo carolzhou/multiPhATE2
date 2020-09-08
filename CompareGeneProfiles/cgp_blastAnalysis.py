@@ -858,8 +858,11 @@ class blast(object):
         else:
             errorList.append(10)
 
-        result = os.system(command)
-        errorList.append(result)
+        try:
+            result = os.system(command)
+            errorList.append(result)
+        except:
+            print("ERROR: Blast process failed for command ",command)
  
         return errorList 
   

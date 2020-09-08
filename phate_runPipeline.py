@@ -301,7 +301,7 @@ outputSubdir = ''
 with open(jsonFile, 'r') as jsonParameters:
     parameters               = json.load(jsonParameters)
     genomeNumber             = parameters["genomeNumber"]
-    genomeFile               = parameters["genomeFile"]
+    genomeFileName           = parameters["genomeFile"]
     genomeType               = parameters["genomeType"]
     genomeSpecies            = parameters["genomeSpecies"]
     genomeName               = parameters["genomeName"]
@@ -377,8 +377,8 @@ jsonParameters.close()
 PIPELINE_OUTPUT_SUBDIR = os.path.join(PIPELINE_OUTPUT_DIR,outputSubdir) 
 runLog = os.path.join(PIPELINE_OUTPUT_SUBDIR,"runPhATE.log")
 LOGFILE.write("%s%s\n" % ("PIPELINE_OUTPUT_SUBDIR is ",PIPELINE_OUTPUT_SUBDIR))
-GENOME_FILE = genomeName + '.fasta' 
-LOGFILE.write("%s%s\n" % ("GENOME_FILE is ",GENOME_FILE))
+#GENOME_FILE = genomeName + '.fasta' 
+#LOGFILE.write("%s%s\n" % ("GENOME_FILE is ",GENOME_FILE))
 
 # Create user's output subdirectory, if doesn't already exist
 try:
@@ -412,7 +412,7 @@ if PHATE_MESSAGES:
     print("PIPELINE_INPUT_DIR is", PIPELINE_INPUT_DIR)
     print("PIPELINE_OUTPUT_DIR is", PIPELINE_OUTPUT_DIR)
     print("PIPELINE_OUTPUT_SUBDIR is", PIPELINE_OUTPUT_SUBDIR)
-    print("genomeFile is", genomeFile)
+    print("genomeFile is", genomeFileName)
     print("geneFile is", geneFile)
     print("proteinFile is", proteinFile)
     print("genomeNumber is", genomeType) 
@@ -485,7 +485,7 @@ RUNLOG.write("%s\n" % ("Input parameters:"))
 RUNLOG.write("%s%s\n" % ("   PIPELINE_INPUT_DIR: ", PIPELINE_INPUT_DIR))
 RUNLOG.write("%s%s\n" % ("   PIPELINE_OUTPUT_DIR: ", PIPELINE_OUTPUT_DIR))
 RUNLOG.write("%s%s\n" % ("   PIPELINE_OUTPUT_SUBDIR: ", PIPELINE_OUTPUT_SUBDIR))
-RUNLOG.write("%s%s\n" % ("   genomeFile: ", genomeFile))
+RUNLOG.write("%s%s\n" % ("   genomeFile: ", genomeFileName))
 RUNLOG.write("%s%s\n" % ("   geneFile: ", geneFile))
 RUNLOG.write("%s%s\n" % ("   proteinFile: ", proteinFile))
 RUNLOG.write("%s%s\n" % ("   genomeType is ", genomeType))
@@ -555,11 +555,11 @@ RUNLOG.write("%s%s\n" % ("   checkpointPhate is ",checkpointPhate))
 # Open and check input file(s)
 
 inputDir             = PIPELINE_INPUT_DIR
-genomeFile           = PIPELINE_INPUT_DIR + GENOME_FILE
-primaryCallsPathFile = PIPELINE_OUTPUT_SUBDIR + primaryCallsFile 
+genomeFile           = os.path.join(PIPELINE_INPUT_DIR,genomeFileName) 
+primaryCallsPathFile = os.path.join(PIPELINE_OUTPUT_SUBDIR,primaryCallsFile) 
 # Reassign geneFile and proteinFile as path/filename
-geneFile             = PIPELINE_OUTPUT_SUBDIR + GENE_FILE
-proteinFile          = PIPELINE_OUTPUT_SUBDIR + PROTEIN_FILE
+geneFile             = os.path.join(PIPELINE_OUTPUT_SUBDIR,GENE_FILE)
+proteinFile          = os.path.join(PIPELINE_OUTPUT_SUBDIR,PROTEIN_FILE)
 outputDir            = PIPELINE_OUTPUT_SUBDIR
 
 RUNLOG.write("%s%s\n" % ("inputDir is ",    inputDir))

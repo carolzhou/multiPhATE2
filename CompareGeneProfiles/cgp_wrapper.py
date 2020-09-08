@@ -125,7 +125,6 @@ if argCount in ACCEPTABLE_ARG_COUNT:
         LOGFILE.write("%s%s\n" % ("Project directory is ", projectDirectory))
         if len(sys.argv) >= 3:
             cgpThreads = sys.argv[2]
-            #print("TESTING: cgpThreads parameter value is",cgpThreads)
 else:
     print (USAGE_STRING)
     exit(0)
@@ -201,7 +200,6 @@ if THREADING_ON:
         annot2    = fileSet["a2"]; annot2  = os.path.join(directory, annot2)
         nextCommand = "python " + COMPARE_GENE_PROFILES_CODE + " -g1 " + genome1 + " -g2 " + genome2 + " -a1 " + annot1 + " -a2 " + annot2 + " -d " + projectDirectory
         commandList.append(nextCommand)
-    print("TESTING: in cgp_wrapper, testing for __main__")
     if __name__ == '__main__':
         LOGFILE.write("%s%s" % ("cgp_wrapper / __main__: List of commands: ",commandList))
         cgp_pool = Pool(int(float(cgpThreads)))
