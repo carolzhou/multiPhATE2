@@ -665,6 +665,9 @@ class Comparison(object):
                         printArray[printColumn] = geneList[i].geneCaller + '\t' + geneList[i].strand   + '\t' \
                                                 + geneList[i].leftEnd    + '\t' + geneList[i].rightEnd + '\t' \
                                                 + geneList[i].geneLength + '\t' + geneList[i].contig + '\t'
+                        if PHATE_WARNINGS:
+                            if '\n' in geneList[i].contig:
+                                print("CGC_compare says, WARNING: contig name contains a newline, contig: ",geneList[i].contig)
 
                     # Print the current row: horizontal list of identical gene calls 
                     print(count, '\t')
@@ -688,10 +691,17 @@ class Comparison(object):
                 count = 1
 
                 # Print column headers, for as many gene callers as we have
-                FILE_H.write("%s\n" % ("Gene-call Table:"))
-                FILE_H.write("%s" % ("count\t"))
+                #FILE_H.write("%s\n" % ("Gene-call Table:"))
+                #FILE_H.write("%s" % ("count\t"))
+                print()
+                print("GENE-CALL TABLE:")
+                print()
+                headerString = "number\t"
                 for i in range(0,len(self.callerList)):
-                    FILE_H.write("%s\n" % ("caller\tstrand\tleftEnd\trightEnd\tlength\tcontig\t"))
+                    #FILE_H.write("%s" % ("caller\tstrand\tleftEnd\trightEnd\tlength\tcontig\t"))
+                    headerString += "caller\tstrand\tleftEnd\trightEnd\tlength\tcontig\t"
+                #FILE_H.write("\n") 
+                print(headerString)
 
                 # Format each gene call as a single line of output, arranging gene callers in order left to right
                 for geneList in self.uniqueList:
@@ -707,16 +717,20 @@ class Comparison(object):
                         printColumn = self.callerList.index(currentCaller) # capture index of this gene caller in self.callerList
                         printArray[printColumn] = geneList[i].geneCaller + '\t' + geneList[i].strand   + '\t' \
                                                 + geneList[i].leftEnd    + '\t' + geneList[i].rightEnd + '\t' \
-                                                + geneList[i].geneLength + '\t' + geneList[i].contig + '\t'
+                                                + geneList[i].geneLength + '\t' + geneList[i].contig   + '\t'
 
                     # Print the current row: horizontal list of identical gene calls 
-                    FILE_H.write("%s\t" % (count))
+                    grandString = str(count) + '\t' 
+                    #FILE_H.write("%s\t" % (count))
                     for geneCallString in printArray:
                         if geneCallString == '':
-                            FILE_H.write("%s" % ("\t\t\t\t\t\t"))
+                            #FILE_H.write("%s" % ("\t\t\t\t\t\t"))
+                            grandString += "\t\t\t\t\t\t"
                         else:
-                            FILE_H.write("%s" % (geneCallString)) 
-                    FILE_H.write("\n")
+                            #FILE_H.write("%s" % (geneCallString)) 
+                            grandString += geneCallString
+                    #FILE_H.write("\n")
+                    print (grandString)
                     count += 1
             else:
                 FILE_H.write("%s\n" % ("PrintGenecallGrid(): uniqueList is empty"))
@@ -735,6 +749,7 @@ class Comparison(object):
         self.PrintStats2file(FILE_H)
         self.PrintGenecallGrid2file(FILE_H)
         self.PrintGenecallScores2file(FILE_H)
+        self.PrintConsensusScores2file(FILE_H)
         return
 
     def PrintGenecallScores(self):
