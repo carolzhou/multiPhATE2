@@ -43,10 +43,10 @@ TEST_NUMBER = '0'
 #MESSAGE = ": specialtyDBs; allSearches; 3 phate processes; 4 blast threads; 0 cgp processes; 3 genomes"
 #MESSAGE = ": specialtyDBs; allSearches; 0 phate processes; 4 blast threads; 0 cgp processes; 1 genome"
 #MESSAGE = ": gene-calling only; 0 phate processes; 0 blast threads; 0 cgp processes; 1/7 genomes"
-#MESSAGE = ": gene-calling only; 0 phate processes; 0 blast threads; 0 cgp processes; test genome"
+MESSAGE = ": gene-calling only; 0 phate processes; 0 blast threads; 0 cgp processes; 3 test genomes"
+#MESSAGE = ": 2 phate processes; 4 blast threads; 2 cgp processes; 2 bac genomes"
 #MESSAGE = ": cgp only; 0 phate processes; 4 blast threads; 21 cgp processes; 7 genomes"
-#MESSAGE = ": all specialty DBs; all searches; 9 genomes; testing for blast error message"
-MESSAGE = ""
+#MESSAGE = ": specialty DBs + refseqP; all searches; 9 phate processes; 4 blast threads; 36 cgp processes9 genomes; "
 
 timeLog = "./time.log"
 TIME_LOG = open(timeLog,'a')
@@ -260,13 +260,6 @@ GENOMICS_DIR_DEFAULT        = BASE_DIR_DEFAULT + "Genomics/"
 GENOMICS_RESULTS_DIR        = PIPELINE_OUTPUT_DIR_DEFAULT + "GENOMICS_RESULTS/"
 JSON_DIR                    = BASE_DIR_DEFAULT + "JSON/"
 
-##### Ensure that PipelineOutput dir is in place
-try:
-    os.stat(PIPELINE_OUTPUT_DIR_DEFAULT)
-except:
-    os.mkdir(PIPELINE_OUTPUT_DIR_DEFAULT)
-
-#####
 PHATE_PIPELINE_CODE             = 'phate_runPipeline.py' # The annotaton engine
 GENE_FILE                       = 'gene.fnt'             # default filename where gene sequences are written, per genome's PipelineOutput/
 PROTEIN_FILE                    = 'protein.faa'          # default filename where protein sequences are written, per genome's PipelineOutput/
@@ -355,12 +348,12 @@ os.environ["PHATE_PVOGS_HEADER_FILE"]               = os.environ["PHATE_PVOGS_BA
 # VOG gene and protein fasta data sets need to be pre-processed via dbPrep_getDBs.py to insert VOG identifiers in fasta headers
 os.environ["PHATE_VOGS_BASE_DIR"]                   = DATABASE_DIR_DEFAULT + "VOGs/"
 os.environ["PHATE_VOG_PROTEIN_BASE_DIR"]            = os.environ["PHATE_VOGS_BASE_DIR"]
+#os.environ["PHATE_VOG_ANNOTATION_FILE"]             = os.environ["PHATE_VOGS_BASE_DIR"] + "vog.annotations.tsv"
+os.environ["PHATE_VOG_ANNOTATION_FILE"]             = ""
 os.environ["PHATE_VOG_GENE_BLAST_HOME"]             = os.environ["PHATE_VOGS_BASE_DIR"] + "VOG_genes.fnt"      
 os.environ["PHATE_VOG_PROTEIN_BLAST_HOME"]          = os.environ["PHATE_VOGS_BASE_DIR"] + "VOG_protein.faa"
 os.environ["PHATE_VOG_PROTEIN_HEADER_FILE"]         = ""  # This should be called PHATE_VOG_HEADER_FILE, since applies to gene and protein
 os.environ["PHATE_VOG_PROTEIN_ANNOTATION_FILE"]     = ""  # This should be called PHATE_VOG_ANNOTATION_FILE, since applies to gene and protein
-#os.environ["PHATE_VOG_ANNOTATION_FILE"]             = os.environ["PHATE_VOGS_BASE_DIR"] + "vog.annotations.tsv"
-os.environ["PHATE_VOG_ANNOTATION_FILE"]             = ""  # This is set via user config file
 os.environ["PHATE_PHANTOME_BASE_DIR"]               = DATABASE_DIR_DEFAULT + "Phantome/"
 os.environ["PHATE_PHANTOME_BLAST_HOME"]             = os.environ["PHATE_PHANTOME_BASE_DIR"] + "Phantome_Phage_genes.faa"
 os.environ["PHATE_PHAGE_ENZYME_BASE_DIR"]           = DATABASE_DIR_DEFAULT + "PhageEnzyme/" # not yet in service
