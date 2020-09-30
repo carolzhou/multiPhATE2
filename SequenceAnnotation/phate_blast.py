@@ -6,7 +6,7 @@
 #
 # Programmer:  Carol Zhou
 #
-# Last Update:  30 August 2020
+# Last Update:  29 September 2020
 # 
 # Classes and Methods:
 #    multiBlast
@@ -348,23 +348,37 @@ class multiBlast(object):
 
         # Run blast
         if self.blastFlavor == 'blastn':
-            command = BLAST_HOME + "blastn -query " + fastaFile + " -out " + outfile + \
-                " -task blastn -db " + database + " -evalue " + str(self.evalueMin) + \
-                " -best_hit_score_edge " + str(self.scoreEdge) + " -best_hit_overhang " + \
-                str(self.overhang) + " -outfmt " + str(self.outputFormat) + " -perc_identity " + \
-                str(self.identityMin) + " -max_target_seqs " + str(self.topHitCount) + \
-                " -num_threads " + str(self.blastThreads)
+            if str(self.blastThreads) == '0':
+                command = BLAST_HOME + "blastn -query " + fastaFile + " -out " + outfile + \
+                    " -task blastn -db " + database + " -evalue " + str(self.evalueMin) + \
+                    " -best_hit_score_edge " + str(self.scoreEdge) + " -best_hit_overhang " + \
+                    str(self.overhang) + " -outfmt " + str(self.outputFormat) + " -perc_identity " + \
+                    str(self.identityMin) + " -max_target_seqs " + str(self.topHitCount)
+            else:
+                command = BLAST_HOME + "blastn -query " + fastaFile + " -out " + outfile + \
+                    " -task blastn -db " + database + " -evalue " + str(self.evalueMin) + \
+                    " -best_hit_score_edge " + str(self.scoreEdge) + " -best_hit_overhang " + \
+                    str(self.overhang) + " -outfmt " + str(self.outputFormat) + " -perc_identity " + \
+                    str(self.identityMin) + " -max_target_seqs " + str(self.topHitCount) + \
+                    " -num_threads " + str(self.blastThreads)
 
         elif self.blastFlavor == 'blastp': # Recall: You can't specificy %identity, but can filter afterward
-            command = BLAST_HOME + "blastp -query " + fastaFile + " -out " + outfile + \
-                " -task blastp -db " + database + " -evalue " + str(self.evalueMin) + \
-                " -best_hit_score_edge " + str(self.scoreEdge) + " -best_hit_overhang " + \
-                str(self.overhang) + " -outfmt " + str(self.outputFormat) + \
-                " -max_target_seqs " + str(self.topHitCount) + \
-                " -num_threads " + str(self.blastThreads)
-                #" -max_target_seqs " + str(self.topHitCount) + \
-                #" -sorthits " + str(HIT_SORT_CRITERION) + \
-                #" -sorthsps " + str(HSP_SORT_CRITERION)
+            if str(self.blastThreads) == '0':
+                command = BLAST_HOME + "blastp -query " + fastaFile + " -out " + outfile + \
+                    " -task blastp -db " + database + " -evalue " + str(self.evalueMin) + \
+                    " -best_hit_score_edge " + str(self.scoreEdge) + " -best_hit_overhang " + \
+                    str(self.overhang) + " -outfmt " + str(self.outputFormat) + \
+                    " -max_target_seqs " + str(self.topHitCount)
+            else:
+                command = BLAST_HOME + "blastp -query " + fastaFile + " -out " + outfile + \
+                    " -task blastp -db " + database + " -evalue " + str(self.evalueMin) + \
+                    " -best_hit_score_edge " + str(self.scoreEdge) + " -best_hit_overhang " + \
+                    str(self.overhang) + " -outfmt " + str(self.outputFormat) + \
+                    " -max_target_seqs " + str(self.topHitCount) + \
+                    " -num_threads " + str(self.blastThreads)
+                    #" -max_target_seqs " + str(self.topHitCount) + \
+                    #" -sorthits " + str(HIT_SORT_CRITERION) + \
+                    #" -sorthsps " + str(HSP_SORT_CRITERION)
         else:
             if PHATE_WARNINGS:
                 print("phate_blast says, ERROR: blast flavor not currently supported: ", self.blastFlavor)
