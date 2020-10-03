@@ -301,6 +301,7 @@ Note that genemarks is not available as a conda package, so this program, as wel
 * Issue:  The default settings in the CompareGeneProfiles module are too stringent for my genome set. Solution:  Use checkpointing (see above) to re-run the CGP analysis. You may in your configuration file (multiphate.config) set the cgp_identity cutoff value. Re-run any number of times, until you are satisfied with the results of the Genomics module.
 * Issue:  Not all of the input genomes are processed all the way through PhATE, or some of the blast processes in the CompareGeneProfiles (CGP) module fail, yielding empty blast .out files in the Results_nnn directories.  Possible solution: Try setting the number of blast threads (blast_threads in your multiPhate.config file) to no more than 4 (or turn threads off completely by setting to 0). Blast will randomly (though infrequently) fail with a null-pointer exception when there are more than 4 threads running. Helpful hint:  If some of your genomes completed PhATE processing without error (i.e., the phate_sequenceAnnotation_main.out file is populated), you can re-run your genome set on only those genomes that failed by commenting out the configuration lines for the ones that succeeded.
 * Issue:  multiPhATE2 runs to completion without errors using the sample input data, but fails on my own input genomes. Try this: Run your genomes through the cleanHeaders.py script in the Utility/ folder, and capture the output (e.g., $ python cleanHeaders.py myGenome.fasta > myCleanGenome.fasta). Then revise your multiphate.config file:  name each genome accordingly, and check your genome metadata parameters in your multiphate.config file to ensure they contain only alphanumeric characters.
+* Issue:  BLAST+ is throwing a C++ null-pointer exception. This happens randomly (i.e., this error is independent of the input fasta sequence) and at a low frequency, essentially a few times out of several hundred blastp executions. Solution: We are not certain why blast is randomly failing with this error. It may be a feature (bug) in the most recent release of BLAST+, or it may be an issue with server hardware/OS handling of blast threads. If you encounter this problem on your machine, we recommend setting blast_threads='0' and/or downgrading your installation of BLAST+ to an older version.
 
 #### RUNNING PHATE AS AN "EMBARASSINGLY PARALLEL" CODE
 
@@ -321,6 +322,7 @@ Because the behavior of 3rd party codes can sometimes be unpredictable, it is re
 #### CAUTIONS 
 
 1) multiPhATE2 has not been developed or tested on Windows. 
+2) The developers have detected a possible issue with a recent version of BLAST+, whereby blastp randomly generates a C++ null pointer exception. We believe that this may be occurring when invoking blastp with the blast_threads option. If you encounter this error, it may be necessary to either set blast_threads='0' or back out your installation of BLAST+ and re-install an older version of BLAST+.
 
 #### PUBLICATION
 
