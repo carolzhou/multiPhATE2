@@ -11,7 +11,7 @@
 ################################################################
 
 # This code was originally developed by Jeff Kimbrel and adapted by Carol Zhou at Lawrence Livermore National Laboratory.
-# THIS CODE IS COVERED BY THE BSD LICENSE. SEE INCLUDED FILE BSD.PDF FOR DETAILS.
+# THIS CODE IS COVERED BY THE GPL-3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
 
 import os
 import sys
