@@ -1,5 +1,5 @@
 # multiPhATE v.2.0
-/MultiPhATE/ - multiPhATE2 (beta version) - This code is has been thoroughly tested in the hands of the developers, but is considered beta until it passes peer review. Feel free to download and test drive the pre-release, version 1.9.  Thank you for your interest in multiPhATE2. For a production version of multiPhATE, use the code at https://github.com/carolzhou/multiPhATE.git. 
+/MultiPhATE/ - multiPhATE2 (beta version) - This code is has been thoroughly tested in the hands of the developers, but is considered beta until it passes peer review. Feel free to download and test drive the pre-release, version 1.91.  Thank you for your interest in multiPhATE2. For a production version of multiPhATE, use the code at https://github.com/carolzhou/multiPhATE.git. 
 
 This code was developed by Carol L. Ecale Zhou and Jeffrey Kimbrel at Lawrence Livermore National Laboratory.
 
