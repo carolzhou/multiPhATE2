@@ -5,7 +5,7 @@
 # Program Title:  multiPhate2.py (/multiPhate2/)
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last Update:  10 September 2020
+# Last Update:  05 October 2020
 #
 # Description: Script multiPhate.py runs an annotation pipeline (phate_runPipeline.py) over any
 #    number of genomes specified in the user's input configuration file (multPhate.config). It then
@@ -32,7 +32,7 @@
 ################################################################
 
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
-# THIS CODE IS COVERED BY THE GPL-3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
+# THIS CODE IS COVERED BY THE BSD LICENSE. SEE INCLUDED FILE BSD.PDF FOR DETAILS.
 
 import datetime
 import time
@@ -79,7 +79,8 @@ else:
 # in multiPhATE processing.
 #
 # Skip gene calling, and jump straight to the phate annotation module.
-# This assumes that the gene.fnt and protein.faa files are present in each genome's subdirectory
+# This assumes that the gene.fnt and protein.faa files are present in each genome's subdirectory.
+# Setting CHECKPOINT_PHATE to True tells the sequence annotation module to no perform gene calling.
 CHECKPOINT_PHATE = False 
 # Skip gene calling, PhATE annotation, and jump straight to the CGP (Compare Gene Profiles) module.
 # This assumes that the previous processing is complete, and all files are where expected.a
@@ -97,11 +98,14 @@ CHECKPOINT_GENOMICS = False
 # contention for I/O.
 HPC = False  # write to log
 # HPC = True  # mute the log
-# Set THREADS to 'ALL' to use all available processors, or to an integer to limit number of parallel processes
-#THREADS = 'ALL'
+
+# MULTIPROCESSING AND THREADING DEFAULTS
+# Concurrency can be shut off at any level by setting the value to 0 (zero).
+# Set PHATE_THREADS to 'ALL' to use all available processors, or to an integer to limit number of parallel processes
+#PHATE_THREADS = 'ALL'
 PHATE_THREADS = 0 
 # Set the number of blast threads that blast+ will invoke
-BLAST_THREADS = 1
+BLAST_THREADS = 0 
 # Set the number of threads for parallelizing CompareGeneProfiles. Ideally this is N*(N-1)/2, where N = number of input genomes.
 CGP_THREADS = 0
 
@@ -1640,7 +1644,7 @@ for cLine in cLines:
 
     elif match_blastThreads:
         value = match_blastThreads.group(1)
-        if int(value) >= 1:
+        if int(value) >= 0:
             blastThreads = int(value)
 
     elif match_cgpThreads:
