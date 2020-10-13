@@ -5,7 +5,7 @@
 # Program Title:  multiPhate2.py (/multiPhate2/)
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last Update:  05 October 2020
+# Last Update:  13 October 2020
 #
 # Description: Script multiPhate.py runs an annotation pipeline (phate_runPipeline.py) over any
 #    number of genomes specified in the user's input configuration file (multPhate.config). It then
@@ -38,12 +38,13 @@ import datetime
 import time
 
 TEST_NUMBER = '0'
+MESSAGE = ""
 #MESSAGE = ": allDBs; allSearches; 9 phate processes; 10 blast threads; 36 cgp processes; 9 genomes"
 #MESSAGE = ": specialtyDBs; allSearches; 7 phate processes; 4 blast threads; 0 cgp processes; 6 genomes"
 #MESSAGE = ": specialtyDBs; allSearches; 3 phate processes; 4 blast threads; 0 cgp processes; 3 genomes"
 #MESSAGE = ": specialtyDBs; allSearches; 0 phate processes; 4 blast threads; 0 cgp processes; 1 genome"
 #MESSAGE = ": gene-calling only; 0 phate processes; 0 blast threads; 0 cgp processes; 1/7 genomes"
-MESSAGE = ": gene-calling only; 0 phate processes; 0 blast threads; 0 cgp processes; 3 test genomes"
+#MESSAGE = ": gene-calling only; 0 phate processes; 0 blast threads; 0 cgp processes; 3 test genomes"
 #MESSAGE = ": 2 phate processes; 4 blast threads; 2 cgp processes; 2 bac genomes"
 #MESSAGE = ": cgp only; 0 phate processes; 4 blast threads; 21 cgp processes; 7 genomes"
 #MESSAGE = ": specialty DBs + refseqP; all searches; 9 phate processes; 4 blast threads; 36 cgp processes9 genomes; "
@@ -271,6 +272,7 @@ CGP_CODE_NAME                   = 'cgp_driver.py'        # top-level, driver pro
 CGP_CODE                        = CGP_DIR_DEFAULT + CGP_CODE_NAME # absolute path of top-level, driver for CompareGeneProfiles pipeline
 GENOMICS_CODE_NAME              = 'genomics_driver.py'   # top-level, driver program for running Genomics analysis
 GENOMICS_CODE                   = GENOMICS_DIR_DEFAULT + GENOMICS_CODE_NAME # absolute path of top-level, drive for Genomics analysis
+VOG_GENE_HEADER_FILENAME        = "vog.gene.headers.lst"  # The headers from the vog.genes.tagged.all.fa file (computed by multiPhate.py)
 VOG_PROTEIN_HEADER_FILENAME     = "vog.protein.headers.lst"  # The headers from the vog.proteins.tagged.all.fa file (computed by multiPhate.py)
 VOG_ANNOTATION_FILENAME         = "vog.annotations.tsv"  # The annotations associated with VOG identifiers (downloaded from VOG server)
 PVOG_HEADER_FILENAME            = "pVOGs.headers.lst"
@@ -354,8 +356,10 @@ os.environ["PHATE_VOGS_BASE_DIR"]                   = DATABASE_DIR_DEFAULT + "VO
 os.environ["PHATE_VOG_PROTEIN_BASE_DIR"]            = os.environ["PHATE_VOGS_BASE_DIR"]
 #os.environ["PHATE_VOG_ANNOTATION_FILE"]             = os.environ["PHATE_VOGS_BASE_DIR"] + "vog.annotations.tsv"
 os.environ["PHATE_VOG_ANNOTATION_FILE"]             = ""
-os.environ["PHATE_VOG_GENE_BLAST_HOME"]             = os.environ["PHATE_VOGS_BASE_DIR"] + "VOG_genes.fnt"      
-os.environ["PHATE_VOG_PROTEIN_BLAST_HOME"]          = os.environ["PHATE_VOGS_BASE_DIR"] + "VOG_protein.faa"
+#os.environ["PHATE_VOG_GENE_BLAST_HOME"]             = os.environ["PHATE_VOGS_BASE_DIR"] + "VOG_genes.fnt"      
+#os.environ["PHATE_VOG_PROTEIN_BLAST_HOME"]          = os.environ["PHATE_VOGS_BASE_DIR"] + "VOG_protein.faa"
+os.environ["PHATE_VOG_GENE_BLAST_HOME"]             = ""      
+os.environ["PHATE_VOG_PROTEIN_BLAST_HOME"]          = ""
 os.environ["PHATE_VOG_PROTEIN_HEADER_FILE"]         = ""  # This should be called PHATE_VOG_HEADER_FILE, since applies to gene and protein
 os.environ["PHATE_VOG_PROTEIN_ANNOTATION_FILE"]     = ""  # This should be called PHATE_VOG_ANNOTATION_FILE, since applies to gene and protein
 os.environ["PHATE_PHANTOME_BASE_DIR"]               = DATABASE_DIR_DEFAULT + "Phantome/"
@@ -1462,6 +1466,16 @@ for cLine in cLines:
     elif match_vogGeneDBpath:   
         if match_vogGeneDBpath.group(1) != '':
             os.environ["PHATE_VOG_GENE_BLAST_HOME"] = match_vogGeneDBpath.group(1)
+            PHATE_VOG_GENE_BASE_DIR = os.path.dirname(match_vogGeneDBpath.group(1)) + '/'
+            os.environ["PHATE_VOG_GENE_BASE_DIR"]    = PHATE_VOG_GENE_BASE_DIR 
+            os.environ["PHATE_VOG_GENE_HEADER_FILE"] = os.path.join(PHATE_VOG_GENE_BASE_DIR,VOG_GENE_HEADER_FILENAME)
+            os.environ["PHATE_VOG_ANNOTATION_FILE"]  = os.path.join(PHATE_VOG_GENE_BASE_DIR,VOG_ANNOTATION_FILENAME)
+            # Create Vog Gene headers file
+            try:
+                command = "grep '>' " + os.environ["PHATE_VOG_GENE_BLAST_HOME"] + ' > ' + os.environ["PHATE_VOG_GENE_HEADER_FILE"]
+                success = os.system(command)
+            except:
+                print ("multiPhate says, ERROR: Could not create PHATE_VOG_GENE_HEADER_FILE")
 
     elif match_vogProteinDBpath:   
         if match_vogProteinDBpath.group(1) != '':
