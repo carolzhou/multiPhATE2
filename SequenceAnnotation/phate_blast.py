@@ -6,7 +6,7 @@
 #
 # Programmer:  Carol Zhou
 #
-# Last Update:  29 September 2020
+# Last Update:  13 October 2020
 # 
 # Classes and Methods:
 #    multiBlast
@@ -32,7 +32,7 @@
 ############################################################################
 
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
-# THIS CODE IS COVERED BY THE GPL-3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
+# THIS CODE IS COVERED BY THE BSD LICENSE. SEE INCLUDED FILE BSD.PDF FOR DETAILS.
 
 import re
 import copy
@@ -57,6 +57,13 @@ HSP_SORT_CRITERION = 3 # for sorting hsp's
     # 2 = query start
     # 3 = percent identity
     # 4 = subject start
+
+# Create log
+#DEBUG = True
+DEBUG = False
+blastErrorLog = "./blastError.log"
+if DEBUG:
+    BLAST_ERROR_LOG = open(blastErrorLog,'a')
 
 # Get environment variables (set in phate_runPipeline.py)
 
@@ -383,10 +390,16 @@ class multiBlast(object):
             if PHATE_WARNINGS:
                 print("phate_blast says, ERROR: blast flavor not currently supported: ", self.blastFlavor)
             return
+
+        BLAST_SUCCEEDED = True
         try:
-            result = os.system(command)
+            #result = os.system(command)
+            os.system(command)
         except:
             print("ERROR: Blast process failed for command ", command)
+            BLAST_SUCCEEDED = False
+            if DEBUG:
+                BLAST_ERROR_LOG.write("%s%s\n" % ("WARNING: Blast failed for the following sequence:",outfile))
 
         # Capture result(s) and store as an annotation object for this fasta; Coded for -outfmt 7
 
@@ -428,7 +441,7 @@ class multiBlast(object):
         p_gi       = re.compile('^gi\|(\d*)|')   # gi number occurs at front of hit defline; capture number only via group(0)
 
         # Parse from XML-formatted blast output
-        if self.outputFormat == XML:
+        if self.outputFormat == XML and BLAST_SUCCEEDED:
 
             blastDatabase = ""
             blastProgram  = ""
@@ -552,7 +565,7 @@ class multiBlast(object):
                     fasta.annotationList.append(newAnnotation)
 
         # Parse from LIST-formatted blast output
-        elif self.outputFormat == LIST:
+        elif self.outputFormat == LIST and BLAST_SUCCEEDED:
             columns = []; hitList = []
             outfileH = open(outfile,"r")
             bLines = outfileH.read().splitlines()
