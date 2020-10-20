@@ -2,9 +2,11 @@
 
 #######################################
 #
-# checkVogData.py
+# Name: checkVogData.py
 #
-# Date: 20 July 2020
+# Programmer: Carol L. Ecale Zhou
+#
+# Date: 19 October 2020
 #
 # Summary: This script compares the vog.genes/proteins.all/fa files to vog.genes/proteins.tagged.all.fa files
 #   to determine why the latter files are smaller than the former.
@@ -12,7 +14,7 @@
 ######################################
 
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
-# THIS CODE IS COVERED BY THE GPL-3 LICENSE. SEE INCLUDED FILE GPL-3.pdf FOR DETAILS
+# THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.pdf FOR DETAILS
 
 import os, sys, re
 

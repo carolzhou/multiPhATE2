@@ -1,17 +1,33 @@
 ##########################################################################
 #
-# module dbPrep_vog
+# Name:  module dbPrep_vog
 #
 # Description:  Handles data and processing for VOG data type
 #
-# Last update:  23 July 2020
+# Last update:  19 October 2020
 #
 # Programmer:  C. E. Zhou
+#
+# Classes and Methods
+#    VOG
+#       printAll
+#    VOGs
+#       tagVogFastas
+#       linkFastas2VOGs
+#       insertAccns
+#       readParameters
+#       loadVogs
+#       loadAnnotations
+#       writeVOGtaggedFastaFile
+#       getSequence
+#       getVogCount
+#       getAccessionCount
+#       printAll
 #
 #########################################################################
 
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
-# THIS CODE IS COVERED BY THE GPL-3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
+# THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
 
 import os
 import re

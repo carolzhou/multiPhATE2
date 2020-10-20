@@ -5,11 +5,17 @@
 # Program Title:  multiPhate2.py (/multiPhate2/)
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last Update:  13 October 2020
 #
-# Description: Script multiPhate.py runs an annotation pipeline (phate_runPipeline.py) over any
-#    number of genomes specified in the user's input configuration file (multPhate.config). It then
-#    runs a code (CGP) to compare the proteomes of the user's genomes.
+# Last Update:  19 October 2020
+#
+# Description: Script multiPhate.py is a driver program that runs the multiPhATE2 bacteriophage annotation system,
+#    which comprises four modules:  Gene Calling, PhATE, Compare Gene Profiles, and Genomics. See the README file
+#    for information about each of these modules. The multiPhate.py script takes a single input parameter, 
+#    multiphate.config, which specifies the user's input configurations guiding execution of multiPhATE2.
+#    MultiPhATE2 is intended to be run in a Conda environment, but can also be run on a system running Python 3.x
+#    as the default version of Python. Any number of bacteriophage genomes can be specified in the multiphate.config
+#    file; concurrency enables parallel annotation of the user's genomes and subsequent comparision among the
+#    genomes.
 #    Specifically:
 #      1) multiPhate.py runs the annotation pipeline over each input phage genome. The first step
 #         involves gene calling using up to 4 gene callers plus an optional custom gene caller's
@@ -25,14 +31,29 @@
 #         config), and lists all corresponding predicted genes and proteins from each of the other genomes.
 #         Lastly, it identifies corresponding genes and proteins with respect to the reference genome,
 #         and creates homology groups.
+# Setup:
+#    CompareCalls/         - code for comparing gene caller results
+#    DatabasePrep/         - code for preparing custom databases
+#    GeneCalling/          - mini-pipeline runs gene-call programs
+#    CompareGeneProfiles/  - code for comparing genes/proteins across genomes
+#    Genomics/             - code for consolidating comparisons across genomes
+#    SequenceAnnotation/   - PhATE sequence annotation codes
+#    Utility/              - miscellaneous codes
+#    phate_runPipeline.py  - PhATE pipeline driver
+#    PipelineIntput/       - contains myGenome.fasta (and optional custom gene calls)
+#    PipelineOutput/       - output files are written here and to genome-specific subdirectories
+#    multiphate.config     - configuration file (copy/modify sample.config)
 #
 # Usage:  python multiPhate.py myMultiPhate.config
 #    (see sample_multiPhate.config for how to create your configuration file)
 #
+# Methods:
+#    phate_threaded() - Creates and handles threads for running phate_runPipeline.py in parallel
+#
 ################################################################
 
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
-# THIS CODE IS COVERED BY THE BSD LICENSE. SEE INCLUDED FILE BSD.PDF FOR DETAILS.
+# THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
 
 import datetime
 import time

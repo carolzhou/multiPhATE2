@@ -2,9 +2,11 @@
 
 ################################################################
 #
-# CGC_convertGenbankFasta2gff3.py  # 
+# Name: CGC_convertGenbankFasta2gff3.py   
 #
 # Programmer: Carol Zhou
+#
+# Date of most recent update:  16 October 2020
 #
 # Description:  Accepts a genbank protein fasta file and outputs a GFF3-formatted list of genes 
 #    Use this script when you need to input genbank's proteins into CGC to compare with PHANOTATE's (or other).
@@ -16,7 +18,7 @@
 ################################################################
 
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
-# THIS CODE IS COVERED BY THE GPL-3 LICENSE. SEE INCLUDED FILE GPL-3.pdf FOR DETAILS.
+# THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.pdf FOR DETAILS.
 
 import sys
 import os

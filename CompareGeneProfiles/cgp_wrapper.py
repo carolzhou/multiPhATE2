@@ -1,12 +1,13 @@
 #!/usr/bin/env python
-
 #######################################################
 #
-# CGPMwrapper.py (/multiPhATE2/)
+# Name: CGPMwrapper.py (/multiPhATE2/)
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last Update: 01 September 2020
 #
+# Last Update: 16 October 2020
+#
+# Description:
 # This script uses a config file to run compareGeneProfiles.py
 # using the designated input files.  Specifically, the config file
 # contains a base directory followed by 2 genome filenames and 2
@@ -46,11 +47,12 @@
 # There is one set of the above input parameters for each comparison
 # to be run.
 #
+# Method:
+#    cgp_threaded
 #
 #################################################################
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
-# THIS CODE IS COVERED BY THE GPL-3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
-
+# THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
 
 import sys, os, re, string, copy
 import time

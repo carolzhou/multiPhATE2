@@ -2,20 +2,26 @@
 # Module: dbPrep_annotation.py
 # Programmer: Carol L. Ecale Zhou
 #
-# Data of last update: 21 July 2020 
+# Data of last update: 19 October 2020 
 #
 # Module containing classes and methods for representing annotation results from various sources 
 # Classes and methods: 
 #     annotationRecord
-#         enterGFFdata(gff/dict)
+#         enterGFFdata
+#         removeRedundancy
 #         printAnnotationRecord
+#         printAnnotationRecord_tabHeader
+#         printAnnotationRecord_tab
+#         printAnnotationRecord2file_tabHeader
+#         printAnnotationRecord2file_tab
 #         printAnnotationRecord2file
 #         printAll
-#         printAll2file(fileH)
+#         printAll2file
+#
 #########################################################
 
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
-# THIS CODE IS COVERED BY THE GPL-3 LICENSE. SEE INCLUDED FILE GPL-3.pdf FOR DETAILS
+# THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.pdf FOR DETAILS
 
 import re
 import os

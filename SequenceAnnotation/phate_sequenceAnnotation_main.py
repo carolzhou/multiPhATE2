@@ -1,22 +1,21 @@
-#!/usr/bin/env python
+#0!/usr/bin/env python
 
 ################################################################
 #
-# phate_sequenceAnnotation_main.py
+# Name: phate_sequenceAnnotation_main.py
+#
+# Programmer: CEZhou
+#
+# Latest Update: 30 August 2020
 #
 # Description:  Performs blast and/or hmm searches on a given input gene or protein databases.
 #    Databases may be blast, sequence, or hmm profiles. Current search programs supported are:
 #    blastn, blastp, jackhmmer, phmmer, hmmscan.
 #
-# Programmer: CEZhou
-#
-# Latest Update: 30 August 2020
-# Version 1.5
-#
 ################################################################
 
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
-# THIS CODE IS COVERED BY THE GPL-3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
+# THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
 
 import sys, os, re, string, copy
 import time, datetime
@@ -189,7 +188,7 @@ RUN_GENOME_BLAST         = False         # blasting against genome database
 RUN_GENE_BLAST           = False         # blasting against gene database
 RUN_PROTEIN_BLAST        = False         # blasting against any protein database
 BLASTP_SEARCH            = False         # If True, run blastp against fasta blast DB(s)
-BLAST_THREADS            = 1             # Positive integer; assume serial execution unless indicated otherwise
+BLAST_THREADS            = 0             # Positive integer; assume serial execution unless indicated otherwise
 PHMMER_SEARCH            = False         # if True, run phmmer against fasta blast DB(s)
 JACKHMMER_SEARCH         = False         # if True, run jackhmmer against fasta blast DB(s)
 HMMSCAN                  = False         # Default; can be configured by user ###*** to be deprecated
@@ -447,7 +446,11 @@ for i in range(0,argCount):
 
     if match_blastThreadsParam:
         if i < argCount:
-            blastThreads = int(argList[i+1])
+            value = argList[i+1]
+            if int(value) >= 0:
+                blastThreads = value 
+            else:
+                blastThreads = 0
 
     # Blast, Hmm, and Profile database processing
 

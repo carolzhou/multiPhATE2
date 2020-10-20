@@ -3,67 +3,81 @@
 #
 # Programmer: Carol L. Ecale Zhou
 #
-# Most recent update: 15 August 2020
+# Most recent update: 19 October 2020
 # 
 # Module containing classes and methods for representing a multi-fasta sequence and associated methods
 # Classes and methods: 
 #     fasta
-#         queryNRsequence(gi,nrLocation)
-#         enterGeneData(geneData/dict)
-#         assignType(type)
-#         assignHeader(hdr)
-#         assignCompoundHeader(hdr,parent)
-#         assignCustomHeader(customHdr)
+#         queryNRsequence
+#         enterGeneData
+#         assignType
+#         assignHeader
+#         assignCompoundHeader
+#         assignCustomHeader
+#         assignHeader
+#         assignSequence
 #         removeEMBOSSpostfix
 #         removeTerminalAsterisk
 #         getFullHeader
 #         getCleanHeader
-#         getShortHeader
 #         getTruncHeader
+#         getShortHeader
 #         getCompoundHeader
 #         getBlastHeader
-#         getHeader(hdrType)
+#         getSequentialHeader
 #         getCustomHeader
-#         assignSequence(seq)
-#         consolidate
-#         getSequenceLength
-#         getSubsequence(start,end)
-#         reverseComplement
-#         addAnnotation
+#         getHeader
 #         getStartCodon
 #         verifyProkaryoticStartCodon
-#         highlightAllStartCodons
+#         consolidate
+#         getSequenceLength
+#         getSubsequence
+#         getPVOGassociation
+#         reverseComplement
+#         addAnnotation
 #         printFasta
-#         printFasta2file(fileH)
-#         printFasta2file_case(fileH,case)
+#         printFasta2file
+#         printFasta2file_case
 #         printAll
+#         printAll_tab
+#         printAll2file_tab
+#         printData2file_GFF
 #         printAll2file
-#         splitToList(lineLength)
+#         splitToList
 #         getAnnotationlist
 #         printAnnotations
-#         printAnnotations2file(fileH)
+#         printAnnotations_tab
+#         printAnnotations2file_tab
+#         printAnnotations2file
 #     multiFasta   
+#         findStringInHeader
 #         reportStats
 #         countParalogs
-#         addFasta(newFa)
-#         addFastas(lines,mtype)
-#         addFastasFromFile(mtype)
-#         addAnnotation(newAnnot)
-#         deleteFasta(oldFa)
+#         assignContig
+#         assignContig2all
+#         assignParent
+#         assignCompoundHeaders
+#         assignMoleculeType
+#         addFasta
+#         addFastas
+#         addFastasFromFile
+#         addAnnotation
+#         deleteFasta
 #         printMultiFasta
-#         printMultiFasta2file(fileH)
-#         printMultiFasta2file_case(fileH,case)
+#         printMultiFasta2file
+#         printMultiFasta2file_case
+#         printMultiFasta2file_custom
 #         printAll
-#         printAll2file(fileH)
+#         printAll2file
 #         renumber
-#         matchHeader(hdr)
+#         matchHeader
 #         removeEMBOSSpostfix
 #         removeTerminalAsterisk   
 #
 ####################################################################    
 
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
-# THIS CODE IS COVERED BY THE GPL-3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
+# THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
 
 import re, string
 import phate_annotation

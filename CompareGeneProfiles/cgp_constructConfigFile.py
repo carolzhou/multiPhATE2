@@ -2,8 +2,13 @@
 
 #######################################################
 #
-# constructConfigFile.py
+# Name: constructConfigFile.py
 #
+# Programmer: Carol L. Ecale Zhou
+#
+# Date of most recent update: 16 October 2020
+#
+# Description:
 # This script inputs 2 parameters: 1) a text file containing a base directory
 # and a list of genome fasta and annotation gff files, followed by 2) a
 # filename where output is to be written. Then, constructConfigFile.py
@@ -24,13 +29,10 @@
 # Note that there are no blank lines, the fasta file is listed first,
 # and there is a single space preceeding the gff file.
 #
-# Programmer:  Carol L. Ecale Zhou
-# Last update: 04 March 2020
-#
 #################################################################
 
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
-# THIS CODE IS COVERED BY THE GPL-3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
+# THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
 
 import sys, os, re, string, copy
 from subprocess import call

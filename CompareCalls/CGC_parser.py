@@ -2,10 +2,11 @@
 
 ################################################################
 #
-# CGC_parser.py
+# Name:  CGC_parser.py
 #
 # Programmer:  Carol Zhou
-# Last update:  30 August 2020
+#
+# Last update:  16 October 2020
 #
 # Description:  This code inputs the name of a gene caller plus
 #    the gene-caller's output file, and outputs a properly formatted
@@ -24,13 +25,22 @@
 #    XXX.genes.sco file, for Glimmer3, use the run3.coords file. 
 #
 # Programmer's Notes:
-#    *) Should this code to writing to OUTFILE or OUT, even if user provided
+#    *) Should this code be writing to OUTFILE or OUT, even if user provided
 #       an output filename?
+#
+# Methods:
+#    ProcessGenemark()
+#    ProcessGlimmer()
+#    ProcessCustom()
+#    ProcessRAST()
+#    ProcessGFF3()
+#    ProcessProdigal()
+#    ProcessPHANOTATE()
 #
 ################################################################
 
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
-# THIS CODE IS COVERED BY THE GPL-3 LICENSE. SEE INCLUDED FILE GPL-3.pdf FOR DETAILS.
+# THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.pdf FOR DETAILS.
 
 import datetime
 import sys

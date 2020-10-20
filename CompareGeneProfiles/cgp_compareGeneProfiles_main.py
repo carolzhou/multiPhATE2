@@ -1,13 +1,13 @@
 #!usr/bin/env python
-
-
 ###################################################################
 #
-# compareGeneProfiles_main.py
+# Name: compareGeneProfiles_main.py
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last update: 30 August 2020
 #
+# Last update: 16 October 2020
+#
+# Description:
 # This program compares the gene calls from 2 genomes and identifies genes that 
 # match, are similar, or are unique in each genome. This code is a re-write of
 # compareGeneProfiles.py, which was written using beginner's knowledge of Python.
@@ -18,35 +18,19 @@
 # Files:
 #    genome sequence files (in multi-fasta format; -g1 and -g2)
 #    annotation files (in RAST .gff or .gff3 format; -a1 and -a2)
-# Match/similarity detection (integer 0-100) with default value:
-#    %identity gene-match cutoff (default 95)
-#    %coverage gene-match cutoff (default 95)
-#    %identity gene-similarity cutoff (default 60)
-#    %coverage gene-similarity cutoff (default 75)
-#    %identity domain-match cutoff (default 95)
-#    %coverage domain-match cutoff (default 45)
-#    %identity domain-similarity cutoff (default 60)
-#    %coverage domain-similarity cutoff (default 45)
-#    %identity paralog-match cutoff (default 95)
-#    %coverage paralog-match cutoff (default 95)
-#    %identity paralog-domain similarity cutoff (default 60)
-#    %coverage paralog-domain similarity cutoff (default 45) 
-#    %identity protein-match cutoff (default 95)
-#    %coverage protein-match cutoff (default 95)
-#    %identity protein-similarity cutoff (default 60)
-#    %coverage protein-similarity cutoff (default 75)
-#    %identity protein-domain-match cutoff (default 95)
-#    %coverage protein-domain-match cutoff (default 45)
-#    %identity protein-domain-similarity cutoff (default 60)
-#    %coverage protein-domain-similarity cutoff (default 45)
-#    %identity protein-paralog-match cutoff (default 95)
-#    %coverage protein-paralog-match cutoff (default 95)
-#    %identity protein-paralog-domain similarity cutoff (default 60)
-#    %coverage protein-paralog-domain similarity cutoff (default 45) 
+#
+# Methods:
+#    ConstructFilename
+#    ConstructNewFilename
+#    GetRootFile
+#    GetConfig
+#    GetArguments
+#    Translate2protein
+#    ExtractGeneCalls
 #
 ###################################################################
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
-# THIS CODE IS COVERED BY THE GPL-3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
+# THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
 
 #SERVER = False  # True if this version of the code is running on the Django server
 SERVER = True

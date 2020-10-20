@@ -4,17 +4,19 @@
 #
 # Program:  dbPrep_createPvogFastaFile.py
 #
+# Programmer:  CEZhou
+#
+# Last Update:  19 October 2020
+#
 # Description: This code reads input files, AllFamilyProteinList.tab and NCBI_Phage.faa,
 #    and creates a file containing pVOG-tagged protein fastas.
 #
 # Usage:  python createPvogFastaFile.py
 #
-# Programmer:  CEZhou
-#
 ####################################################################
 
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
-# THIS CODE IS COVERED BY THE GPL-3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
+# THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
 
 import sys
 import os

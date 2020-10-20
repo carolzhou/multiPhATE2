@@ -1,27 +1,41 @@
 ############################################################################
-# THIS MODULE IS UNDER DEVELOPMENT 
 #
-# Module:  phate_profile.py
+# Name:  phate_profile.py
 #
-# Most Recent Update: 15 August 2020
+# Programmer:  Carol Zhou
 #
+# Most Recent Update: 19 October 2020
+#
+# Description:
 # This class performs hmm searches of hmm profiles or alignments against 
 # various protein- or phage-related hmm profile databases.  The terminology may
 # be confusing. This module uses profiles against profile databases. The "hmm"
 # module run hmm codes to search sequence databases.
 # 
-# Programmer:  C Zhou
-#
-# Programmer's Notes:
-# Currently working on running profile search with hmmscan. Need to install the pVOGs profile
-# database on this machine; then test/fix code for running/parsing/saving profile searches.
-#
 # Classes and Methods:
+#    class multiProfile
+#       setProfileParameters
+#       setTopHitCount
+#       setGeneCallDir
+#       setProfileOutDir
+#       getTopHits
+#       getDescription4pvog
+#       getDescription4vog
+#       prifile1fasta
+#       runProfile
+#       writeVOGsequences2file
+#       cleanProfileOutDir
+#       printParameters
+#       printParameters2file
+#       printAnnotations2file
+#       printAll
+#       printAll2file
+#       calculateStatistics
 #
 ############################################################################
 
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
-# THIS CODE IS COVERED BY THE GPL-3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
+# THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
 
 import re
 import copy

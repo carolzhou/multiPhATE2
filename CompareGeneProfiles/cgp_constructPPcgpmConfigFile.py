@@ -2,7 +2,11 @@
 
 ################################################################
 #
-# constructPPcgpmConfigFile.py
+# Name: constructPPcgpmConfigFile.py
+#
+# Programmer: Carol L. Ecale Zhou
+#
+# Last update:  16 October 2020
 #
 # Description:  Constructs a config file for input to ppCGPMwrapper.py.
 #    Config file is constructed by reading the directory names produced
@@ -12,13 +16,9 @@
 #    to be post-processed. This code should be run in the working 
 #    directory where the current analysis is being done.
 #
-# Programmer: Carol L. Ecale Zhou
-# Last update:  04 March 2020
-#
 ################################################################
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
-# THIS CODE IS COVERED BY THE GPL-3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
-
+# THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
 
 import sys
 import os
@@ -74,11 +74,6 @@ REPORT_FILE = "compareGeneProfiles_main.report"
 myDict = {
     "example" : "myStuff",
     }
-
-##### FUNCTIONS
-
-def MyFunction():
-    return (0) 
 
 ##### GET INPUT PARAMETERS
 

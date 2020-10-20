@@ -1,21 +1,42 @@
 ############################################################################
 #
-# Module:  phate_hmm.py
+# Name:  phate_hmm.py
 #
+# Programmer:  Carol Zhou
+#
+# Most recent update:  19 October 2020
+# 
+# Description:
 # This class performs hmm searches against various protein- or phage-related fasta databases. 
 # Note that this "hmm" module runs hmm codes. The "profile" module runs profiles or alignments.
 # 
-# Programmer's Notes: 
-#
-# Programmer:  C Zhou
-# Most recent update:  06 August 2020
-# 
 # Classes and Methods:
+#    class multiHmm
+#       setHmmParameters
+#       setHmmProgram
+#       setTopHitCount
+#       setOutputFormat
+#       setGeneCallDir
+#       setHmmOutDir
+#       setPVOGsOutDir
+#       setVOGsOutDir
+#       getTopHits
+#       hmm1fasta
+#       runHmm
+#       writeVOGsequence2file
+#       cleanHmmOutDir
+#       printParameters
+#       printParameters2file
+#       printAnnotations
+#       printAnnotations2file
+#       printAll
+#       printAll2file
+#       calculateStatistics
 #
 ############################################################################
 
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
-# THIS CODE IS COVERED BY THE GPL-3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
+# THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
 
 import re
 import copy

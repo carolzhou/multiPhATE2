@@ -2,7 +2,11 @@
 
 #####################################################################
 #
-# phate_getLast3percent.py
+# Name: phate_getLast3percent.py
+#
+# Programmer:  Carol Zhou
+#
+# Last Update: 19 October 2020
 #
 # Description: This code captures the remaining 3% of pVOG sequences
 #    from the NR database, which could not be retrieved in the original
@@ -39,12 +43,10 @@
 #       than add these sequences to the NR subset and re-run the original
 #       code, phate_createPvogFastaFile.py (see NOTE above).
 #
-# Programmer:  CEZhou
-#
 ####################################################################
 
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
-# THIS CODE IS COVERED BY THE GPL-3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
+# THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
 
 import sys
 import os

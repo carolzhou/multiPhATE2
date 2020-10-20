@@ -1,15 +1,24 @@
 ##########################################################################
 #
-# module phate_pVOG
+# Name: phate_pVOG
+#
+# Programmer:  C. E. Zhou
+# 
+# Last Update: 19 October 2020
 #
 # Description:  Handles data and processing for pVOG data type
 #
-# Programmer:  C. E. Zhou
+# Classes and Methods:
+#    pVOG
+#    pVOGs
+#       addPvogs
+#       getPvogCount
+#       getAccessionCount
 #
 #########################################################################
 
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
-# THIS CODE IS COVERED BY THE GPL-3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
+# THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
 
 #DEBUG = True
 DEBUG = False 
@@ -21,21 +30,6 @@ import os
 import copy
 import subprocess
 
-#class pVOGrecord(object):
-    
-#    def __init__(self):
-#        self.pVOGrecord = {
-#            'summary'      : '',
-#            'family'       : '',
-#            'species'      : '',
-#            'genomeAccn'   : '',
-#            'peptideAccn'  : '',
-#            'location'     : '',
-#            'number'       : 0,
-#            'genomeCount'  : 0,
-#            'peptideCount' : 0,
-#            'description'  : '',
-#            }
 pVOGrecord = {
     'summary'      : '',
     'family'       : '',

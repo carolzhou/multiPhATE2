@@ -1,6 +1,21 @@
-# This script invokes I/O in order to keep an ssh window active
-
 #!/user/bin/env python
+
+#######################################################################
+#
+# Name: keep_it_going.py
+#
+# Programmer:  Carol Zhou
+#
+# Last Update:  19 October 2020
+#
+# Description:  Run this script in the background to keep you ssh window
+#  active, for example when downloading databases onto a remote server.
+#  
+#######################################################################
+
+# This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
+# THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.pdf FOR DETAILS.
+
 import time
 while True:
     time.sleep(100)

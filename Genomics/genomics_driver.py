@@ -2,21 +2,20 @@
 
 #######################################################################################
 #
-# genomics_driver.py
+# Name: genomics_driver.py
+#
+# Programmer:  C. E. Zhou
+#
+# Latest update:  19 October 2020
 #
 # Description: This driver code runs the Genomics module, which identifies gene correspondences
 #    among genomes that have been compared using CompareGeneProfiles (CGP), creates fasta
 #    clusters of homologus gene and protein sequences, and builds hmms accordingly.
 #
-# Programmer:  C. E. Zhou
-#
-# Latest update:  30 August 2020
-# multiPhATE2 v. 1.5
-#
 ########################################################################################
 
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory
-# THIS CODE IS COVERED BY THE GPL-3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
+# THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
 
 import sys, os, re, string, copy
 import time, datetime

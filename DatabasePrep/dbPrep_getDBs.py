@@ -1,22 +1,21 @@
 #!/usr/bin/env python
-
 #############################################################################
 #
 # program: dbPrep_getDBs.py
 #
 # programmer:  C. E. Zhou
 #
-# Programmer's Notes:
-# 1) update_blastdb.pl --showall <to see which databases are available>
+# Most recent update:  19 October 2020
 #
 # Summary:  This script facilitates the downloading of databases to be used with multiPhATE.
 #
-# Most recent update:  08 August 2020
+# Programmer's Notes:
+# 1) update_blastdb.pl --showall <to see which databases are available>
 #
 ##############################################################################
 
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
-# THIS CODE IS COVERED BY THE GPL-3 LICENSE. SEE INCLUDED FILE GPL-3.pdf FOR DETAILS.
+# THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.pdf FOR DETAILS.
 
 import os, sys, re, time, datetime
 #from ftplib import FTP
@@ -75,6 +74,14 @@ accn2taxid_file     = "nucl_gb.accession2taxid"
 accn2taxid_file_gz  = accn2taxid_file + ".gz"
 accn2taxid_fileAddr = os.path.join(accn2taxid_httpAddr,accn2taxid_file_gz)
 
+# Refseq Databases # not yet in service
+refseqVirusProtein          = "https://ftp.ncbi.nlm.nih.gov/refseq/release/viral/"
+refseqVirusProteinFilename1 = "viral.1.protein.faa.gz"
+refseqVirusProteinFilename2 = "viral.2.protein.faa.gz"
+refseqVirusProteinFile1addr = refseqVirusProtein + refseqVirusProteinFilename1
+refseqVirusProteinFile2addr = refseqVirusProtein + refseqVirusProteinFilename2
+refseqVirusProteinFilename  = "viral.protein.faa"  # This will hold the concatenated segments
+
 # Swissprot Database
 swissprotUniprot_httpAddr = "ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz"
 swissprotDBfile_gz        = "uniprot_sprot.fasta.gz"
@@ -102,36 +109,37 @@ cazyFamInfo_httpAddr       = os.path.join(dbCAN2_httpAddr,cazyFamInfo)
 cazyPrWithEC_httpAddr      = os.path.join(dbCAN2_httpAddr,cazyPrWithEC)
 
 # DATABASES: Boolean control
-BLAST               = False
-NCBI_VIRUS_GENOME   = False
-NCBI_VIRUS_PROTEIN  = False
-REFSEQ_PROTEIN      = False
-SWISSPROT           = False
-NR                  = False
-PHANTOME            = False 
-PVOGS               = False 
-PVOG_HMMS           = False
-VOGS                = False
-VOG_HMMS            = False
-CAZY                = False
+BLAST                = False
+NCBI_VIRUS_GENOME    = False
+NCBI_VIRUS_PROTEIN   = False
+REFSEQ_PROTEIN       = False
+SWISSPROT            = False
+NR                   = False
+PHANTOME             = False 
+PVOGS                = False 
+PVOG_HMMS            = False
+VOGS                 = False
+VOG_HMMS             = False
+CAZY                 = False
 
 # VARIABLES
-blast               = ''
-ncbi_virus_genome   = ''
-ncbi_virus_protein  = ''
-refseq_gene         = ''
-refseq_protein      = ''
-swissprot           = ''
-nr                  = ''
-pvogs               = ''
-pvog_hmms           = ''
-vogs                = ''
-vog_hmms            = ''
-cazy                = ''
-decision            = ''
-blastPath           = '' # path to user's blast installation
-cwd                 = '' # current working direcgtory
-emailAddr           = '' # user's email address for ftp login
+blast                = ''
+ncbi_virus_genome    = ''
+ncbi_virus_protein   = ''
+refseq_gene          = ''
+refseq_protein       = ''
+refseq_virus_protein = ''
+swissprot            = ''
+nr                   = ''
+pvogs                = ''
+pvog_hmms            = ''
+vogs                 = ''
+vog_hmms             = ''
+cazy                 = ''
+decision             = ''
+blastPath            = '' # path to user's blast installation
+cwd                  = '' # current working direcgtory
+emailAddr            = '' # user's email address for ftp login
 
 # Set up database directories
 cwd                    = os.getcwd()  # current working directory
@@ -253,7 +261,7 @@ if REMOTE:
     NCBI_VIRUS_GENOME   = False 
     NCBI_VIRUS_PROTEIN  = False 
     REFSEQ_PROTEIN      = False 
-    SWISSPROT           = True 
+    SWISSPROT           = False 
     NR                  = False
     PHANTOME            = False   # Provided in distribution
     PVOGS               = False   # Provided in distribution

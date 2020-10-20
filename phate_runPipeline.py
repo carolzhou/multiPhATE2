@@ -2,38 +2,29 @@
 
 ################################################################
 #
-# Program Title:  phate_runPipeline.py ()
+# Program Title:  phate_runPipeline.py 
 #
-# Most recent update:  20 August 2020
+# Programmers: 
+#    Carol E. Zhou - pipeline programmer: CompareCalls/, DatabasePrep/, SequenceAnnotation/, phate_runPipeline.py
+#    Jeff Kimbrel, Carol Zhou  - GeneCalling/
+#
+# Most recent update:  19 October 2020
 #
 # Description: Runs the phate annotation pipeline.  This code runs under Python 3.7, and requires
 #    dependent packages.
 #
 # Input: a json string, formatted by multiPhATE2.py
 #
-# Usage:  python phate_runPipeline.py myGenome.json
-#
-# Setup:
-#     CompareCalls/         - code for comparing gene caller results
-#     DatabasePrep/         - code for preparing custom databases
-#     GeneCalling/          - mini-pipeline runs gene-call programs
-#     SequenceAnnotation/   - PhATE sequence annotation codes
-#     phate_runPipeline.py  - pipeline driver
-#     PipelineInput/        - contains myGenome.fasta (and optionally, myGenome.psat)
-#     PipelineOutput/       - output files are written here to a subdirectory specified in config file
-#     myPhATE.config        - configuration file (copy/modify sample.config)
+# Usage:  Do not invoke this code manually. This code is invoked by multiPhate.py
+#   as follows:  python phate_runPipeline.py myGenome.json
 #
 # Programmer's Notes:
 #    This code uses a running log; need to occasionally clean it out
 #
-# Programmers: 
-#    Carol E. Zhou - pipeline programmer: CompareCalls/, DatabasePrep/, SequenceAnnotation/, phate_runPipeline.py
-#    Jeff Kimbrel, Carol Zhou  - GeneCalling/
-#
 ################################################################
 
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
-# THIS CODE IS COVERED BY THE BSD LICENSE. SEE INCLUDED FILE BSD.PDF FOR DETAILS.
+# THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
 
 import sys, os, re, string, copy, time, datetime
 import subprocess

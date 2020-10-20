@@ -1,39 +1,57 @@
 ###############################################################
-# Module: cgp_genomeSequence.py
+# Name: cgp_genomeSequence.py
+#
 # Programmer: Carol L. Ecale Zhou
-# Last Update: 20 August 2020
+#
+# Last Update: 16 October 2020
 # 
+# Description:
 # Module comprising data structures for organizing genome information
 # Note:  EMBOSS messes with fasta headers; therefore, I am putting minimal info in the header and using only '/'
 #    as a separator. EMBOSS adds "_1" to the end of a simple fasta header--can't prevent this. Using other 
 #    separators wreaks havoc in terms of the header EMBOSS produces.
+#
 # Classes and methods:
 #    genome
-#        setName(name)
-#        setGenomeType(type)
-#        setFilename(filename)
-#        setSpecies(species)
-#        addContig(newContig)
-#        addContigs(lines)
-#        addGene(newGene)
-#        addProtein(newProtein)
-#        addAnnotation(newAnnot)
-#        getSubsequence(start,end,contig)
-#        getSubsequenceWithFlank(start,end,contig,flank)
+#        setCodeBaseDir
+#        setOutputDir
+#        setName
+#        setGenomeType
+#        setFilename
+#        setSpecies
+#        getCGCsubsequence
+#        getSubsequence
+#        getSubsequenceWithFlank
+#   xxx  setPSATparameters
+#        processGeneCalls
+#        addContig
+#        addContigs
+#        addGene
+#        addProtein
+#        addAnnotation
+#   xxx  PSATparmasOK
+#   xxx  recordPSATannotations
+#        countAllAnnotations
 #        printGenomeData
-#        printGenomeData2file(fileH)
+#        printGenomeData_tab
+#        printGenomeData2file_tab
+#        printGenomeData2file
+#        printGenomeData2file_GFF
 #        printAll
-#        printAll2file(fileH)
+#        printAll2file
 #        printGenes
-#        printFastas2file(kvargs:mtype,hdrType)
-#        writePVOGgroups(pVOGsOutDir)
-#        translateGenes(kvargs:geneticCode,file)
-#        makeBlastDB(kvargs:dbtype,filename)
-#        write2proteinSet(faLines)
-#        cleanUpAfterEmboss()
+#        printFastas2file
+#        translateGene
+#        translateGenes
+#        makeBlastDB
+#        write2proteinSet
+#        restorSlashesAfterEMBOSS
+#        cleanUpAfterEmboss
+#
+#########################################################################################
 
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
-# THIS CODE IS COVERED BY THE GPL-3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
+# THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
 
 import string
 from Bio.Seq import Seq

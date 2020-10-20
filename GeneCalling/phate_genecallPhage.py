@@ -1,12 +1,27 @@
 ################################################################
 #
-# phate_genecallPhage.py
+# Program Title: phate_genecallPhage.py
 #
 # Programmers: Jeff Kimbrel, Carol Zhou
 #
-# Last update: 20 August 2020
+# Last update: 19 October 2020
 #
-# Description: Single command to run PHANOTATE, Prodigal, Glimmer and GeneMarkS on a fasta file
+# Description: Script phate_genecallPhage.py runs up to four gene callers: PHANOTATE, Prodigal, 
+#    Glimmer and GeneMarkS, on a genome fasta file. Outputs from these gene callers are converted to
+#    GFF format, and also to a multiPhATE2-specfic CGC format, which facilitates downstream 
+#    processing in the SequenceAnnotation module of multiPhATE2.
+#
+# Classes and Methods:
+#    class geneCall
+#       systemCall()
+#       getProdigalID()
+#       getGeneMarkSID()
+#       processProdigal()
+#       processGlimmer()
+#       processGeneMarkS()
+#       processPhanotate()
+#       Convert_gff2cgc()
+#       Convert_cgc2gff()
 #
 ################################################################
 

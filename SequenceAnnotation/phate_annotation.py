@@ -1,8 +1,10 @@
 ###########################################################
-# Module: phate_annotation.py
+#
+# Name: phate_annotation.py
+#
 # Programmer: Carol L. Ecale Zhou
 #
-# Latest update: 30 August 2020
+# Latest update: 19 October 2020
 #
 # Description: Module containing classes and methods for representing annotation results from various sources 
 #
@@ -10,29 +12,35 @@
 #     annotationRecord
 #         addPVOBid2list
 #         getPVOGassociationList
-#         enterGFFdata(gff/dict)
+#         enterGFFdata
 #         setPSATparameters
+#         removeRedundancy
 #         recordPSATannotations
 #         updatePSATcount
 #         getDBXREFs
 #         findInfo
 #         getFigDescription
 #         getPvogMembers
+#         findPVOGannotation
+#         findVOGannotation
 #         getNCBItaxonomy
 #         link2databaseIdentifiers
+#         getECdescription4cazy
 #         printAnnotationRecord_tabHeader
 #         printAnnotationRecord_tab
+#         printAnnotationRecord_tagged
+#         printAnnotationDescription
 #         printAnnotationRecord2file_tabHeader
 #         printAnnotationRecord2file_tab
-#         printAnnotationRecord2file
 #         returnGFFannotationRecord
+#         printAnnotationRecord2file
 #         printAll
-#         printAll2file(fileH)
+#         printAll2file
 #         writePVOGgroups
 ##########################################################
 
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
-# THIS CODE IS COVERED BY THE GPL-3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
+# THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
 
 import re, os, subprocess
 import platform

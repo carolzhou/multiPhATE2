@@ -1,8 +1,9 @@
 ###########################################################
-# Module: cgp_annotation.py
+# Name: cgp_annotation.py
+#
 # Programmer: Carol L. Ecale Zhou
 #
-# Latest update: 11 April 2020
+# Latest update: 16 October 2020
 #
 # Description: Module containing classes and methods for representing annotation results from various sources 
 #
@@ -20,19 +21,20 @@
 #         getPvogMembers
 #         getNCBItaxonomy
 #         link2databaseIdentifiers
+#         returnGFFannotationRecord
+#         printAnnotationRecord
 #         printAnnotationRecord_tabHeader
 #         printAnnotationRecord_tab
 #         printAnnotationRecord2file_tabHeader
 #         printAnnotationRecord2file_tab
 #         printAnnotationRecord2file
-#         returnGFFannotationRecord
 #         printAll
 #         printAll2file(fileH)
 #         writePVOGgroups
 ##########################################################
 
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
-# THIS CODE IS COVERED BY THE GPL-3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
+# THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
 
 import re, os, subprocess
 
@@ -486,6 +488,36 @@ class annotationRecord(object):
 
         return 
 
+    # Return annotations as a semicolon-delimited string
+    def returnGFFannotationRecord(self,FILE_HANDLE):
+        annot = ''
+        if self.annotationType == 'gene':
+            annot = '(gene) ' + self.start + '/' + self.end + '/' + self.strand + ' ' + self.method 
+        elif self.annotationType == 'functional':
+            annot = '(func) ' + self.method + ' ' + self.description
+        elif self.annotationType == 'homology':
+            homologName = self.name
+            newName = re.sub(';','',homologName)  # Remove embedded ';' because GFF uses this delimiter
+            annot = '(homolog) ' + self.method + ' ' + newName
+        elif self.annotationType == 'hmm search':
+            annot = '(hmm search) ' + self.method + ' ' + self.description
+        elif self.annotationType == 'profile search':
+            annot = '(profile search) ' + self.method + ' ' + self.description
+        elif self.annotationType == 'cds':
+            annot = '(cds)' + self.method + ' ' + self.description
+        elif self.annotationType == 'mrna':
+            annot = '(mrna)' + self.method + ' ' + self.description
+        elif self.annotationType == 'polypeptide':
+            annot = '(polypeptide) ' + self.method + ' ' + self.description
+        else:
+            annot = '(unk type) ' + self.method + ' ' + self.description
+
+        annotationString = ""
+        for item in self.annotationList:
+            annotationString += item
+        annot += annotationString
+        FILE_HANDLE.write("%s" % (annot))
+
     # PRINT METHODS
 
     def printAnnotationRecord(self):
@@ -522,36 +554,6 @@ class annotationRecord(object):
         tabLine += str(self.start) + '-' + str(self.end) + '/' + self.strand + '\t'
         tabLine += self.name + '\t' + self.description + '\t' + annotationString
         FILE_HANDLE.write("%s\n" % (tabLine))
-
-    # Return annotations as a semicolon-delimited string
-    def returnGFFannotationRecord(self,FILE_HANDLE):
-        annot = ''
-        if self.annotationType == 'gene':
-            annot = '(gene) ' + self.start + '/' + self.end + '/' + self.strand + ' ' + self.method 
-        elif self.annotationType == 'functional':
-            annot = '(func) ' + self.method + ' ' + self.description
-        elif self.annotationType == 'homology':
-            homologName = self.name
-            newName = re.sub(';','',homologName)  # Remove embedded ';' because GFF uses this delimiter
-            annot = '(homolog) ' + self.method + ' ' + newName
-        elif self.annotationType == 'hmm search':
-            annot = '(hmm search) ' + self.method + ' ' + self.description
-        elif self.annotationType == 'profile search':
-            annot = '(profile search) ' + self.method + ' ' + self.description
-        elif self.annotationType == 'cds':
-            annot = '(cds)' + self.method + ' ' + self.description
-        elif self.annotationType == 'mrna':
-            annot = '(mrna)' + self.method + ' ' + self.description
-        elif self.annotationType == 'polypeptide':
-            annot = '(polypeptide) ' + self.method + ' ' + self.description
-        else:
-            annot = '(unk type) ' + self.method + ' ' + self.description
-
-        annotationString = ""
-        for item in self.annotationList:
-            annotationString += item
-        annot += annotationString
-        FILE_HANDLE.write("%s" % (annot))
 
     def printAnnotationRecord2file(self,FILE_HANDLE):  #*** Update this
         FILE_HANDLE.write("%s%s%s" % ("Annotation source:",self.source,"\n"))

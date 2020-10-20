@@ -1,27 +1,34 @@
 #############################################
-# Module: blastAnalysis.py
-# Programmer:  Carol L. Ecale Zhou
-# Date of last update:  01 September 2020
+# Name: blastAnalysis.py
 #
+# Programmer:  Carol L. Ecale Zhou
+#
+# Date of last update:  16 October 2020
+#
+# Description:
 # Module comprising data structures and methods for blasting the genes and proteins
 #    of two genome objects and comparing the gene profiles and the nt and aa levels.
 #
 # Classes and methods: 
 #     hit 
+#         computeCoverage
 #         printAll
 #         printAll2file
+#         printAll2file_tab
 #     hitList
 #         append
 #         printAll
 #         printAll2file
 #     homology
+#         computeCoverage
+#         mergeAll
 #         reportStats
 #         printAll
 #         printAll2file
-#         mergeAll
 #     paralog
 #         printAll
 #         printAll2file
+#         printAll2file_tab
 #     blast
 #         identifyLoners
 #         identifyParalogs
@@ -34,7 +41,7 @@
 #
 #####################################################################################################
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
-# THIS CODE IS COVERED BY THE GPL-3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
+# THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
 
 import string
 import cgp_fastaSequence as fastaSequence

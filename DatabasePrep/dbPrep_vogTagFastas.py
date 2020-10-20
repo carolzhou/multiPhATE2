@@ -4,19 +4,19 @@
 #
 # Program: dbPrep_vogTagFastas.py
 #
+# Programmer:  Carol L. Ecale Zhou
+#
+# Most recent update: 23 July 2020 
+#
 # Description: Processes VOG data files. Inserts VOG identifiers in header
 #    string of each fasta file.  
 #
 # Instructions: Run this code within the /DatabasePrep/ folder
 #
-# Programmer:  Carol L. Ecale Zhou
-#
-# Most recent update: 23 July 2020 
-#
 ###########################################################################
 
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
-# THIS CODE IS COVERED BY THE GPL-3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
+# THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
 
 import os, sys, re, copy, subprocess
 import dbPrep_vog

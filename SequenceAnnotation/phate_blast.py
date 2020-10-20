@@ -1,12 +1,12 @@
 ############################################################################
 #
-# Module:  phate_blast.py
+# Name:  phate_blast.py
 #
 # This class performs blast against various phage-related databases. 
 #
 # Programmer:  Carol Zhou
 #
-# Last Update:  13 October 2020
+# Last Update:  19 October 2020
 # 
 # Classes and Methods:
 #    multiBlast
@@ -32,7 +32,7 @@
 ############################################################################
 
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
-# THIS CODE IS COVERED BY THE BSD LICENSE. SEE INCLUDED FILE BSD.PDF FOR DETAILS.
+# THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
 
 import re
 import copy

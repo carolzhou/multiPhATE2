@@ -6,11 +6,11 @@
 #
 # Programmer: Carol Zhou
 #
-# Last Update: 30 August 2020
+# Last Update: 16 October 2020
 #
 # Description:  Accepts a list of input files, each comprising a set of
 #    gene calls from a given gene caller program (e.g., Prodigal, Glimmer,
-#    GeneMark, RAST, PHANOTATE, custom).  Outputs comparisons accross the gene calls. 
+#    GeneMark, RAST, PHANOTATE, custom).  Outputs comparisons across the gene calls. 
 #    Note:  The input files are re-formatted using CGC_parser.py, so that
 #    they have a common format and identify the gene caller in the comments
 #    at the top of the file.
@@ -18,7 +18,7 @@
 ################################################################
 
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
-# THIS CODE IS COVERED BY THE GPL-3 LICENSE. SEE INCLUDED FILE GPL-3.pdf FOR DETAILS.
+# THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.pdf FOR DETAILS.
 
 import os
 

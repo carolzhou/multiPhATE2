@@ -3,70 +3,99 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Most recent update: 30 August 2020
+# Most recent update: 19 October 2020
 #
 # Module comprising classes and data structures for comparing genomes
 #
 # Classes and Methods:
 #    class comparison
-#       performComparison()
-#       ---data input
-#       loadData()
-#       readDirectories()
-#       parseDirectories()
-#       parseReportFiles()
-#       findGenomes()
-#       loadBestHits()
-#       getGeneCallString()
-#       addHit2genome()
-#       findGenomeObject()
-#       ---comparison
-#       identifyParalogs()
-#       computeHomologyGroups()
-#       saveHomologyGroups()
-#       ---verification
-#       countGenomes()
-#       checkUnique()
-#       ---reporting
-#       writeCoreGenome()
-#       writeCorrespondences()
-#       writeMutualBestHitList()
-#       writeSingularBestHitList()
-#       writeLonerList()
-#       printReport()
-#       printAll()
+#       performComparison
+#     - comparison data and load methods
+#       loadData
+#       readDirectories
+#       parseDirectories
+#       parseReportFiles
+#       findGenomes
+#       loadBestHits
+#       loadParalogs
+#       addParalog2genome
+#       addGeneCallString
+#       addHit2genome
+#       findGenomeObject
+#       addMutualBestHit
+#       addSingularBestHit
+#       addLoner
+#     - comparison genomic methods
+#       computeHomologyGroups
+#       findGeneParalog
+#       createGeneHomologyFastaFiles
+#       createProteinHomologyFastaFiles
+#       getGeneFile
+#       getProteinFile
+#       getSequence
+#       getAnnotation
+#     - comparison data check methods
+#       runDataChecks
+#       countGenomes
+#       checkMutualBestHitLists
+#       checkUnique
+#     - comparison print methods
+#       writeCorrespondences2file
+#       writeCoreGenome2file
+#       writeCoreGenome
+#       writeMutualBestHitList2file
+#       writeMutualBestHitList
+#       writeSingularBestHitList2file
+#       writeSingularBestHitList
+#       writeGeneCorrespondecnes2file
+#       writeGeneCorrespondecnes
+#       writeLonerList2file
+#       writeLonerList
+#       writeParalogs2file
+#       writeParalogs
+#       writeHomologyGroups2file
+#       writeHomologyGroups
+#       printReports2files
+#       printReports2file
+#       printReport
+#       printAll2file
+#       printAll
 #    class genome
-#       ---comparison
-#       identifyParalogs()
-#       ---verification
-#       checkUnique()
-#       ---reporting
-#       printReport()
-#       printAll()
+#       addParalog
+#     - genome data check methods
+#       checkMutualBestHitList
+#       checkSingularBestHitList
+#       checkUnique
+#     - genome print methods
+#       printAll2file
+#       printAll
 #    class paralogSet
-#       ---verification
-#       countParalogs()
-#       ---reporting
-#       printReport()
-#       printAll()
+#       countParalogs
+#     - paralog print methods
+#       printAll2file
+#       printAll
 #    class gene_protein
-#       ---data input
-#       addMutualBestHit()
-#       addSingularBestHit()
-#       addGroupMember()
-#       ---verification
-#       verifyLoner()
-#       ---reporting
-#       writeMutualBestHitList()
-#       writeSingularBestHitList()
-#       writeLonerList()
-#       printReport()
-#       printAll()
+#       addMutualBestHit
+#       addSingularBestHit
+#       addGroupMember
+#     - gene_protein data check methods
+#       verifyLoner
+#     - gene_protein print methods
+#       writeMutualBestHitList2file
+#       writeMutualBestHitList
+#       writeSingularBestHitList2file
+#       writeSingularBestHitList
+#       writeLonerList2file
+#       writeLonerList
+#       writeReport2file
+#       writeReport
+#       printAll2file
+#       printAll
 #
 #################################################################################
 
-# This code was developed by Carol. L. Ecale Zhou at Lawrence Livermore National Laboratory.
-# THIS CODE IS COVERED BY THE GPL-3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
+# This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
+# THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
 
 import re, os, copy
 import subprocess

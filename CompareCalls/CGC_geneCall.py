@@ -4,27 +4,34 @@
 #
 # Programmer:  Carol Zhou
 #
+# Date of most recent update:  16 October 2020
+#
 # Description:  Module containing classes and methods for handling data output from a gene caller 
 #
 # Classes and Methods:
 #    GeneCall()
 #        AssignGeneCall(<input parameters>)
 #        PrintAll()
+#        PrintAll2file()
 #        PrintAll_brief()
+#        PrintAll_brief_2file()
 #    GeneCallSet()
+#        UpdateGeneCount()
+#        GetGeneCalls()
 #        AddGeneCall(newGeneCall)
 #        AddGeneCalls(GENE_FILE_HANDLE)
 #        IsLesser(gene1,gene2)
-#        UpdateGeneCount()
-#        GetGeneCalls()
 #        SortGeneCalls()
+#        Swap()
 #        PrintAll()
+#        PrintAll2file()
 #        PrintAll_brief()
+#        PrintAll_brief_2file()
 #
 #################################################################################################
 
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
-# THIS CODE IS COVERED BY THE GPL-3 LICENSE. SEE INCLUDED FILE GPL-3.pdf FOR DETAILS.
+# THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.pdf FOR DETAILS.
 
 import re
 import copy

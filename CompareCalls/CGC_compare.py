@@ -8,31 +8,48 @@
 #    callers.
 #
 # Updates:
-#    15 August 2020
-#
-# Programmer's Notes:
+#    16 October 2020
 #
 # Classes and Methods:
 #    Comparison
 #        IdentifyCallers()
 #        IdentifyCommonCore()
-#        IsLesser(gene1,gene2)
-#        Merge(nextGeneSet)
+#        IsLesser()
+#        Merge()
 #        Compare()
+#        Score()
+#        AverageGeneCallScores()
+#        IsIdentical()
+#        SameSaveStareCoordinates()
+#        ProcessAgreement()
+#        PrintGenecalls2file_cgc()
+#        PrintGenecalls2file_gff()
 #        PrintMergeList()
+#        PrintMergeList2file()
 #        PrintUniqueList()
+#        PrintUniqueList2file()
 #        PrintCommonCore()
+#        PrintCommonCore2file()
 #        PrintCallerList()
+#        PrintCallerList2file()
+#        PrintConsensusScores()
+#        PrintConsensusScores2file()
 #        PrintGenecallGrid()
+#        PrintGenecallGrid2file()
 #        PrintReport()
+#        PrintReport2file()
 #        PrintStats()
+#        PrintStats2file()
+#        PrintGenecallScores()
+#        PrintGenecallScores2file()
 #        PrintAll()
+#        PrintAll2file()
 #        PrintAll_verbose()
 #
 ###################################################################################################
 
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
-# THIS CODE IS COVERED BY THE GPL-3 LICENSE. SEE INCLUDED FILE GPL-3.pdf FOR DETAILS.
+# THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.pdf FOR DETAILS.
 
 import os, re
 import copy

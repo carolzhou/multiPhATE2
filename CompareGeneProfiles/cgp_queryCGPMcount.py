@@ -2,17 +2,16 @@
 
 #######################################################
 #
-# queryCGPMcount.py
-#
+# Name: queryCGPMcount.py
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last update:  12 April 2020
+#
+# Last update:  16 October 2020
 # 
 #
 #################################################################
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
-# THIS CODE IS COVERED BY THE GPL-3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
-
+# THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
 
 import sys, os, re, string, copy
 from subprocess import call

@@ -2,11 +2,13 @@
 
 #######################################################
 #
-# cgp_driver.py - command-line version 1.0.0 (/multiPhATE2/)
+# Name: cgp_driver.py - command-line version 1.0.0 (/multiPhATE2/)
 #
 # Programmer:  Carol L. Ecale Zhou
-# Last update: 21 August 2020
 #
+# Last update: 16 October 2020
+#
+# Description:#
 # This script inputs a config file, cgpNxN.config, which lists the
 # base directory containing input fasta and annotation files for
 # processing through compareGeneProfiles_main.py.
@@ -33,7 +35,7 @@
 #
 #################################################################
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
-# THIS CODE IS COVERED BY THE GPL-3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
+# THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
 
 import sys, os, re, string, copy
 import datetime, time
