@@ -70,7 +70,15 @@ Procedure:
 1) At the command line, make a copy of the file, [sample.multiPhate.config](sample.multiPhate.config), and name it appropriately (hereafter referred to as `multiPhate.config`): ` $ cp sample.multiPhate.config multiPhate.config`.  Then, edit your config file as described below.
 
 2) List of Genomes:
-For each genome to be processed, provide six lines under "Genome List:" and before "END of list":  for each genome, you need to list the genome number, the name of the genome fasta file, the genome type (typically 'phage', but could be 'bacteria'), the species, if known (no spaces), the name of the genome, and a name for the output directory to hold this genome's output files (again, no spaces and no periods), in that order. You can simply copy/paste the six lines provided as many times as needed, and fill in the information appropriate for each genome.
+For each genome to be processed, provide six lines under "Genome List:" and before "END of list":  for each genome, you need to list (in this order):
+   - the genome number,
+   - the name of the genome fasta file,
+   - the genome type (typically 'phage', but could be 'bacteria'),
+   - the species, if known (no spaces),
+   - the name of the genome, and
+   - a name for the output directory to hold this genome's output files (again, no spaces and no periods)
+   
+You can simply copy/paste the six lines provided as many times as needed, and fill in the information appropriate for each genome.
 
 3) Processing Information:
 You may configure the pipeline to perform gene finding only, or gene finding plus functional annotation. For example, you may want to examine the results of multiple gene finders before going forward with functional annotation. In order to configure phate to run gene finding only, set translate_only to 'true'; in this way, only gene-calling and translation (to peptide sequence) will be performed. If you set translate_only to 'false', then the pipeline will not stop at the translation step, but will proceed with functional annotation of the predicted genes (ie, blast and/or hmm). Normally the genetic_code should be set to '11', for prokaryotic.
