@@ -2153,6 +2153,9 @@ if runCGP and not translateOnly and (len(genomeList) > 1):
     # Run CompareGeneProfiles
     genomeCount = len(genomeList)
     maxCGPthreads = (genomeCount * (genomeCount - 1))/2 
+    if cgpThreads == 'ALL' or cgpThreads == 'MAX':
+        cgpThreads = os.cpu_count()
+
     if cgpThreads >= int(maxCGPthreads):
         cgpThreads = int(maxCGPthreads)
 
