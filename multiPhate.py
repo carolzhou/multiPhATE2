@@ -2080,7 +2080,7 @@ def phate_threaded(jsonFile):
 
 # Control Threading
 THREADING_ON = True
-if int(phateThreads) == 0:
+if phateThreads != 'ALL' and int(phateThreads) == 0:
     THREADING_ON = False
     LOG.write("%s%s\n" % ("THREADING_ON is ",THREADING_ON))
 
