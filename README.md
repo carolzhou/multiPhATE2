@@ -23,7 +23,7 @@ THIS CODE IS COVERED BY THE GPL-3 LICENSE. SEE INCLUDED FILE GPL-3.pdf FOR DETAI
 
 #### ABOUT THE MULTI-PHATE PIPELINE DRIVER
 
-MultiPhATE is a command-line program that runs gene finding and the PhATE annotation code over user-specified phage genomes, then performs gene-by-gene comparisons among the genomes. The multiPhate.py code takes a single argument consisting of a configuration file (hereafter referred to as, "multiPhate.config"; use sample.multiPhate.config as starting point) and uses it to specify annotation parameters. Then, multiPhate.py invokes the PhATE pipeline for each genome. See below for the types of annotations that PhATE performs. If two or more genomes are specified by the user, then multiPhATE will run the CompareGeneProfiles code to identify corresponding genes among the genomes.
+MultiPhATE is a command-line program that runs gene finding and the PhATE annotation code over user-specified phage genomes, then performs gene-by-gene comparisons among the genomes. The `multiPhate.py` code takes a single argument consisting of a configuration file (hereafter referred to as, `multiPhate.config`; use the file [sample.multiPhate.config](sample.multiPhate.config) as starting point) and uses it to specify annotation parameters. Then, `multiPhate.py` invokes the PhATE pipeline for each genome. See below for the types of annotations that PhATE performs. If two or more genomes are specified by the user, then multiPhATE will run the CompareGeneProfiles code to identify corresponding genes among the genomes.
 
 #### ABOUT THE PHATE PIPELINE
 
@@ -35,19 +35,18 @@ CompareGeneProfiles performs binary blast (NxN) of the genes from each genome ag
 
 #### HOW TO SET UP MULTI-PHATE ON YOUR LOCAL MACHINE
 
-It is strongly recommended that you read through this narrative before installing multiPhATE, as you will find here complete installation instructions. Then, in the INSTALLATION CHECKLIST section (below) there is essentially a short summary of the procedure.
+It is strongly recommended that you read through this narrative before installing multiPhATE, as you will find here complete installation instructions. Then, in the [INSTALLATION CHECKLIST](#installation-and-set-up-checklist) section (below) there is essentially a short summary of the procedure.
 
 First, create a working directory on your computer for running multiPhATE. Then, acquire the multiPhATE package from github. This can be done either by downloading a zip file directly from the multiPhATE repository, or by cloning the repository. The first method is recommended, but the second is certainly an option:
 
-=) To download the zip file:  Use a browser and navigate to https://github.com/carolzhou/multiPhATE2. Press the green button "Clone or download", and download the zip file. Then, unzip the package in your working (main execution "multiPhate") directory.
+   - To download the zip file:  Clone the repository from [https://github.com/carolzhou/multiPhATE2](https://github.com/carolzhou/multiPhATE2). Press the green button "Clone or download", and download the zip file. Then, unzip the package in your working (main execution "multiPhate") directory.
 
 ```
 $ cd myMultiphateDir
 
 $ unzip multiPhate2-master.zip
 ```
-
-=) To clone from github:  Acquire git from https://git-scm.com/downloads. Naviate to your working (main execution "multiPhATE") directory, and clone multiPhATE from the command line: 
+   - To clone from github:  Acquire git from [https://git-scm.com/downloads](https://git-scm.com/downloads). Naviate to your working (main execution "multiPhATE") directory, and clone multiPhATE from the command line: 
 
 ```
 $ git init
@@ -55,11 +54,11 @@ $ git init
 $ git clone https://github.com/carolzhou/multiPhATE2
 ```
 
-(Complete instructions for using git and github can be found at http://help.github.com.)
+(Complete instructions for using git and github can be found at [http://help.github.com](http://help.github.com).)
 
 Now, be sure that multiPhate.py and phate_runPipeline.py and associated files and directories are in your main execution "multiPhATE2" directory. Check that the two subdirectories: PipelineInput/ and PipelineOutput/ are present (should already exist in the downloaded distribution). Place your phage genome fasta files (genome1.fasta, genome2.fasta, etc.) into the PipelineInput/ subdirectory. Place your configuration file (ie, your copy of sample.multiPhate.config) in the main execution directory (same level as multiPhate.py). A word of caution here:  it is always best to name your files and fasta contigs as strings lacking any spaces or special characters, as third-party codes over which we have no control may balk when encountering odd characters or spaces. I have attempted to make the multiPhATE code robust with respect to odd characters in fasta headers, but there is no guarantee. If you run into problems that might stem from this issue, you may run your genome fasta files through script cleanHeaders.py (find it in the Utility folder). 
 
-You will need to acquire one or more of the databases listed below under SUPPORING DATABASES (Phantome and pVOGs are included in the multiPhATE distribution, so it is possible to begin with just those), and the 3rd party codes listed under SUPPORTING 3rd PARTY CODES. You will need to acquire at least one of the supported gene finders, but it is recommended to run as many of the four gene finders as is feasible so that the results can be more meaningfully compared. You will need to specifiy the locations of the supporting data sets and codes in the multiPhATE config file (see multiPhate.config), and you will need to locate your genome file(s) to the PipelineInput/ subdirectory. Once you have acquired the third-party codes and databases, you will be ready to configure the multiPhate.config file.
+You will need to acquire one or more of the databases listed below under [SUPPORING DATABASES](#supporting-databases) (Phantome and pVOGs are included in the multiPhATE distribution, so it is possible to begin with just those), and the 3rd party codes listed under SUPPORTING 3rd PARTY CODES. You will need to acquire at least one of the supported gene finders, but it is recommended to run as many of the four gene finders as is feasible so that the results can be more meaningfully compared. You will need to specifiy the locations of the supporting data sets and codes in the multiPhATE config file (see multiPhate.config), and you will need to locate your genome file(s) to the PipelineInput/ subdirectory. Once you have acquired the third-party codes and databases, you will be ready to configure the multiPhate.config file.
 
 #### HOW TO WRITE A CONFIGURATION FILE
 
@@ -77,7 +76,7 @@ For each genome to be processed, provide six lines under "Genome List:" and befo
 You may configure the pipeline to perform gene finding only, or gene finding plus functional annotation. For example, you may want to examine the results of multiple gene finders before going forward with functional annotation. In order to configure phate to run gene finding only, set translate_only to 'true'; in this way, only gene-calling and translation (to peptide sequence) will be performed. If you set translate_only to 'false', then the pipeline will not stop at the translation step, but will proceed with functional annotation of the predicted genes (ie, blast and/or hmm). Normally the genetic_code should be set to '11', for prokaryotic.
 
 4) Gene Callers:
-The gene_caller option specifies which gene caller's results (ie, gene calls) will be used for subsequent functional annotation. The choices are:  'phanotate', 'genemarks', 'prodigal', or 'glimmer'.  To run a gene caller, you must have acquired that third-party code and installed it locally for use with multiPhATE. For each gene caller you wish to have run, set that caller's parameter to 'true'. In the usual case, you will want to specify gene_caller='phanotate' for annotation of phage genomes. You may also provide your own gene calls (referred to as "custom"), but your input file must conform to a gff format that is recognized by PhATE. Check the distribution for a sample custom gene-call file (Eb_P2.custom.gff, which resembles the output produced by Prodigal). A custom gene-call file must be named according to your genome's output subdirectory (e.g., myGenome.custom.gff) and placed in the PipelineInput/ directory. MultiPhATE2 will recognize your custom gene-call file and move it to the designated PipelineOutput subdirectory. If you select more than one gene caller (or select one and provide one of your own), then PhATE will compute the following gene-call sets: superset (non-redundant list of all gene-caller gene calls), consensus (set of calls that are in agreement among at least two gene callers), and commoncore (calls that are in agreement among all callers). You may select as the gene-call set to be forwarded for annotation any of the gene callers or 'superset', 'consensus', or 'commoncore'. Only one gene-call set will be annotated in a given multiPhATE run.
+The gene_caller option specifies which gene caller's results (ie, gene calls) will be used for subsequent functional annotation. The choices are:  '[phanotate](https://github.com/deprekate/PHANOTATE)', '[GeneMarkS](http://exon.gatech.edu/Genemark/)', '[prodigal](https://github.com/hyattpd/Prodigal)', or '[glimmer](http://ccb.jhu.edu/software/glimmer/index.shtml)'.  You must install each of the gene callers separately, although many of them can be [installed with conda](#conda-installation). For each gene caller you wish to have run, set that caller's parameter to 'true'. In the usual case, you will want to specify gene_caller='phanotate' for annotation of phage genomes. You may also provide your own gene calls (referred to as "custom"), but your input file must conform to a gff format that is recognized by PhATE. Check the distribution for a sample custom gene-call file (Eb_P2.custom.gff, which resembles the output produced by Prodigal). A custom gene-call file must be named according to your genome's output subdirectory (e.g., myGenome.custom.gff) and placed in the PipelineInput/ directory. MultiPhATE2 will recognize your custom gene-call file and move it to the designated PipelineOutput subdirectory. If you select more than one gene caller (or select one and provide one of your own), then PhATE will compute the following gene-call sets: superset (non-redundant list of all gene-caller gene calls), consensus (set of calls that are in agreement among at least two gene callers), and commoncore (calls that are in agreement among all callers). You may select as the gene-call set to be forwarded for annotation any of the gene callers or 'superset', 'consensus', or 'commoncore'. Only one gene-call set will be annotated in a given multiPhATE run.
 
 5) Annotation:
 Set to 'true' each blast or hmm search process that you want to be run. Note that you must have acquired the associated database, and in the next section (Databases) you must configure the location of each database. You may also set the desired blast parameters. The blast_identity sets the minimum identity that will be considered; any blast result below that threshold will be ignored. The hit_count parameters will determine how many top hits will be reported. (Note that recent releases of blast+ suggest considering at least 5 hits, and will generate a warning message if you set the hit count to less than 5.) You may select hmm search using phmmer, jackhmmer, or hmmscan. Currently hmm searches are performed only using the protein fasta databases or the pVOG protein and VOG protein profile database (future releases of multiPhate are expected to support additional databases).
@@ -110,7 +109,7 @@ This advanced feature allows the user to re-start computations at 3 stages in mu
 12) Verbosity:
 You may up- or down-regulate verbosity in the multiPhate.config file, under "# VERBOSITY". This includes an option to clean the (voluminous) raw blast and hmm search data from the output directories. It is suggested that clean_raw_data, and phate_progress be set to 'true'. The phate_warnings and phate_messages, when set to 'true', will generate voluminous output; set these to 'true' only when trouble-shooting the system. 
 
-Lastly, see INSTALLATION AND SET-UP CHECKLIST below.
+Lastly, see [INSTALLATION AND SET-UP CHECKLIST](#installation-and-set-up-checklist) below.
 
 
 #### PIPELINE EXECUTION
