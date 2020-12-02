@@ -58,16 +58,16 @@ $ git clone https://github.com/carolzhou/multiPhATE2
 
 Now, be sure that multiPhate.py and phate_runPipeline.py and associated files and directories are in your main execution "multiPhATE2" directory. Check that the two subdirectories: PipelineInput/ and PipelineOutput/ are present (should already exist in the downloaded distribution). Place your phage genome fasta files (genome1.fasta, genome2.fasta, etc.) into the PipelineInput/ subdirectory. Place your configuration file (ie, your copy of sample.multiPhate.config) in the main execution directory (same level as multiPhate.py). A word of caution here:  it is always best to name your files and fasta contigs as strings lacking any spaces or special characters, as third-party codes over which we have no control may balk when encountering odd characters or spaces. I have attempted to make the multiPhATE code robust with respect to odd characters in fasta headers, but there is no guarantee. If you run into problems that might stem from this issue, you may run your genome fasta files through script cleanHeaders.py (find it in the Utility folder). 
 
-You will need to acquire one or more of the databases listed below under [SUPPORING DATABASES](#supporting-databases) (Phantome and pVOGs are included in the multiPhATE distribution, so it is possible to begin with just those), and the 3rd party codes listed under SUPPORTING 3rd PARTY CODES. You will need to acquire at least one of the supported gene finders, but it is recommended to run as many of the four gene finders as is feasible so that the results can be more meaningfully compared. You will need to specifiy the locations of the supporting data sets and codes in the multiPhATE config file (see multiPhate.config), and you will need to locate your genome file(s) to the PipelineInput/ subdirectory. Once you have acquired the third-party codes and databases, you will be ready to configure the multiPhate.config file.
+You will need to acquire one or more of the databases listed below under [SUPPORING DATABASES](#supporting-databases) (Phantome and pVOGs are included in the multiPhATE distribution, so it is possible to begin with just those), and the 3rd party codes listed under SUPPORTING 3rd PARTY CODES. You will need to acquire at least one of the supported gene finders, but it is recommended to run as many of the four gene finders as is feasible so that the results can be more meaningfully compared. You will need to specifiy the locations of the supporting data sets and codes in the multiPhATE config file (see `multiPhate.config`), and you will need to locate your genome file(s) to the PipelineInput/ subdirectory. Once you have acquired the third-party codes and databases, you will be ready to configure the `multiPhate.config` file.
 
 #### HOW TO WRITE A CONFIGURATION FILE
 
 Summary:
-Availability and locations of supporting databases and codes are to be specified in a configuration file. A sample configuration file is provided, called "sample.multiPhate.config". Make a copy of this file and rename it accordingly (eg., myGenomeSet_multiPhate.config). Hereafter we refer to this file as, multiPhate.config. The multiPhate.config file is configured according to established default parameters (just about everything turned off initially). Any of the parameters may be modified (switches turned on or off) by assigning 'true' or 'false'. It is suggested that you turn switches off, then install each supporting gene finder and database in turn and test the pipeline.
+Availability and locations of supporting databases and codes are to be specified in a configuration file. A sample configuration file is provided, called [sample.multiPhate.config](sample.multiPhate.config). Make a copy of this file and rename it accordingly (eg., myGenomeSet_multiPhate.config). Hereafter we refer to this file as, `multiPhate.config`. The `multiPhate.config` file is configured according to established default parameters (just about everything turned off initially). Any of the parameters may be modified (switches turned on or off) by assigning 'true' or 'false'. It is suggested that you turn switches off, then install each supporting gene finder and database in turn and test the pipeline.
 
 Procedure:
 
-1) At the command line, make a copy of the file, sample.multiPhate.config, and name it appropriately (hereafter referred to as 'multiPhate.config'):  `$ cp sample.multiPhate.config multiPhate.config.  Then, edit your config file as described below.
+1) At the command line, make a copy of the file, [sample.multiPhate.config](sample.multiPhate.config), and name it appropriately (hereafter referred to as `multiPhate.config`): ` $ cp sample.multiPhate.config multiPhate.config`.  Then, edit your config file as described below.
 
 2) List of Genomes:
 For each genome to be processed, provide six lines under "Genome List:" and before "END of list":  for each genome, you need to list the genome number, the name of the genome fasta file, the genome type (typically 'phage', but could be 'bacteria'), the species, if known (no spaces), the name of the genome, and a name for the output directory to hold this genome's output files (again, no spaces and no periods), in that order. You can simply copy/paste the six lines provided as many times as needed, and fill in the information appropriate for each genome.
@@ -107,14 +107,14 @@ multiPhATE2 can be parallelized in several ways. First, the user may specify the
 This advanced feature allows the user to re-start computations at 3 stages in multiPhATE2 processing. Select the point at which you wish to re-start computations by setting that checkpoint to 'true'. See the section on checkpointing (below) for more information about when to use checkpointing.
 
 12) Verbosity:
-You may up- or down-regulate verbosity in the multiPhate.config file, under "# VERBOSITY". This includes an option to clean the (voluminous) raw blast and hmm search data from the output directories. It is suggested that clean_raw_data, and phate_progress be set to 'true'. The phate_warnings and phate_messages, when set to 'true', will generate voluminous output; set these to 'true' only when trouble-shooting the system. 
+You may up- or down-regulate verbosity in the `multiPhate.config` file, under "# VERBOSITY". This includes an option to clean the (voluminous) raw blast and hmm search data from the output directories. It is suggested that clean_raw_data, and phate_progress be set to 'true'. The phate_warnings and phate_messages, when set to 'true', will generate voluminous output; set these to 'true' only when trouble-shooting the system. 
 
 Lastly, see [INSTALLATION AND SET-UP CHECKLIST](#installation-and-set-up-checklist) below.
 
 
 #### PIPELINE EXECUTION
 
-Run the PhATE pipeline at the command line by passing your multiPhate.config file as an argument to the multiPhate.py pipeline driver script, as follows: `$ python multiPhate.py multiPhate.config`
+Run the PhATE pipeline at the command line by passing your `multiPhate.config` file as an argument to the multiPhate.py pipeline driver script, as follows: `$ python multiPhate.py multiPhate.config`
 
 #### HOW TO USE CHECKPOINTING
 
@@ -175,7 +175,7 @@ Databases/
 	VOGhmms/
 ```
 
-You must specify in your multiPhate.config file the locations of the data sets that you will be using. Although it is recommended that you place your databases in the above directory structure, they can reside anywhere locally on disk, but in any case you must specify the full directory path/filename to a given resource in your multiPhate.config file. Script dbPrep_getDBs.py generates a listing of the downloaded data files in dbPrep_getDBs.lst to assist you in copying/pasting the locations of your databases into your multiPhATE configuration file.
+You must specify in your `multiPhate.config` file the locations of the data sets that you will be using. Although it is recommended that you place your databases in the above directory structure, they can reside anywhere locally on disk, but in any case you must specify the full directory path/filename to a given resource in your `multiPhate.config` file. Script dbPrep_getDBs.py generates a listing of the downloaded data files in dbPrep_getDBs.lst to assist you in copying/pasting the locations of your databases into your multiPhATE configuration file.
 
 
 #### SUPPORTING 3rd PARTY CODES
@@ -278,7 +278,7 @@ Note that genemarks is not available as a conda package, so this program, as wel
 * Have you installed the databases you would like to use with multiPhATE? Recall that Phantome and pVOGs are included under Databases/, and that script dbPrep\_getDBs.py can assist you in downloading and preparing the databases.
 * Have you run makeblastdb or hmmpress on each of your local databases (if this has not already been done by dbPrep\_getDBs.py)?
 * Have you acquired the dependent codes, either by installing from the provided web addresses or by installing within a Conda environment?
-* Have you created a copy of sample.multiPhate.config and configured it?
+* Have you created a copy of [sample.multiPhate.config](sample.multiPhate.config) and configured it?
 	- added meta-data for each genome to be processed
 	- configured "translate_only" to do genecalling only ('true') or to do genecalling followed by blast/hmm analyses ('false')
 	- selected gene callers to be run, and specified the gene caller to use for annotation (preferred caller)?
@@ -308,7 +308,7 @@ Note that genemarks is not available as a conda package, so this program, as wel
 
 There are three ways to perform parallel processing with multiPhATE2. 1) The code can be run using multiprocessing by specifying the number of threads in the configuration file (phate_threads='', and cgp_threads=''); note that by specifying 'ALL', all available threads should be automatically used on your system. 2) Multiple instances of multiPhATE can be distributed across cores of a high-performance computing machine by specifying HPC='true' in the configuration file. Note that the user will need to write scripts specific to the hardware on which multiPhATE is to be run. 3) Blast+ allows the user to specify the number of threads for running blast processing. Specify the number of blast threads in the configuration file: blast_threads=''. 
 
-The MultiPhATE2 system avoids clashes in writing results; outputs for each genome are written to user-specified output subdirectories (specified in your multiPhate.config file).
+The MultiPhATE2 system avoids clashes in writing results; outputs for each genome are written to user-specified output subdirectories (specified in your `multiPhate.config` file).
 
 #### FURTHER RECOMMENDATIONS
 
