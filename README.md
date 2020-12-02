@@ -225,7 +225,7 @@ $ cd ..
 $ hmmpress pVOGsHmmProfilesDB.hmm
 ```
 
-The pVOGs data set is updated infrequently; as of this writing (1 August 2020), the pVOGs database has not been updated since it was last inserted into the multiPhATE distribution. The pVOGs data set can either be downloaded from [NCBI](https://ftp.ncbi/nlm.nih.gov/pub/kristensen/pVOGs/downloads/ALL/) or [U.Iowa](https://dmk-brain.ecn.uiowa.edu/pVOGs/downloads/ALL/).
+The pVOGs data set is updated infrequently; as of this writing (1 August 2020), the pVOGs database has not been updated since it was last inserted into the multiPhATE distribution. The pVOGs data set can either be downloaded from [NCBI](https://ftp.ncbi.nlm.nih.gov/pub/kristensen/pVOGs/downloads.html)
 
 [VOGs](http://fileshare.csb.univie.ac.at/vog/vog99/). Prepare for hmm profile searching in the same manner as pVOGs (see above). Caution: this database is large. If you get error messages to the effect that there are too many lines to concatenate, then try using the [dbPrep_consolidateVOGs.py](DatabasePrep/dbPrep_consolidateVOGs.py) script in the DatabasePrep/ folder. Then format using hmmpress as above. The VOG database files are updated on a regular basis. You may modify the dbPrep_getDBs.py script to download the current database version by modifying the VOG_VERSION variable at the top of the dbPrep_getDBs.py code (approximately line 59). The multiPhATE developers will check periodically for the next update and will modify the dbPrep_getDBs.py script accordingly, but please feel free to notify us if you detect an update before we do.
 
