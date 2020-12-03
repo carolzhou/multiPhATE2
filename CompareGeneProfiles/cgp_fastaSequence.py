@@ -81,7 +81,6 @@
 
 import re, string
 from Bio.Seq import Seq
-from Bio.Alphabet import generic_dna, generic_protein
 import cgp_annotation as annotation
 from Bio import SeqIO  
 import os

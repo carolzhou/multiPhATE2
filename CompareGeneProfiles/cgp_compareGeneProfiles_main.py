@@ -39,7 +39,6 @@ BACTERIAL_CODE = 11
 
 import sys, os, re, string, copy
 from Bio.Seq import Seq
-from Bio.Alphabet import generic_dna, generic_protein
 from time import strftime
 from time import gmtime
 import datetime
