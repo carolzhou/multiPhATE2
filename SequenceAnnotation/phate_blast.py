@@ -460,7 +460,7 @@ class multiBlast(object):
                     blastQuery = child.text
 
             # Find hits and extract hit data
-            for hit in root.getiterator('Hit'):  
+            for hit in root.iter('Hit'):  
                 # reset
                 speciesList = []; doPrint = False
                 querySeq = ""; subjectSeq = ""; hitDefline = ""
