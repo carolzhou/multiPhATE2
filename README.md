@@ -10,7 +10,7 @@ THIS CODE IS COVERED BY THE GPL-3 LICENSE. SEE INCLUDED FILE GPL-3.pdf FOR DETAI
  - [ABOUT THE MULTI-PHATE PIPELINE DRIVER](#about-the-multi-phate-pipeline-driver)
  - [ABOUT THE PHATE PIPELINE](#about-the-phate-pipeline)
  - [ABOUT COMPARE-GENE-PROFILES and the GENOMICS MODULE](#about-compare-gene-profiles-and-the-genomics-module)
- - [Quick Start Guide (TL;DR)](#quick-start-guide-(tl;dr))
+ - [Quick Start Guide (TL;DR)](#quick-start-guide-tldr)
  - [HOW TO SET UP MULTI-PHATE ON YOUR LOCAL MACHINE](#how-to-set-up-multi-phate-on-your-local-machine)
  - [HOW TO WRITE A CONFIGURATION FILE](#how-to-write-a-configuration-file)
  - [PIPELINE EXECUTION](#pipeline-execution)
@@ -18,14 +18,14 @@ THIS CODE IS COVERED BY THE GPL-3 LICENSE. SEE INCLUDED FILE GPL-3.pdf FOR DETAI
  - [SUPPORTING DATABASES](#supporting-databases)
  - [SUPPORTING 3rd PARTY CODES](#supporting-3rd-party-codes)
  - [CONDA INSTALLATION](#conda-installation)
- - [MultiPHATE OUTPUT FILES ](#multiphate-output-files-)
+ - [MultiPHATE OUTPUT FILES ](#multiphate-output-files)
  - [INSTALLATION AND SET-UP CHECKLIST](#installation-and-set-up-checklist)
  - [TROUBLESHOOTING](#troubleshooting)
- - [RUNNING PHATE AS AN "EMBARASSINGLY PARALLEL" CODE](#running-phate-as-an-"embarassingly-parallel"-code)
+ - [RUNNING PHATE AS AN "EMBARASSINGLY PARALLEL" CODE](#running-phate-as-an-embarassingly-parallel-code)
  - [FURTHER RECOMMENDATIONS](#further-recommendations)
- - [CAUTIONS ](#cautions-)
+ - [CAUTIONS ](#cautions)
  - [PUBLICATION](#publication)
- - [WHAT'S NEW?](#what's-new?)
+ - [WHAT'S NEW?](#whats-new)
 
 #### ABOUT THE MULTI-PHATE PIPELINE DRIVER
 
@@ -102,6 +102,7 @@ In particular:
 python3 multiPhate.py multiPhate.config
 ```
 
+[Return to the Index](#index)
 
 #### HOW TO SET UP MULTI-PHATE ON YOUR LOCAL MACHINE
 
@@ -129,6 +130,8 @@ $ git clone https://github.com/carolzhou/multiPhATE2
 Now, be sure that multiPhate.py and phate_runPipeline.py and associated files and directories are in your main execution "multiPhATE2" directory. Check that the two subdirectories: PipelineInput/ and PipelineOutput/ are present (should already exist in the downloaded distribution). Place your phage genome fasta files (genome1.fasta, genome2.fasta, etc.) into the PipelineInput/ subdirectory. Place your configuration file (ie, your copy of sample.multiPhate.config) in the main execution directory (same level as multiPhate.py). A word of caution here:  it is always best to name your files and fasta contigs as strings lacking any spaces or special characters, as third-party codes over which we have no control may balk when encountering odd characters or spaces. I have attempted to make the multiPhATE code robust with respect to odd characters in fasta headers, but there is no guarantee. If you run into problems that might stem from this issue, you may run your genome fasta files through script cleanHeaders.py (find it in the Utility folder). 
 
 You will need to acquire one or more of the databases listed below under [SUPPORING DATABASES](#supporting-databases) (Phantome and pVOGs are included in the multiPhATE distribution, so it is possible to begin with just those), and the 3rd party codes listed under SUPPORTING 3rd PARTY CODES. You will need to acquire at least one of the supported gene finders, but it is recommended to run as many of the four gene finders as is feasible so that the results can be more meaningfully compared. You will need to specifiy the locations of the supporting data sets and codes in the multiPhATE config file (see `multiPhate.config`), and you will need to locate your genome file(s) to the PipelineInput/ subdirectory. Once you have acquired the third-party codes and databases, you will be ready to configure the `multiPhate.config` file.
+
+[Return to the Index](#index)
 
 #### HOW TO WRITE A CONFIGURATION FILE
 
@@ -192,13 +195,19 @@ You may up- or down-regulate verbosity in the `multiPhate.config` file, under "#
 Lastly, see [INSTALLATION AND SET-UP CHECKLIST](#installation-and-set-up-checklist) below.
 
 
+[Return to the Index](#index)
+
 #### PIPELINE EXECUTION
 
 Run the PhATE pipeline at the command line by passing your `multiPhate.config` file as an argument to the multiPhate.py pipeline driver script, as follows: `$ python multiPhate.py multiPhate.config`
 
+[Return to the Index](#index)
+
 #### HOW TO USE CHECKPOINTING
 
 Checkpointing is provided at three stages of multiPhATE2 processing: 1) after completion of gene finding and before PhATE processing (phate checkpointing), 2) after completion of PhATE annotation, before execution of the CGP module (CGP checkpointing), and 3) after CGP processing and before the Genomics module (genomics checkpointing). In order for phate checkpointing to work, genefinding must have completed; likewise, for CGP checkpointing, the PhATE pipeline must have successfully completed for all input genomes. And finally, in order for CGP checkpointing to work, the genome.fasta files must exist in the PipelineInput/ folder, and the phate_sequenceAnnotation.gff files must exist in the PipelineOutput/ folder for all input genomes; and before Genomics checkpointing, all Results_nnn directories created by the CGP module must be in place. Invoking checkpointing involves setting the checkpoint parameters in your multiPhATE.config file:  turn checkpoint_phate, checkpoint_cgp, or checkpoint_genomics to 'true' (set only one of these 'true' in any given run). Checkpointing can be used at any stage when troubleshooting multiPhATE2; checkpointing allows the user to skip earlier stages of processing (saving time), and troubleshooting a later stage. In addition, checkpointing at the CGP module allows the user to run the module any number of times, using the same prerequisite data files (i.e., outputs from PhATE), in order to modify parameters that specificy stringency with which gene correspondences are determined, and, ultimately, a core genome is computed. Thus, if checkpointing at the CGP module, the cgp_identity cutoff can be modified to override default sequence identity. To re-run CGP with the custom parameter, invoke multiPhATE in the usual manner:  python multiPhate.py yourRunName.config.
+
+[Return to the Index](#index)
 
 #### SUPPORTING DATABASES
 
@@ -260,6 +269,8 @@ Databases/
 You must specify in your `multiPhate.config` file the locations of the data sets that you will be using. Although it is recommended that you place your databases in the above directory structure, they can reside anywhere locally on disk, but in any case you must specify the full directory path/filename to a given resource in your `multiPhate.config` file. Script dbPrep_getDBs.py generates a listing of the downloaded data files in dbPrep_getDBs.lst to assist you in copying/pasting the locations of your databases into your multiPhATE configuration file.
 
 
+[Return to the Index](#index)
+
 #### SUPPORTING 3rd PARTY CODES
 
 Note that some third-party codes are required for multiPhATE, but others are optional, as indicated below. Some of these codes can be installed in a Conda environment. Codes that can be installed via Conda are so indicated below. If using Conda, follow the instructions that occur at the bottom of this section. Otherwise, install these codes globally, following the instructions provided with each package from the source.
@@ -283,6 +294,8 @@ jackhmmer, phmmer, hmmscan - https://www.eddylab.org/software.html or http://www
 tRNAscan-SE - https://www.eddylab.org/software.html - select tRNAscan-SE download link (conda)
 
 wget - https://www.cyberciti.biz/faq/howto-install-wget-om-mac-os-x-mountain-lion-mavericks-snow-leopard/ https://www.tecmint.com/install-wget-in-linux/ (conda)
+
+[Return to the Index](#index)
 
 #### CONDA INSTALLATION
 
@@ -316,6 +329,8 @@ Repeat for each of biopython, emboss, blast, glimmer, prodigal, hmmer, trnascan-
 7) When running multiPhATE within your multiphate Conda environment, the pipeline will use the version of python and the third party codes installed within the multiphate environment, so there should be no clashes with other versions of these packages that may be installed elsewhere on your system. When you are finished running multiPhATE, you may exit from the multiphate Conda environment:  $ source deactivate
 
 Note that genemarks is not available as a conda package, so this program, as well as the dependent databases, all need to be acquired/installed manually (or via dbPrep_getDBs.py) in any case.
+
+[Return to the Index](#index)
 
 #### MultiPHATE OUTPUT FILES 
 
@@ -356,6 +371,8 @@ Note that genemarks is not available as a conda package, so this program, as wel
 
 
 
+[Return to the Index](#index)
+
 #### INSTALLATION AND SET-UP CHECKLIST
 
 * Have you installed multiPhATE either by downloading the zip file from https://github.com/carolzhou/multiPhATE.git or cloning the repository?
@@ -374,7 +391,10 @@ Note that genemarks is not available as a conda package, so this program, as wel
 * We recommend stepwise testing to be sure all components have been correctly installed and specified.
 * Feel free to post issues and suggestions regarding multiPhATE on our github project page: https://github.com/carolzhou/multiPhATE2.git. Select the 'Issues' tab.
 
+[Return to the Index](#index)
+
 #### TROUBLESHOOTING
+
 * Issue:  The code is returning errors pertaining to print statements. Solution:  multiPhATE runs under Python 3.x. It is recommended to set up a Conda environment, but if you are not doing so, and you receive a syntax error referring to a print statement, then that may indicate that you are running the code in a Python 2.x environment. Unfortunately, invoking python3 at the command line will not enable python3 for subordinate codes in the multiPhATE code base. You must either upgrade your system to Python 3.x, or run multiPhATE in a Python 3.x Conda environment.
 * Issue:  The dbPrep_getDBs.py script is failing. dbPrep_getDBs.py can become out of date as 3rd party database providers modify their data or its location. Kindly notify the developers by submitting an issue on the github project page if you encounter problems in downloading with dbPrep_getDBs.py.
 * Issue:  I am downloading databases on a remote server and my console keeps timing out or getting disconnected before dbPrep_getDBs.py finishes a download.  Solution: The script can be modified as a workaround for this problem. Edit the dbPrep_getDBs.py file as follows: set INTERACTIVE to False, and set REMOTE to True and VERBOSE to True (note: these words are case sensitive). Running dbPrep_getDBs.py in REMOTE mode will require that you pre-set the databases you want downloaded. Scroll down to the comment that says, "Pre-set download instructions; skip user input", and set the databases you want to True.
@@ -388,11 +408,15 @@ Note that genemarks is not available as a conda package, so this program, as wel
 * Issue: There are no results in phate_sequenceAnnotation_main.out for some of the database searches. Try this: Check the blastn/p cutoff values in your configuration file. If you are annotating a novel phage, it is quite possible that there will be little or no homology in some of the databases. Lower the cutoffs and see if that yields (more) hits. However, be aware that hits at low cutoff values may not yield reliable annotations (!).
 * Issue: The VOG Genes or VOG Proteins database is not returning meaningful annotations. Try this: Be sure that you are using the vog.genes.tagged.all.fa or vog.proteins.tagges.all.faa database. These "tagged" databases are computed using the dbPrep_getDBs.py script. This is necessary, because the original VOG fasta databases do not include the VOG identifiers in the headers. The dbPrep_getDBs.py script pulls the VOG identifier(s) for each fasta sequence and re-writes the header accordingly. Then, with these modified headers, multiPhATE2's blastn or blastp process can readily look up the annotation using the VOG identifier(s). The pre-processing can be done by hand using scripts in the DatabasePrep/ folder, but it is strongly recommended to use the option(s) available in dbPrep_getDBs.py.
 
+[Return to the Index](#index)
+
 #### RUNNING PHATE AS AN "EMBARASSINGLY PARALLEL" CODE
 
 There are three ways to perform parallel processing with multiPhATE2. 1) The code can be run using multiprocessing by specifying the number of threads in the configuration file (phate_threads='', and cgp_threads=''); note that by specifying 'ALL', all available threads should be automatically used on your system. 2) Multiple instances of multiPhATE can be distributed across cores of a high-performance computing machine by specifying HPC='true' in the configuration file. Note that the user will need to write scripts specific to the hardware on which multiPhATE is to be run. 3) Blast+ allows the user to specify the number of threads for running blast processing. Specify the number of blast threads in the configuration file: blast_threads=''. 
 
 The MultiPhATE2 system avoids clashes in writing results; outputs for each genome are written to user-specified output subdirectories (specified in your `multiPhate.config` file).
+
+[Return to the Index](#index)
 
 #### FURTHER RECOMMENDATIONS
 
@@ -404,16 +428,22 @@ The NR database has grown enormously large. It is recommended to use a smaller d
 
 Because the behavior of 3rd party codes can sometimes be unpredictable, it is recommended that the user replace spaces and unusual characters in their fasta headers with the underscore character. The "cleanHeaders.py" script can help you with this. Please also be aware that the genome name and subdir parameters in the multiphate.config file are used to generate system-level variables, so it is best to write these as benign strings (i.e., no periods, space, slashes, or unusual characters in any way). Stick with alphanumeric and KISS!
 
+[Return to the Index](#index)
+
 #### CAUTIONS 
 
 1) multiPhATE2 has not been developed or tested on Windows. 
 2) The developers have detected a possible issue with a recent version of BLAST+, whereby blastp randomly generates a C++ null pointer exception. We believe that this may be occurring when invoking blastp with the blast_threads option. If you encounter this error, it may be necessary to either set blast_threads='0' or back out your installation of BLAST+ and re-install an older version of BLAST+.
+
+[Return to the Index](#index)
 
 #### PUBLICATION
 
 If you use multiPhATE in your research, kindly reference our paper:  "multiPhATE: bioinformatics pipeline for functional annotation of phage isolates", by Carol E Zhou, Stephanie A Malfatti, Jeffrey A Kimbrel, Casandra W Philipson, Katelyn E McNair, Theron C Hamilton, Robert A Edwards, and Brian E Souza; Bioinformatics, 2019, https://doi.org/10.1093/bioinformatics/btz258. If you run PHANOTATE "under the hood" as your primary gene caller, please also reference, "PHANOTATE: a novel approach to gene identification in phage genomes", by Katelyn McNair, Carol Zhou, Elizabeth A Dinsdale, Brian Souza, and Robert A Edwards, Bioinformatics, 2019, https://doi.org/10.1093/bioinformatics/btz265. A preprint describing multiPhATE2 can be found here:  https://www.biorxiv.org/content/10.1101/2020.10.05.324566v1 (doi:https://doi.org/10.1101/2020.10.05.324566). 
 
 Feel free to report bugs or problems, or to suggest future improvements, by posting an issue on the project github page (click on the Issues tab), or by emailing the developers at: multiphate@gmail.com. Thank you for using multiPhATE2.
+
+[Return to the Index](#index)
 
 #### WHAT'S NEW?
 
@@ -433,4 +463,6 @@ Feel free to report bugs or problems, or to suggest future improvements, by post
 
 
 multiPhATE2 v.2.0
+
+[Return to the Index](#index)
 
