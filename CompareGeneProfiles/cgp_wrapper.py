@@ -132,6 +132,10 @@ else:
     exit(0)
 
 ##### Threading
+if str(cgpThreads).lower() == 'all':
+    THREADING_ON = True
+    cgpThreads = os.cpu_count()
+
 if int(float(cgpThreads)) >= 1:
     THREADING_ON = True
 
