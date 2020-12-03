@@ -55,7 +55,6 @@
 
 import string
 from Bio.Seq import Seq
-from Bio.Alphabet import generic_dna, generic_protein
 import cgp_fastaSequence as fastaSequence
 import cgp_annotation as annotation
 import re, os, copy
