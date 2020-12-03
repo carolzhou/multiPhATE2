@@ -6,7 +6,7 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Last Update:  19 October 2020
+# Last Update:  02 December 2020
 #
 # Description: Script multiPhate.py is a driver program that runs the multiPhATE2 bacteriophage annotation system,
 #    which comprises four modules:  Gene Calling, PhATE, Compare Gene Profiles, and Genomics. See the README file
@@ -2079,10 +2079,20 @@ def phate_threaded(jsonFile):
         LOG.write("%s%s\n" % ("End PhATE processing at ",datetime.datetime.now()))
 
 # Control Threading
+
+def RepresentsInt(myString):
+    try:
+        int(myString)
+        return True
+    except ValueError:
+        return False
+
 THREADING_ON = True
-if int(phateThreads) == 0:
-    THREADING_ON = False
-    LOG.write("%s%s\n" % ("THREADING_ON is ",THREADING_ON))
+
+if RepresentsInt(phateThreads):
+    if int(phateThreads) == 0:
+        THREADING_ON = False
+        LOG.write("%s%s\n" % ("THREADING_ON is ",THREADING_ON))
 
 if not CHECKPOINT_CGP and not CHECKPOINT_GENOMICS:
     LOG.write("%s%s%s%s\n" % ("CHECKPOINT_CGP is:",CHECKPOINT_CGP," and CHECKPOINT_GENOMICS is:",CHECKPOINT_GENOMICS))
@@ -2152,9 +2162,16 @@ if runCGP and not translateOnly and (len(genomeList) > 1):
 
     # Run CompareGeneProfiles
     genomeCount = len(genomeList)
-    maxCGPthreads = (genomeCount * (genomeCount - 1))/2 
-    if cgpThreads >= int(maxCGPthreads):
-        cgpThreads = int(maxCGPthreads)
+    maxCGPthreads = int(genomeCount * (genomeCount - 1)/2)
+
+    if cgpThreads == 'MAX':
+        cgpThreads = os.cpu_count()
+
+    if cgpThreads > os.cpu_count():
+        cgpThreads = os.cpu_count()
+
+    if cgpThreads > maxCGPthreads:
+        cgpThreads = maxCGPthreads
 
     try:
         command = "python " + CGP_CODE + ' ' + CGP_CONFIG_FILE + ' ' + str(cgpThreads)
