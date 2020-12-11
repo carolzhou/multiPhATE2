@@ -5,7 +5,7 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Last Update: 16 October 2020
+# Last Update: 9 December 2020
 #
 # Description:
 # This script uses a config file to run compareGeneProfiles.py
@@ -80,7 +80,7 @@ if PHATE_WARNINGS_STRING.lower() == 'true':
 
 #### FILE
 
-logFile = os.path.join(CODE_BASE_DIR,"CGPMwrapper.log")
+logFile = os.path.join(CODE_BASE_DIR,"cgp_wrapper.log")
 LOGFILE = open(logFile,"a")
 LOGFILE.write("%s\n" % ("================================"))
 LOGFILE.write("%s\n" % ("Begin CGPMwrapper log file"))
@@ -107,6 +107,7 @@ THREADING_ON = False
 if PHATE_PROGRESS:
     print("cgp_wrapper says, Being processing.")
     print("cgp_wrapper says, Gathering command-line arguments.")
+LOGFILE.write("%s%s\n" % ("sys.argv is ",sys.argv))
 argCount = len(sys.argv)
 if argCount in ACCEPTABLE_ARG_COUNT:
     match = re.search("help", sys.argv[1].lower())
@@ -132,12 +133,14 @@ else:
     exit(0)
 
 ##### Threading
-if str(cgpThreads).lower() == 'all':
+
+if str(cgpThreads).lower() == 'all' or str(cgpThreads).lower == 'max':
     THREADING_ON = True
     cgpThreads = os.cpu_count()
-
-if int(float(cgpThreads)) >= 1:
+if int(float(cgpThreads)) >= 1: # Compatible with what's on github repo
     THREADING_ON = True
+#elif int(float(cgpThreads)) >= 1:
+#    THREADING_ON = True
 
 ##### Parse config file; construct lists of BASE_DIRS and FILES
 
@@ -196,6 +199,7 @@ if PHATE_PROGRESS:
     print ("cgp_wrapper says, Executing compareGeneProfiles_main.py....")
 
 if THREADING_ON:
+    LOGFILE.write("%s%s\n" % ("Threading is on; cgpThreads is ",cgpThreads))
     count = 0; commandList = []
     for fileSet in inFileList:
         count += 1
@@ -212,6 +216,7 @@ if THREADING_ON:
         cgp_pool.map(cgp_threaded, commandList)
         cgp_pool.close() 
 else:
+    LOGFILE.write("%s\n" % ("Threading is off; skipping thread pool."))
     count = 0
     for fileSet in inFileList:
         count += 1

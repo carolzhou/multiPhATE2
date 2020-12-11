@@ -6,7 +6,7 @@
 #
 # Programmer:  C. E. Zhou
 #
-# Latest update:  19 October 2020
+# Latest update:  07 December 2020
 #
 # Description: This driver code runs the Genomics module, which identifies gene correspondences
 #    among genomes that have been compared using CompareGeneProfiles (CGP), creates fasta
@@ -21,6 +21,7 @@ import sys, os, re, string, copy
 import time, datetime
 from subprocess import call
 import genomics_compareGenomes
+import hmm_build
 
 DEBUG = True
 #DEBUG = False
@@ -56,6 +57,13 @@ GENOMICS_RESULTS_DIR = os.environ["PHATE_GENOMICS_RESULTS_DIR"]
 # BEGIN MAIN
 #
 
+# Collect input parameter
+referenceGenome = "" 
+if len(sys.argv) == 2:
+    referenceGenome = sys.argv[1]
+if referenceGenome == "":
+    print("genomics_driver says, ERROR: reference genome not set.")
+
 if PHATE_PROGRESS:
     print("genomics_driver says, Performing comparisons among genomes.")
 
@@ -69,7 +77,35 @@ except:
     os.mkdir(GENOMICS_RESULTS_DIR)
 
 # Perform genome comparisons
+paramSet = {
+        "referenceGenome" : referenceGenome,
+        }
+genomeComparison.setParameters(paramSet)
 genomeComparison.performComparison()
+
+if PHATE_PROGRESS:
+    print("genomics_driver says, Creating hmm profiles.")
+
+# Create hmm build object
+hmmBuild = hmm_build.build()
+buildDirectory = ""
+buildParameters = {
+        "codeName"          : "hmmbuild",
+        "codeVersion"       : '2',
+        "alignmentCodeName" : "clustalo",
+        "buildDirectory"    : GENOMICS_RESULTS_DIR,
+        }
+hmmBuild.setParameters(buildParameters)
+if PHATE_MESSAGES:
+    hmmBuild.printParameters()
+
+# Build hmms for gene/protein groups
+if PHATE_MESSAGES:
+    print("genomics_driver says, fnt files for hmm build:")
+    print(hmmBuild.fileList_fnt)
+    print("genomics_driver says, faa files for hmm build:")
+    print(hmmBuild.fileList_faa)
+hmmBuild.performBuild()
 
 # Clean up
 if PHATE_PROGRESS:

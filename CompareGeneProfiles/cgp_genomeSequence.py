@@ -3,7 +3,7 @@
 #
 # Programmer: Carol L. Ecale Zhou
 #
-# Last Update: 16 October 2020
+# Last Update: 08 December 2020
 # 
 # Description:
 # Module comprising data structures for organizing genome information
@@ -22,15 +22,12 @@
 #        getCGCsubsequence
 #        getSubsequence
 #        getSubsequenceWithFlank
-#   xxx  setPSATparameters
 #        processGeneCalls
 #        addContig
 #        addContigs
 #        addGene
 #        addProtein
 #        addAnnotation
-#   xxx  PSATparmasOK
-#   xxx  recordPSATannotations
 #        countAllAnnotations
 #        printGenomeData
 #        printGenomeData_tab
@@ -55,6 +52,7 @@
 
 import string
 from Bio.Seq import Seq
+#from Bio.Alphabet import generic_dna, generic_protein
 import cgp_fastaSequence as fastaSequence
 import cgp_annotation as annotation
 import re, os, copy
@@ -121,11 +119,6 @@ class genome(object):
         self.geneSet.sequenceType    = 'nt'
         self.proteinSet.moleculeType = 'peptide'
         self.proteinSet.sequenceType = 'aa'
-        self.psat = {               # Parameters for handling PSAT annotation for proteins; this dict reflected in each protein's annot obj
-            "jobID"    : "",        # PSAT job ID
-            "jobName"  : "",        # PSAT job name
-            "fileName" : "",        # PSAT output file path/name
-            }
         self.codeBaseDir             = ""       # needs to be set
         self.outputDir               = ""       # needs to be set
 
@@ -180,11 +173,6 @@ class genome(object):
                 if contig == fa.shortHeader: # RAST truncates after 1st space
                     subSeq = fa.getSubsequence(int(flankedStart)-1,int(flankedEnd)) # recall: numerbing starts w/zero
         return subSeq
-
-    def setPSATparameters(self,jobID,jobName,fileName):
-        self.psat["jobID"]    = jobID
-        self.psat["jobName"]  = jobName
-        self.psat["fileName"] = fileName
 
     # INPUT/PROCESS SEQUENCES 
 
@@ -354,28 +342,6 @@ class genome(object):
 
     def addAnnotation(self,newAnnot):
         self.annotationList.append(newAnnot)
-
-    def PSATparamsOK(self):
-        if self.psat["fileName"] != "":  # Filename is enough for now, but should have complete data
-            return True
-        return False
-
-    def recordPSATannotations(self):
-        if self.PSATparamsOK():
-            count = 0
-            for protein in self.proteinSet.fastaList: 
-                PSAT_H = open(self.psat["fileName"],"r")
-                count += 1
-                newPSAT = copy.deepcopy(annotationObj)
-                newPSAT.setPSATparameters(self.psat["jobID"],self.psat["jobName"],self.psat["fileName"],self.outputDir)
-                #*** NOTE: may need to adjust header type
-                newPSAT.recordPSATannotations(protein.shortHeader,PSAT_H)
-                protein.addAnnotation(newPSAT)
-                PSAT_H.close()
-        else:
-            if PHATE_WARNINGS:
-                print("cgp_genomeSequence says, WARNING: First you need to set the PSAT filename in phate_genomeSequence object") 
-        return 0
 
     def countAllAnnotations(self):
         annotationCount = 0
@@ -676,9 +642,9 @@ class genome(object):
         else:
             return False
         if databaseType == "nucl" or databaseType == "nt" or databaseType == "dna":
-            command = BLAST_HOME + "makeblastdb -in " + filename + " -dbtype nucl -logfile " + filename + ".blastdb1_nucl_log"
+            command = "makeblastdb -in " + filename + " -dbtype nucl -logfile " + filename + ".blastdb1_nucl_log"
         elif databaseType == "prot" or databaseType == "aa" or databaseType == "protein":
-            command = BLAST_HOME + "makeblastdb -in " + filename + " -dbtype prot -logfile " + filename + ".blastdb1_prot_log"
+            command = "makeblastdb -in " + filename + " -dbtype prot -logfile " + filename + ".blastdb1_prot_log"
         else:
             return False
         myResult = os.system(command)

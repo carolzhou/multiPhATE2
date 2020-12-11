@@ -2,7 +2,7 @@
 # Module: dbPrep_annotation.py
 # Programmer: Carol L. Ecale Zhou
 #
-# Data of last update: 19 October 2020 
+# Data of last update: 20 October 2020 
 #
 # Module containing classes and methods for representing annotation results from various sources 
 # Classes and methods: 
@@ -36,7 +36,7 @@ class annotationRecord(object):
 
     def __init__(self):
         self.source            = "unknown" # Typically RAST, LLNL, PhAnToMe, GeneMark, Glimmer, Prodigal, PHATE, KEGG, NCBI 
-        self.method            = "unknown" # Typcially RAST, PSAT, PFP, PhiRAST, JGI, SDSU, Blast, blastp, blastn 
+        self.method            = "unknown" # Typcially RAST, PFP, PhiRAST, JGI, SDSU, Blast, blastp, blastn 
         self.annotationType    = "unknown" # gene, mRNA, polypeptide, CDS, functional, homology
         self.contig            = "unknown"
         self.start             = 0
@@ -50,12 +50,6 @@ class annotationRecord(object):
         self.annotationList    = []      # could be multiple from single source 
         self.category          = "none"  # functional categories: primary, sequence, structure, motif, etc.
         self.wraparound        = "none"  # indicates that a gene call wraps around the genome sequence as given
-        self.psat = {
-            "jobID"    : "",   # PSAT job id
-            "jobName"  : "",   # PSAT job name
-            "fileName" : "",   # PSAT output file
-            }
-        self.psatOutDir = ""   # need to set
 
     def enterGFFdata(self,gff):  # Input a dict object with key/values as specified
         if isinstance(gff,dict):
@@ -75,7 +69,7 @@ class annotationRecord(object):
         else:
             return False
 
-    def removeRedundancy(self,inList): # Eliminate redundancy in list; Different PSAT annotations sources can return same annotation
+    def removeRedundancy(self,inList): # Eliminate redundancy in list
         outList = []
         for i in range(len(inList)):
             item = inList.pop()

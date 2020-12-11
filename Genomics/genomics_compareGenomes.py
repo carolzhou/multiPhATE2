@@ -3,7 +3,7 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Most recent update: 19 October 2020
+# Most recent update: 08 December 2020
 #
 # Module comprising classes and data structures for comparing genomes
 #
@@ -11,6 +11,7 @@
 #    class comparison
 #       performComparison
 #     - comparison data and load methods
+#       setParameters
 #       loadData
 #       readDirectories
 #       parseDirectories
@@ -160,7 +161,7 @@ HOMOLOGY_GROUP_FILE             = os.path.join(GENOMICS_RESULTS_DIR,GENOMICS_HOM
 
 PHATE_PIPELINE_OUTPUT_DIR       = os.environ["PHATE_PIPELINE_OUTPUT_DIR"] 
 CGP_GENES_FILENAME              = "cgp_gene.fnt"
-CGP_PROTEINS_FILENAME           = "cgp_protein.fnt"   # This should be ".faa"
+CGP_PROTEINS_FILENAME           = "cgp_protein.faa"  
 
 # Report file fields
 SORT_POSITION        = 0
@@ -202,7 +203,7 @@ class comparison(object):
 
         self.name                  = "multiPhATE2"  # Can assign a set to this genome comparison
         self.directories           = []             # List of Results directories to be processed
-        self.referenceGenome       = ""             # name of genome assigned as the reference
+        self.referenceGenome       = "unknown"      # name of genome assigned as the reference
         self.genomeCount           = 0              # number of genomes in set
         self.genomeList            = []             # set of genome class objects
         self.commonCore_gene       = []             # list of genes that are common among all genomes: all around mutual best hits
@@ -246,6 +247,12 @@ class comparison(object):
         self.printReports2files()
 
     #===== COMPARISON DATA LOAD METHODS
+
+    def setParameters(self,kvargs):
+        if isinstance(kvargs,dict):
+            if "referenceGenome" in list(kvargs.keys()):
+                self.referenceGenome = kvargs["referenceGenome"]
+        return
 
     def loadData(self):
         dirList = self.readDirectories()
@@ -300,7 +307,9 @@ class comparison(object):
 
             # First genome listed is the reference (was listed first in user's config file)
             if genomeList:
-                self.referenceGenome = genomeList[0]
+                if PHATE_PROGRESS:
+                    print("genomics_compareGenomes says, reference genome is: ",self.referenceGenome)
+                #self.referenceGenome = genomeList[0]
             else:
                 if PHATE_WARNINGS:
                     print("genomics_compareGenomes says, WARNING: There are no genomes to compare.")
@@ -1626,12 +1635,6 @@ class genome(object):
 
     #===== GENOME PRINT METHODS
 
-    def x_printReport2file(self,FILE_H):
-        return
-
-    def x_printReport(self):
-        return
-
     def printAll2file(self,FILE_H):
         FILE_H.write("%s\n" % ("=========Genome========"))
         FILE_H.write("%s%s\n" % ("name:",self.name))
@@ -1751,14 +1754,6 @@ class gene_protein(object):
 
     def addGroupMember(self,member):
         self.groupList.append(member)
-
-    # Construct a set of genes/proteins that are related by homology
-    def x_constructGroup(self):
-        # self.groupList
-
-        if PHATE_MESSAGES:
-            print("genomics_compareGenomes says, Group constructed for gene_protein",self.identifier,";",self.type)
-        return
 
     #===== GENE_PROTEIN DATA CHECK METHODS
 

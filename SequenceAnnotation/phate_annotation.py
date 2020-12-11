@@ -4,7 +4,7 @@
 #
 # Programmer: Carol L. Ecale Zhou
 #
-# Latest update: 19 October 2020
+# Latest update: 20 October 2020
 #
 # Description: Module containing classes and methods for representing annotation results from various sources 
 #
@@ -13,10 +13,7 @@
 #         addPVOBid2list
 #         getPVOGassociationList
 #         enterGFFdata
-#         setPSATparameters
 #         removeRedundancy
-#         recordPSATannotations
-#         updatePSATcount
 #         getDBXREFs
 #         findInfo
 #         getFigDescription
@@ -104,7 +101,7 @@ class annotationRecord(object):
 
     def __init__(self):
         self.source            = "unknown" # Typically RAST, LLNL, PhAnToMe, GeneMark, Glimmer, Prodigal, PHANOTATE, KEGG, NCBI, pVOGs 
-        self.method            = "unknown" # Typcially RAST, PSAT, PFP, PhiRAST, JGI, SDSU, BLAST, blastp, blastn, HMM, jackhmmer 
+        self.method            = "unknown" # Typcially RAST, PFP, PhiRAST, JGI, SDSU, BLAST, blastp, blastn, HMM, jackhmmer 
         self.annotationType    = "unknown" # gene, mRNA, polypeptide, CDS, functional, homology, hmm
         self.VOGlist           = []        # list of pVOG or VOG identifiers (identified via blast hit)
         self.contig            = "unknown"
@@ -118,12 +115,6 @@ class annotationRecord(object):
         self.annotationList    = []      # could be multiple from single source 
         self.category          = "none"  # functional categories: primary, sequence, structure, motif, etc.
         self.wraparound        = "none"  # indicates that a gene call wraps around the genome sequence as given
-        self.psat = {
-            "jobID"    : "",   # PSAT job id
-            "jobName"  : "",   # PSAT job name
-            "fileName" : "",   # PSAT output file
-            }
-        self.psatOutDir = ""   # need to set
         self.annotationString = ""      # used to construct a summary of annotation(s) for GFF output
 
     def addVOGid2list(self,VOG):
@@ -150,19 +141,9 @@ class annotationRecord(object):
         else:
             return False
 
-    # METHODS FOR ANNOTATING FROM EXTERNAL SOURCES (e.g., PSAT)
+    # METHODS FOR ANNOTATING FROM EXTERNAL SOURCES 
 
-    def setPSATparameters(self,jobID,jobName,fileName,psatOutDir):
-        self.psat["jobID"]    = jobID
-        self.psat["jobName"]  = jobName
-        self.psat["fileName"] = fileName
-        self.source = "LLNL"
-        self.method = "PSAT"
-        self.annotationType = "functional"
-        self.psatOutDir = psatOutDir
-        PSAT_OUT_DIR = psatOutDir
-
-    def removeRedundancy(self,inList): # Eliminate redundancy in list; Different PSAT annotations sources can return same annotation
+    def removeRedundancy(self,inList): # Eliminate redundancy in list
         outList = []
         for i in range(len(inList)):
             item = inList.pop()
@@ -170,156 +151,6 @@ class annotationRecord(object):
                 outList.append(item)
         outList.reverse()
         return outList
-
-    def recordPSATannotations(self,proteinHeader,PSAT_H):  # Query PSAT annotation file for current gene's annotations 
-        # Locations of annotations in PSAT annotation file
-        EC_COLUMN       = 3
-        EC_DESC_COLUMN  = 4
-        PATHWAY_COLUMN  = 5
-        INTERPRO_COLUMN = 13
-        SIGNALP_COLUMN1 = 14
-        SIGNALP_COLUMN2 = 15
-        #TMHMM_COLUMN    = 25  # Not in service. TMHMM could be added to PSAT output in column 25
-
-        # Patterns
-        p_comment  = re.compile('^#')
-        p_EC       = re.compile('\d\.\d+\.\d+\.\d+')
-        p_ECdesc   = re.compile('[\w\d\.\-\_\s]+')
-        p_pathway  = re.compile('ec\d{4}.*')
-        p_GO       = re.compile('(MOLECULAR_FUNCTION|BIOLOGICAL_PROCESS|CELLULAR_COMPONENT),(GO:\d{7})')
-        p_pfam     = re.compile('([\w\d\s\.\-\_\,]+)PFAM')
-        p_smart    = re.compile('([\w\d\s\.\-\_\,]+)SMART')
-        p_dbxref   = re.compile('EMPTY4NOW')
-        p_signalp1 = re.compile('YES|NO')
-        p_signalp2 = re.compile('\'(\d+)\-(\d+)\'')
-        p_tmhmm    = re.compile('Topology=([io][io\d\-]+)\|')
-
-        # 
-        annotationString = ""
-        psatAnnotationList = []
-        tempList = []; columns = []
-
-        if PHATE_MESSAGES:
-            print("phate_annotation says, Recording PSAT annotations.")
-
-        ### Capture lines corresponding to the gene
-        pLines = PSAT_H.read().splitlines()
-
-        # Capture all annotation lines for this gene
-        for pLine in pLines:
-            matchTerm = proteinHeader + '\t'
-            match_gene = re.search(matchTerm,pLine)
-            match_comment = re.search(p_comment,pLine)
-            if match_gene:
-                tempList.append(pLine)
-
-        ### Parse each annotation line, capture annotations and format for genbank
-        for line in tempList:
-
-            annotationString = ""
-            EC = ""
-            ecDescription = ""
-            pathway = ""
-            GO = ""
-            pfam = ""
-            smart = ""
-            dbxrefID = ""
-            signalp = ""; signalp1 = ""; signalp2 = ""
-            tmhmm = ""
-            columns = line.split('\t')
-
-            ### Detect annotations; Note: There could be >1 in a given data line, or in a given column
-
-            match_ec       = re.search(p_EC,       columns[EC_COLUMN])
-            match_ecDesc   = re.search(p_ECdesc,   columns[EC_DESC_COLUMN])
-            match_pathway  = re.search(p_pathway,  columns[PATHWAY_COLUMN])
-            match_go       = re.search(p_GO,       columns[INTERPRO_COLUMN])
-            match_pfam     = re.search(p_pfam,     columns[INTERPRO_COLUMN])
-            match_smart    = re.search(p_smart,    columns[INTERPRO_COLUMN])
-            match_dbxref   = re.search(p_dbxref,   columns[INTERPRO_COLUMN])
-            match_signalp1 = re.search(p_signalp1, columns[SIGNALP_COLUMN1])
-            match_signalp2 = re.search(p_signalp2, columns[SIGNALP_COLUMN2])
-            #match_tmhmm    = re.search(p_tmhmm,    columns[TMHMM_COLUMN])  # Not currently in service
-
-            if match_ec:
-                EC = match_ec.group(0)
-                annotationString = "EC:" + EC
-                self.annotationList.append(annotationString)
-
-            if match_ecDesc:
-                ecDesc = match_ecDesc.group(0)
-                annotationString = "EC description:" + ecDesc
-                self.annotationList.append(annotationString)
-
-            if match_pathway:
-                pathwayString = match_pathway.group(0)
-                pathways = pathwayString.split('|\s')
-                for pathway in pathways:
-                    annotationString = "Pathway:" + pathway + ' | '
-                    self.annotationList.append(annotationString)
-
-            if match_go:
-                GO = match_go.group(0)
-                category = match_go.group(1)
-                goID     = match_go.group(2)
-                if category == "BIOLOGICAL_PROCESS":
-                    annotationString = "go_process:" + goID
-                elif category == "MOLECULAR_FUNCTION":
-                    annotationString = "go_function:" + goID
-                elif category == "CELLULAR_COMPONENT":
-                    annotationString = "go_component:" + goID
-                else:
-                    annotationString = "go_unknown:" + goID
-                self.annotationList.append(annotationString)
-
-            if match_pfam:
-                pfam = match_pfam.group(1)
-                pfam = re.sub('\,$','',pfam)
-                annotationString = "pfam:" + pfam
-                self.annotationList.append(annotationString)
-
-            if match_smart:
-                smart = match_smart.group(1)
-                smart = re.sub('\,$','',smart)
-                annotationString = "smart:" + smart
-                self.annotationList.append(annotationString)
-
-            if match_dbxref:
-                dbxrefID = match_dbxref.group(0)
-                for dbxref in match_dbxref:
-                    annotationString = "dbxref:" + dbxrefID
-                    self.annotationList.append(annotationString)
-
-            if match_signalp1:
-                signalp1 = ''; signalp2 = ''; start = 0; end = 0
-                signalp1 = match_signalp1.group(0)
-                if signalp1 == 'YES':
-                    if match_signalp2:
-                        signalp2 = match_signalp2.group(0)
-                        start    = match_signalp2.group(1)
-                        end      = match_signalp2.group(2)
-                    
-                annotationString = "signal_peptide:" + signalp1 + ' ' + signalp2 
-                self.annotationList.append(annotationString)
-
-            # Not in service
-            #if match_tmhmm:
-            #    tmhmm = match_tmhmm.group(1)
-            #    print "found tmhmm:", tmhmm
-            #    annotationString = str(start) + '\t' + str(end) + "\tfeature\tTMHMM\t" + tmhmm 
-            #    #psatAnnotationList.append(annotationString) 
-
-        self.annotationList = self.removeRedundancy(self.annotationList)
-        self.updatePSATcount()
-
-        return 
-
-    def updatePSATcount(self):
-        if self.annotationList == []:
-            self.description = "There are no PSAT annotations"
-        else:
-            self.description = "Num annots:" + str(len(self.annotationList))
-
 
     # METHODS FOR LINKING TO FUNCTIONAL ANNOTATIONS
     # The Phantome, Kegg-virus, and Ncbi-virus database provide cryptic fasta headers

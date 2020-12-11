@@ -6,7 +6,7 @@
 #
 # Programmer:  Carol L. Ecale Zhou 
 #
-# Last update:  16 October 2020
+# Last update:  08 December 2020
 #
 # Description:
 # This program post-processes the output file produced by code
@@ -60,7 +60,7 @@ REPORT_FILE = "./postProcessCGPM.report"
 ##########################################################################
 ##### PATTERNS
 
-p_fasta   = re.compile('\.(fasta)|(fna)|(fas)|(fnt)|(fa)')
+p_fasta   = re.compile('\.(fasta)|(fna)|(fas)|(fnt)|(fa)|(faa)')
 p_report  = re.compile('\.report')
 p_comment = re.compile('^#')
 

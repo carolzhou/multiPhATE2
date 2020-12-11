@@ -3,7 +3,7 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Date of last update:  16 October 2020
+# Date of last update:  9 December 2020
 #
 # Description:
 # Module comprising data structures and methods for blasting the genes and proteins
@@ -231,7 +231,7 @@ class homology(object):  # holds comparative information between 2 gene/protein 
             "set2" : []    # type FastaSequence
         }
 
-    def computeCoverage(self,seqList1,seqList2):  # NEEDS TESTING 
+    def computeCoverage(self,seqList1,seqList2):   
         # This method fills in fields hit.queryCoverage and hit.subjectCoverage
         seqLength1 = {}
         seqLength2 = {}
@@ -767,7 +767,6 @@ class blast(object):
                 newHit.subjectEnd      = fields[9]
                 newHit.evalue          = fields[10]
                 newHit.bitscore        = fields[11]
-                #newHitList.append(newHit)   #*** TESTING: IDENTITY CUTOFF
                 if int(float(newHit.identity)) >= IDENTITY_CUTOFF:
                     newHitList.append(newHit)
         HIT_FILE.close()

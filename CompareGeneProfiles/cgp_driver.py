@@ -6,7 +6,7 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Last update: 16 October 2020
+# Last update: 9 December 2020
 #
 # Description:#
 # This script inputs a config file, cgpNxN.config, which lists the
@@ -59,6 +59,10 @@ if PHATE_MESSAGES_STRING.lower() == 'true':
     PHATE_MESSAGES = True
 if PHATE_WARNINGS_STRING.lower() == 'true':
     PHATE_WARNINGS = True
+# Override
+#PHATE_PROGRESS = True
+#PHATE_MESSAGES = True
+#PHATE_WARNINGS = True
 
 # Set environmental variables for CGP's dependent codes
 os.environ["CGP_CODE_BASE_DIR"] = CODE_BASE_DIR
@@ -113,6 +117,7 @@ if argCount in ACCEPTABLE_ARG_COUNT:
 else:
     print (USAGE_STRING)
     exit(0)
+LOGFILE.write("%s%s\n" % ("cgpThreads is ",cgpThreads))
 
 ##### Set absolute path/file for config files
 projectDirectory = os.path.dirname(in_configFile) 

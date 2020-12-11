@@ -8,12 +8,12 @@
 #    Carol E. Zhou - pipeline programmer: CompareCalls/, DatabasePrep/, SequenceAnnotation/, phate_runPipeline.py
 #    Jeff Kimbrel, Carol Zhou  - GeneCalling/
 #
-# Most recent update:  19 October 2020
+# Most recent update:  27 October 2020
 #
 # Description: Runs the phate annotation pipeline.  This code runs under Python 3.7, and requires
 #    dependent packages.
 #
-# Input: a json string, formatted by multiPhATE2.py
+# Input: a json string, created by multiPhATE.py
 #
 # Usage:  Do not invoke this code manually. This code is invoked by multiPhate.py
 #   as follows:  python phate_runPipeline.py myGenome.json
@@ -29,6 +29,7 @@
 import sys, os, re, string, copy, time, datetime
 import subprocess
 import json
+import phate_trna
 
 # CONSTANTS and CONFIGURABLES
 
@@ -128,7 +129,7 @@ CONFIG_FILE = "phate.config"  # by default, but user should name their own, endi
 
 # Subordinate codes
 GENECALL_CODE_DIR           = BASE_DIR + "GeneCalling/"         # Here resides GENECALL_CODE plus CGC (Compare Gene Calls) codes
-SEQANNOT_CODE_DIR           = BASE_DIR + "SequenceAnnotation/"  # Performs sequence annotation via blast and incorporates PSAT output
+SEQANNOT_CODE_DIR           = BASE_DIR + "SequenceAnnotation/"  # Performs sequence annotation via blast and hmm search
 GENECALL_CODE               = GENECALL_CODE_DIR + "phate_genecallPhage.py"
 SEQANNOTATION_CODE_BASE     = "phate_sequenceAnnotation_main"
 SEQANNOTATION_CODE          = SEQANNOT_CODE_DIR + SEQANNOTATION_CODE_BASE + ".py"
@@ -165,13 +166,13 @@ DEBUG = False
 
 ##### HELP STRINGS
 
-HELP_STRING = """This code, """ + CODE + """, runs a phage annotation pipeline, comprising 1) gene calling by 4 gene callers (PHANOTATE, GeneMarkS, Glimmer3, and Prodigal), followed by identification of closest phage genome by means of blast against an NCBI-phage database, and sequence-based functional annotation by means of blastp against several peptide databases (NR, NCBI virus protein, KEGG-virus, Phantome, pVOGs, Swissprot, Refseq protein), and HMM search against these same protein databases. If a PSAT output file is provided, then those annotations are merged with the blast results.\nType: python """ + CODE + """ usage - for more information about constructing the command line.\nType: python """ + CODE + """ detail - for more information about how this code can be run.\n"""
+HELP_STRING = """This code, """ + CODE + """, runs a phage annotation pipeline, comprising 1) gene calling by 4 gene callers (PHANOTATE, GeneMarkS, Glimmer3, and Prodigal), followed by identification of closest phage genome by means of blast against an NCBI-phage database, and sequence-based functional annotation by means of blastp against several peptide databases (NR, NCBI virus protein, KEGG-virus, Phantome, pVOGs, Swissprot, Refseq protein), and HMM search against these same protein databases. \nType: python """ + CODE + """ usage - for more information about constructing the command line.\nType: python """ + CODE + """ detail - for more information about how this code can be run.\n"""
 
 INPUT_STRING = """The input files and other parameters for running this code are specified in a configuration file, which is provided as the only input parameter. See sample configuration file (phate.config.sample) for details on how to set up the configuration file.\n"""
 
 USAGE_STRING = """Usage: python """ + CODE + """ phate.config\n"""
 
-DETAIL_STRING = """Currently the PSAT module is run separately as a web service. In order to incorporate PSAT output into your annotations, you should first run this pipeline specifying "translation_only" in the configuration file. Then, use the generated peptide/protein fasta file as input for PSAT processing. Once you have the PSAT output, save it to the pipeline input directory, and re-run this pipeline, specifying that translation_only is false.\n"""
+DETAIL_STRING = """No details to describe at this time.\n"""
 
 # First, set defaults; note: setting these values in multiPhate.config file is optional
 
@@ -224,6 +225,7 @@ genomeSpecies            = 'unknown'
 genomeName               = 'unknown' 
 outputSubdir             = 'unknown' 
 geneticCode              = 11 
+trnascan                 = False
 translateOnly            = True
 phanotateCalls           = False
 prodigalCalls            = False
@@ -298,6 +300,7 @@ with open(jsonFile, 'r') as jsonParameters:
     genomeName               = parameters["genomeName"]
     outputSubdir             = parameters["outputSubdir"]
     geneticCode              = parameters["geneticCode"]
+    trnascan                 = parameters["trnascan"]
     translateOnly            = parameters["translateOnly"]
     phanotateCalls           = parameters["phanotateCalls"]
     prodigalCalls            = parameters["prodigalCalls"]
@@ -410,7 +413,8 @@ if PHATE_MESSAGES:
     print("genomeType is", genomeType) 
     print("genomeName is", genomeName) 
     print("genomeSpecies is", genomeSpecies) 
-    print("geneticCode is", geneticCode) 
+    print("geneticCode is", geneticCode)
+    print("trnascan is", trnascan)
     print("Status of boolean translateOnly is", translateOnly)
     print("phanotateCalls is", phanotateCalls)
     print("prodigalCalls is", prodigalCalls)
@@ -483,6 +487,7 @@ RUNLOG.write("%s%s\n" % ("   genomeType is ", genomeType))
 RUNLOG.write("%s%s\n" % ("   genomeName is ", genomeName))
 RUNLOG.write("%s%s\n" % ("   genomeSpecies is ", genomeSpecies))
 RUNLOG.write("%s%s\n" % ("   geneticCode: ", geneticCode))
+RUNLOG.write("%s%s\n" % ("   trnascan: ", trnascan))
 RUNLOG.write("%s%s\n" % ("   Status of boolean translateOnly is ",translateOnly))
 RUNLOG.write("%s%s\n" % ("   phanotateCalls is ",phanotateCalls))
 RUNLOG.write("%s%s\n" % ("   prodigalCalls is ",prodigalCalls))
@@ -590,7 +595,50 @@ if PHATE_PROGRESS:
 
 ##### BEGIN MAIN ########################################################################################
 
-##### Run Gene-calling Module
+#########################
+##### Run tRNA scan #####
+#########################
+
+if PHATE_PROGRESS:
+    print("phate_runPipeline says, Preparing to run trnascan-se...")
+
+trnaOutfile       = os.path.join(outputDir,"trnaGenes.out") 
+trnaStructureFile = os.path.join(outputDir,"trnaStructures.out") 
+statisticsFile    = os.path.join(outputDir,"trnaStatistics.out") 
+
+# Set up parameters
+trnaParameters = {
+        "organismType"      : "bacteria",
+        "useInfernal"       : True,
+        "inputFile"         : genomeFile,
+        "outputFile"        : trnaOutfile,
+        "trnaStructureFile" : trnaStructureFile,
+        "statisticsFile"    : statisticsFile,
+        "quietMode"         : True,
+        }
+
+trna = phate_trna.trna()
+PHATE_MESSAGES = True
+if PHATE_MESSAGES:
+    print("phate_runPipeline says, parameters going into trnascan-se:")
+    print(trnaParameters)
+trna.setParameters(trnaParameters)
+trna.printParameters()
+PHATE_MESSAGES = False
+
+#trnascan = True   #*** Set this via configuration 
+if trnascan:
+    trna.runTrnaScan()
+
+if PHATE_PROGRESS:
+    print("phate_runPipeline says, trnascan-se execution complete.")
+if PHATE_MESSAGES:
+    print("phate_runPipeline says, results from trnascan-se execution:")
+    trna.printResults()
+
+###################################
+##### Run Gene-calling Module #####
+###################################
 
 if PHATE_PROGRESS:
     print("phate_runPipeline says, Preparing to run genecall module...")
@@ -670,7 +718,9 @@ if PHATE_PROGRESS:
     print("phate_runPipeline says, Gene-call processing complete.")
 RUNLOG.write("%s%s\n" % ("Gene-call processing complete at ", datetime.datetime.now()))
 
-##### Run Sequence Annotation Module
+##########################################
+##### Run Sequence Annotation Module #####
+##########################################
 
 RUNLOG.write("%s\n" % ("Preparing to call sequence annotation module..."))
 
@@ -825,6 +875,14 @@ result = os.system(command)
 if PHATE_PROGRESS:
     print("phate_runPipeline says, Sequence annotation processing is complete.")
 RUNLOG.write("%s%s\n" % ("Sequence annotation processing complete at ", datetime.datetime.now()))
+
+##### Add tRNA predictions (if done and tRNAs found) to the annotation GFF output
+gffFile = SEQANNOTATION_CODE_BASE + ".gff"
+gffPathFile = os.path.join(outputDir,gffFile)
+if trnascan:
+    if PHATE_PROGRESS:
+        print("phate_runPipeline says, recording predicted tRNA genes to gff output file ",gffPathFile)
+    trna.write2gffFile(gffPathFile) 
 
 ##### CLEAN UP
 

@@ -39,6 +39,7 @@ BACTERIAL_CODE = 11
 
 import sys, os, re, string, copy
 from Bio.Seq import Seq
+#from Bio.Alphabet import generic_dna, generic_protein
 from time import strftime
 from time import gmtime
 import datetime
@@ -121,7 +122,7 @@ ERROR_LOG        = ""   #
 ##########################################################################
 ##### PATTERNS
 
-p_fasta = re.compile('\.(fasta)|(fna)|(fas)|(fnt)|(fa)')
+p_fasta = re.compile('\.(fasta)|(fna)|(fas)|(fnt)|(fa)|(faa)')
 p_gff   = re.compile('\.gff*')
 
 ########################################################################
@@ -476,8 +477,8 @@ if argCount in ACCEPTABLE_ARG_COUNT:
         joinName2 = pathTail2 + "_cgp_gene.fnt"
         files["geneFile1"]       = os.path.join(pathRoot1, joinName1)
         files["geneFile2"]       = os.path.join(pathRoot2, joinName2)
-        joinName1 = pathTail1 + "_cgp_protein.fnt"
-        joinName2 = pathTail2 + "_cgp_protein.fnt"
+        joinName1 = pathTail1 + "_cgp_protein.faa"
+        joinName2 = pathTail2 + "_cgp_protein.faa"
         files["proteinFile1"]    = os.path.join(pathRoot1, joinName1)
         files["proteinFile2"]    = os.path.join(pathRoot2, joinName2)
 
@@ -574,7 +575,8 @@ if fileError:
 dateTime = str(datetime.datetime.now().time()) # need time down to sub-seconds 
 today    = os.popen('date')
 if SERVER:
-    newTime = re.sub(':','',dateTime) # Remove ':' from dir name (else EMBOSS has trouble)
+    fixTime = re.sub(':','',dateTime) # Remove ':' from dir name (else EMBOSS has trouble)
+    newTime = re.sub('\.','_',fixTime) # Remove '.' from dir name
     OUT_DIR = os.path.join(files["projectDirectory"], "Results_" + newTime + "/")  #
 else:
     OUT_DIR = "./"

@@ -6,7 +6,7 @@
 #
 # Programmer:  Carol Zhou
 #
-# Last Update:  19 October 2020
+# Last Update:  08 December 2020
 # 
 # Classes and Methods:
 #    multiBlast
@@ -119,6 +119,10 @@ if PHATE_MESSAGES_STRING.lower() == 'true':
     PHATE_MESSAGES = True
 if PHATE_PROGRESS_STRING.lower() == 'true':
     PHATE_PROGRESS = True
+# Override
+#PHATE_WARNINGS = True
+#PHATE_MESSAGES = True
+#PHATE_PROGRESS = True
 
 # Other configurables 
 
@@ -170,7 +174,7 @@ class multiBlast(object):
         self.VOG_PROTEIN_BLAST        = False     #  
         self.SWISSPROT_BLAST          = False     #  
         self.PHAGE_ENZYME_BLAST       = False     # not yet in service
-        self.CAZY_BLAST               = False     # not yet in service
+        self.CAZY_BLAST               = False     #
         self.CUSTOM_GENOME_BLAST      = False     #
         self.CUSTOM_GENE_BLAST        = False     #
         self.CUSTOM_PROTEIN_BLAST     = False     #
@@ -314,10 +318,15 @@ class multiBlast(object):
                 print("phate_blast says, WARNING: Overhang should be between 0 and", OVERHANG_MAX, "If this is insufficient, you may change OVERHANG_MAX in phate_blast.py.")
 
     def setBlastThreads(self,blastThreads):
-        if int(blastThreads) >= 1:
+        if int(blastThreads) > 10:
+            print("phate_blast says, Requested value for blastThreads, ",blastThreads," is out of bounds.")
+            print("phate_blast says, Resetting blastThreads to 10.")
+        elif int(blastThreads) >= 0:
             self.blastThreads = int(blastThreads)
         else:
-            self.blastThreads = 1
+            print("phate_blast says, Requested value for blastThreads, ",blastThreads," is out of bounds.")
+            print("phate_blast says, Turning blastThreads off.")
+            self.blastThreads = 0 
 
     def setGeneCallDir(self,geneCallDir):
         self.geneCallDir = geneCallDir
@@ -355,37 +364,43 @@ class multiBlast(object):
 
         # Run blast
         if self.blastFlavor == 'blastn':
+            command = BLAST_HOME + "blastn -query " + fastaFile + " -out " + outfile + \
+                " -task blastn -db " + database + " -evalue " + str(self.evalueMin) + \
+                " -best_hit_score_edge " + str(self.scoreEdge) + " -best_hit_overhang " + \
+                str(self.overhang) + " -outfmt " + str(self.outputFormat) + " -perc_identity " + \
+                str(self.identityMin) + " -max_target_seqs " + str(self.topHitCount)
+
+            # Add threading option, if appropriate
             if str(self.blastThreads) == '0':
-                command = BLAST_HOME + "blastn -query " + fastaFile + " -out " + outfile + \
-                    " -task blastn -db " + database + " -evalue " + str(self.evalueMin) + \
-                    " -best_hit_score_edge " + str(self.scoreEdge) + " -best_hit_overhang " + \
-                    str(self.overhang) + " -outfmt " + str(self.outputFormat) + " -perc_identity " + \
-                    str(self.identityMin) + " -max_target_seqs " + str(self.topHitCount)
+                if PHATE_MESSAGES:
+                    print("phate_blast says, Running blastn without blast threads.")
+                    print("phate_blast says, command is ",command)
             else:
-                command = BLAST_HOME + "blastn -query " + fastaFile + " -out " + outfile + \
-                    " -task blastn -db " + database + " -evalue " + str(self.evalueMin) + \
-                    " -best_hit_score_edge " + str(self.scoreEdge) + " -best_hit_overhang " + \
-                    str(self.overhang) + " -outfmt " + str(self.outputFormat) + " -perc_identity " + \
-                    str(self.identityMin) + " -max_target_seqs " + str(self.topHitCount) + \
-                    " -num_threads " + str(self.blastThreads)
+                command += " -num_threads " + str(self.blastThreads)
+                if PHATE_MESSAGES:
+                    print("phate_blast says, Running blastn with ", str(self.blastThreads), " blast threads.")
+                    print("phate_blast says, command is ",command)
 
         elif self.blastFlavor == 'blastp': # Recall: You can't specificy %identity, but can filter afterward
+            command = BLAST_HOME + "blastp -query " + fastaFile + " -out " + outfile + \
+                " -task blastp -db " + database + " -evalue " + str(self.evalueMin) + \
+                " -best_hit_score_edge " + str(self.scoreEdge) + " -best_hit_overhang " + \
+                str(self.overhang) + " -outfmt " + str(self.outputFormat) + \
+                " -max_target_seqs " + str(self.topHitCount)
+                #" -max_target_seqs " + str(self.topHitCount) + \
+                #" -sorthits " + str(HIT_SORT_CRITERION) + \
+                #" -sorthsps " + str(HSP_SORT_CRITERION)
+
+            # Add threading option, if appropriate
             if str(self.blastThreads) == '0':
-                command = BLAST_HOME + "blastp -query " + fastaFile + " -out " + outfile + \
-                    " -task blastp -db " + database + " -evalue " + str(self.evalueMin) + \
-                    " -best_hit_score_edge " + str(self.scoreEdge) + " -best_hit_overhang " + \
-                    str(self.overhang) + " -outfmt " + str(self.outputFormat) + \
-                    " -max_target_seqs " + str(self.topHitCount)
+                if PHATE_MESSAGES:
+                    print("phate_blast says, Running blastp without blast threads.")
+                    print("phate_blast says, command is ",command)
             else:
-                command = BLAST_HOME + "blastp -query " + fastaFile + " -out " + outfile + \
-                    " -task blastp -db " + database + " -evalue " + str(self.evalueMin) + \
-                    " -best_hit_score_edge " + str(self.scoreEdge) + " -best_hit_overhang " + \
-                    str(self.overhang) + " -outfmt " + str(self.outputFormat) + \
-                    " -max_target_seqs " + str(self.topHitCount) + \
-                    " -num_threads " + str(self.blastThreads)
-                    #" -max_target_seqs " + str(self.topHitCount) + \
-                    #" -sorthits " + str(HIT_SORT_CRITERION) + \
-                    #" -sorthsps " + str(HSP_SORT_CRITERION)
+                command += " -num_threads " + str(self.blastThreads)
+                if PHATE_MESSAGES:
+                    print("phate_blast says, Running blastp with ", str(self.blastThreads), " blast threads.")
+                    print("phate_blast says, command is ",command)
         else:
             if PHATE_WARNINGS:
                 print("phate_blast says, ERROR: blast flavor not currently supported: ", self.blastFlavor)
@@ -393,8 +408,12 @@ class multiBlast(object):
 
         BLAST_SUCCEEDED = True
         try:
-            #result = os.system(command)
-            os.system(command)
+            if PHATE_MESSAGES:
+                print("phate_blast says, Running blast with ",self.blastThreads," threads")
+            result = os.system(command)
+            #os.system(command)
+            if PHATE_MESSAGES:
+                print("phate_blast says, Blast complete, result is ",result)
         except:
             print("ERROR: Blast process failed for command ", command)
             BLAST_SUCCEEDED = False

@@ -2,11 +2,11 @@
 
 ################################################################
 #
-# Program Title:  multiPhate2.py (/multiPhate2/)
+# Program Title:  multiPhate.py (/multiPhate2/)
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Last Update:  02 December 2020
+# Last Update:  09 December 2020
 #
 # Description: Script multiPhate.py is a driver program that runs the multiPhATE2 bacteriophage annotation system,
 #    which comprises four modules:  Gene Calling, PhATE, Compare Gene Profiles, and Genomics. See the README file
@@ -31,6 +31,8 @@
 #         config), and lists all corresponding predicted genes and proteins from each of the other genomes.
 #         Lastly, it identifies corresponding genes and proteins with respect to the reference genome,
 #         and creates homology groups.
+#      3) multiPhate.py creates hmm profiles for each of the fasta groups computed by the GENOMICS module.
+#
 # Setup:
 #    CompareCalls/         - code for comparing gene caller results
 #    DatabasePrep/         - code for preparing custom databases
@@ -170,6 +172,9 @@ genomeName               = 'unknown'
 genomeSpecies            = 'phage'
 geneticCode              = 11  # for translation
 
+# tRNA prediction
+trnascan                 = False
+
 # gene calling
 primaryCalls             = 'phanotate'
 primaryCallsFile         = 'phanotate.cgc'
@@ -286,17 +291,17 @@ GENOMICS_DIR_DEFAULT        = BASE_DIR_DEFAULT + "Genomics/"
 GENOMICS_RESULTS_DIR        = PIPELINE_OUTPUT_DIR_DEFAULT + "GENOMICS_RESULTS/"
 JSON_DIR                    = BASE_DIR_DEFAULT + "JSON/"
 
-PHATE_PIPELINE_CODE             = 'phate_runPipeline.py' # The annotaton engine
-GENE_FILE                       = 'gene.fnt'             # default filename where gene sequences are written, per genome's PipelineOutput/
-PROTEIN_FILE                    = 'protein.faa'          # default filename where protein sequences are written, per genome's PipelineOutput/
-CGP_CODE_NAME                   = 'cgp_driver.py'        # top-level, driver program for running CompareGeneProfiles pipeline
-CGP_CODE                        = CGP_DIR_DEFAULT + CGP_CODE_NAME # absolute path of top-level, driver for CompareGeneProfiles pipeline
-GENOMICS_CODE_NAME              = 'genomics_driver.py'   # top-level, driver program for running Genomics analysis
-GENOMICS_CODE                   = GENOMICS_DIR_DEFAULT + GENOMICS_CODE_NAME # absolute path of top-level, drive for Genomics analysis
-VOG_GENE_HEADER_FILENAME        = "vog.gene.headers.lst"  # The headers from the vog.genes.tagged.all.fa file (computed by multiPhate.py)
-VOG_PROTEIN_HEADER_FILENAME     = "vog.protein.headers.lst"  # The headers from the vog.proteins.tagged.all.fa file (computed by multiPhate.py)
-VOG_ANNOTATION_FILENAME         = "vog.annotations.tsv"  # The annotations associated with VOG identifiers (downloaded from VOG server)
-PVOG_HEADER_FILENAME            = "pVOGs.headers.lst"
+PHATE_PIPELINE_CODE         = 'phate_runPipeline.py' # The annotaton engine
+GENE_FILE                   = 'gene.fnt'             # default filename where gene sequences are written, per genome's PipelineOutput/
+PROTEIN_FILE                = 'protein.faa'          # default filename where protein sequences are written, per genome's PipelineOutput/
+CGP_CODE_NAME               = 'cgp_driver.py'        # top-level, driver program for running CompareGeneProfiles pipeline
+CGP_CODE                    = CGP_DIR_DEFAULT + CGP_CODE_NAME # absolute path of top-level, driver for CompareGeneProfiles pipeline
+GENOMICS_CODE_NAME          = 'genomics_driver.py'   # top-level, driver program for running Genomics analysis
+GENOMICS_CODE               = GENOMICS_DIR_DEFAULT + GENOMICS_CODE_NAME # absolute path of top-level, drive for Genomics analysis
+VOG_GENE_HEADER_FILENAME    = "vog.gene.headers.lst"  # The headers from the vog.genes.tagged.all.fa file (computed by multiPhate.py)
+VOG_PROTEIN_HEADER_FILENAME = "vog.protein.headers.lst"  # The headers from the vog.proteins.tagged.all.fa file (computed by multiPhate.py)
+VOG_ANNOTATION_FILENAME     = "vog.annotations.tsv"  # The annotations associated with VOG identifiers (downloaded from VOG server)
+PVOG_HEADER_FILENAME        = "pVOGs.headers.lst"
 
 # naming the custom gene caller
 # paths to subordinate codes; '' if installed globally (e.g., via conda)
@@ -501,6 +506,20 @@ USAGE_STRING = """Usage: python """ + CODE + """ """ + CONFIG_FILE + """\n"""
 
 DETAIL_STRING = """For further details please consult the README file.\n"""
 
+##### Directories #####
+
+# Make sure the PipelineOutput directory is there
+try:
+    os.stat(PIPELINE_OUTPUT_DIR)
+except:
+    os.mkdir(PIPELINE_OUTPUT_DIR)
+
+# Make sure the JSON directory is there
+try:
+    os.stat(JSON_DIR)
+except:
+    os.mkdir(JSON_DIR)
+
 ##### PATTERNS #####
 
 # LOCATIONS
@@ -527,6 +546,9 @@ p_genomeList                  = re.compile("Genome\sList")       # non-case-sens
 p_genomeNumber                = re.compile("Genome\s+(\d+)")     # genome number
 p_root                        = re.compile("(.*)\.fasta") # captures the root name of the fasta file (e.g., takes 'P2' from P2.fasta)
 p_end                         = re.compile("END")
+
+# tRNA DETECTIN
+p_trnascan                    = re.compile("trnascan='(.*)'")    # true/false
 
 # GENE CALLING
 
@@ -774,6 +796,9 @@ for cLine in cLines:
     match_genomeName                = re.search(p_genomeName,cLine)
     match_outputSubdir              = re.search(p_outputSubdir,cLine)
     match_end                       = re.search(p_end,cLine)
+
+    # tRNA prediction
+    match_trnascan                  = re.search(p_trnascan,cLine)
 
     # gene calling
     match_genemarksCalls            = re.search(p_genemarksCalls,cLine)
@@ -1052,6 +1077,18 @@ for cLine in cLines:
         if value != '':
             geneticCode = value
 
+    elif match_trnascan:
+        value = match_trnascan.group(1)
+        if value.lower() == 'yes' or value.lower() == 'true' or value.lower() == 'on':
+            trnascan = True
+        elif value.lower() == 'no' or value.lower() == 'false' or value.lower() == 'off':
+            trnascan = False
+        else:
+            if PHATE_WARNINGS:
+                print("multiPhate says, WARNING: Invalid string following trnascan parameter in config file:", value)
+            if not HPC:
+                LOG.write("%s%s\n" % ("Invalid string following translate_only parameter in config file: ", value))
+
     elif match_translateOnly:
         value = match_translateOnly.group(1)
         if value.lower() == 'yes' or value.lower() == 'true' or value.lower() == 'on':
@@ -1062,7 +1099,7 @@ for cLine in cLines:
             if PHATE_WARNINGS:
                 print("multiPhate says, WARNING: Invalid string following translate_only parameter in config file:", value)
             if not HPC:
-                LOGFILE.write("%s%s\n" % ("Invalid string following translate_only parameter in config file: ", value))
+                LOG.write("%s%s\n" % ("Invalid string following translate_only parameter in config file: ", value))
 
     ##### Gene Calls #####
 
@@ -1684,14 +1721,15 @@ for cLine in cLines:
 
     elif match_cgpThreads:
         value = match_cgpThreads.group(1)
-        if value.lower() == 'all':
-            cgpThreads = 'MAX' 
+        if value.lower() == 'all' or value.lower() == 'max':
+            cgpThreads = os.cpu_count() 
         elif value == '0':
             cgpThreads = 0
         elif int(value) >= 1:
             cgpThreads = int(value) 
         else:
             cgpThreads = 1
+        LOG.write("%s%s\n" % ("cgpThreads parameter is converted to ",cgpThreads))
 
     ##### CHECKPOINTING #####
 
@@ -1802,6 +1840,7 @@ if not HPC: # Skip logging if running in high-throughput, else multiPhate.log fi
     LOG.write("%s%s\n" % ("   GENE_FILE: ", GENE_FILE))
     LOG.write("%s%s\n" % ("   PROTEIN_FILE: ", PROTEIN_FILE))
     LOG.write("%s%s\n" % ("   geneticCode: ",geneticCode))
+    LOG.write("%s%s\n" % ("   trnascan: ",trnascan))
     LOG.write("%s%s\n" % ("   Status of boolean translateOnly is ",translateOnly))
     LOG.write("%s%s\n" % ("   primaryCalls is ",primaryCalls))
     LOG.write("%s%s\n" % ("   primaryCallsFile is ",primaryCallsFile))
@@ -1953,7 +1992,10 @@ for genome in genomeList:
 
 nextJsonFile = ""
 jsonList = []  # List of json filenames
+if genomeList:
+    referenceGenome = genomeList[0]["genomeName"]
 LOG.write("%s%s\n" % ("List of genome is:",genomeList))
+LOG.write("%s%s\n" % ("Reference genome is:",referenceGenome))
 if PHATE_MESSAGES:
     print("multiPhate says, List of genomes is",genomeList)
 for genome in genomeList:
@@ -1981,6 +2023,7 @@ for genome in genomeList:
             "genomeName":genome["genomeName"],
             "outputSubdir":genome["outputSubdir"],
             "geneticCode":geneticCode,
+            "trnascan":trnascan,
             "translateOnly":translateOnly,
             "phanotateCalls":phanotateCalls,
             "prodigalCalls":prodigalCalls,
@@ -2093,7 +2136,7 @@ if RepresentsInt(phateThreads):
     if int(phateThreads) == 0:
         THREADING_ON = False
         LOG.write("%s%s\n" % ("THREADING_ON is ",THREADING_ON))
-
+    
 if not CHECKPOINT_CGP and not CHECKPOINT_GENOMICS:
     LOG.write("%s%s%s%s\n" % ("CHECKPOINT_CGP is:",CHECKPOINT_CGP," and CHECKPOINT_GENOMICS is:",CHECKPOINT_GENOMICS))
     if THREADING_ON:
@@ -2162,14 +2205,12 @@ if runCGP and not translateOnly and (len(genomeList) > 1):
 
     # Run CompareGeneProfiles
     genomeCount = len(genomeList)
-    maxCGPthreads = int(genomeCount * (genomeCount - 1)/2)
+    maxCGPthreads = int((genomeCount * (genomeCount - 1))/2) # No. threads should not exceed N(N-1)/2, where N=genomeCount
 
-    if cgpThreads == 'MAX':
-        cgpThreads = os.cpu_count()
-
+    # Determine number of (allowed) cgp threads
+    # Input parameter processing already converted user's value to int
     if cgpThreads > os.cpu_count():
         cgpThreads = os.cpu_count()
-
     if cgpThreads > maxCGPthreads:
         cgpThreads = maxCGPthreads
 
@@ -2253,12 +2294,10 @@ if runGenomics and (len(genomeList) > 1):
         print("multiPhate says, Performing gene-correspondence analysis.")
 
     # Invoke the genomics module
-    command = "python " + GENOMICS_CODE
+    command = "python3 " + GENOMICS_CODE + ' ' + referenceGenome
     result = os.system(command)
-    if PHATE_PROGRESS:
+    if PHATE_MESSAGES:
         print("multiPhate says, Result of genomics processing is:",result)
-
-    # Clean up
     if PHATE_PROGRESS:
         print("multiPhate says, Genomics completed.")
 
@@ -2267,6 +2306,7 @@ else:
         print("multiPhate says, Skipping Genomics.")
     LOG.write("%s\n" % ("Skipping Genomics."))
 
+##############################################################################
 ##### CLEAN UP
 
 # Move json files to a subdir to keep main dir tidy

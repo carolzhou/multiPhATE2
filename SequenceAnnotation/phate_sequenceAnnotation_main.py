@@ -6,7 +6,7 @@
 #
 # Programmer: CEZhou
 #
-# Latest Update: 30 August 2020
+# Latest Update: 27 October 2020
 #
 # Description:  Performs blast and/or hmm searches on a given input gene or protein databases.
 #    Databases may be blast, sequence, or hmm profiles. Current search programs supported are:
