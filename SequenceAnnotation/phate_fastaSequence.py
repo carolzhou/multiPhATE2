@@ -3,7 +3,7 @@
 #
 # Programmer: Carol L. Ecale Zhou
 #
-# Most recent update: 19 October 2020
+# Most recent update: 15 December 2020
 # 
 # Module containing classes and methods for representing a multi-fasta sequence and associated methods
 # Classes and methods: 
@@ -149,6 +149,7 @@ class fasta(object):
         self.blastHeader = ""             # header that results from blast, which truncates after 1st space
         self.sequentialHeader = "hdr"     # an assigned, benign header that will not break 3rd party codes
         self.customHeader = ""            # a customized header; could be anything, but written for pVOGs
+        self.cgpHeader = ""               # in format: >cds57/+/235/557/
         self.name = "none"                # name will be geneCaller + number, if gene|protein from gene call
         self.sequence = ""                # store sequence as continuous lower-case string, sans numbers, white space
         self.sequenceLength = 0           # length of sequence
@@ -276,6 +277,9 @@ class fasta(object):
             seqType = type(seq)
             return False
 
+    def computeCGPheader(self):
+        self.cgpHeader = 'cds' + str(self.order) + '/' + str(self.strand) + '/' + str(self.start) + '/' + str(self.end)
+
     def removeEMBOSSpostfix(self):  # Remove the pesky "_1" that EMBOSS adds
         self.assignHeader(self.header.rstrip("_1 "))
 
@@ -305,6 +309,10 @@ class fasta(object):
 
     def getCustomHeader(self):
         return ('>' + self.customHeader)
+
+    def getCGPheader(self):
+        self.computeCGPheader()
+        return ('>' + self.cgpHeader)
  
     def getHeader(self,hdrType):
         headerType = hdrType.lower()
@@ -322,6 +330,8 @@ class fasta(object):
             return ('>' + self.blastHeader)
         elif headerType == 'sequential':
             return ('>' + self.sequentialHeader)
+        elif headerType == 'cgc':
+            return ('>' + self.cgcHeader)
         elif headerType == 'custom':
             return ('>' + self.customHeader)
         else:
@@ -405,6 +415,8 @@ class fasta(object):
             hdr = self.getSequentialHeader()
         elif headerType.lower() == "custom":
             hdr = self.getCustomHeader()
+        elif headerType.lower() == "cgp":
+            hdr = self.getCGPheader()
         else:
             hdr = self.getShortHeader()
         seq = self.sequence
@@ -748,6 +760,10 @@ class multiFasta(object):
         for fa in self.fastaList:
             if fa.customHeader:  # If the custom header is not empty string, then ok to print
                 fa.printFasta2file(FILE_HANDLE,"custom")
+
+    def printMultiFasta2file_cgpHeader(self,FILE_HANDLE):
+        for fa in self.fastaList:
+            fa.printFasta2file(FILE_HANDLE,"cgp")
 
     def printAll(self):
         count = 0

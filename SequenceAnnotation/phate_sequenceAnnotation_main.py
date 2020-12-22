@@ -6,7 +6,7 @@
 #
 # Programmer: CEZhou
 #
-# Latest Update: 27 October 2020
+# Latest Update: 15 December 2020
 #
 # Description:  Performs blast and/or hmm searches on a given input gene or protein databases.
 #    Databases may be blast, sequence, or hmm profiles. Current search programs supported are:
@@ -21,8 +21,8 @@ import sys, os, re, string, copy
 import time, datetime
 from subprocess import call
 
-DEBUG = False 
-#DEBUG = True
+#DEBUG = False 
+DEBUG = True
 
 # Defaults/Parameters
 PRIMARY_CALLS          = 'phanotate'   # Default; can be configured by user
@@ -158,8 +158,10 @@ outfile = ""  # will be constructed using user's specified output subdir
 outputDir           = ""         # user-specified output subdirectory
 infile_genome       = ""         # user-provided file containing the genome sequence that was gene-called
 infile_geneCall     = ""         # gene-call file (output from a gene caller; PHANOTATE for now)
-infile_gene         = ""         # genes to be blasted (not yet in service)
+infile_gene         = ""         # genes to be blasted 
 infile_protein      = ""         # user-provided file containing protein fasta sequences
+infile_cgpGene      = ""         # genes to be blasted by CGP
+infile_cgpProtein   = ""         # user-provided file containing protein fasta sequences to be blasted by CGP
 infile_primaryCalls = ""         # will be assigned later; depends on user's choice
 
 ##### USER-SPECIFIED META-DATA and PARAMTERS
@@ -242,6 +244,8 @@ p_outputDirParam             = re.compile('^-o')   # outout directory (e.g., 'LY
 p_genomeFileParam            = re.compile('^-G')   # Genome with a capital 'G'
 p_geneFileParam              = re.compile('^-g')   # gene with a lower-case 'g'
 p_proteinFileParam           = re.compile('^-p')   # protein or peptide
+p_cgpGeneFileParam           = re.compile('^-v')   # gene with a lower-case 'v'
+p_cgpProteinFileParam        = re.compile('^-w')   # protein or peptide with a lower-case 'w'
 p_geneticCodeParam           = re.compile('^-e')   # genetic code
 p_primaryCallsParam          = re.compile('^-c')   # gene caller = primary calls
 p_primaryCallsPathFileParam  = re.compile('^-f')   # primary gene calls file
@@ -337,6 +341,8 @@ for i in range(0,argCount):
     match_genomeFileParam            = re.search(p_genomeFileParam,            argList[i])
     match_geneFileParam              = re.search(p_geneFileParam,              argList[i])
     match_proteinFileParam           = re.search(p_proteinFileParam,           argList[i])
+    match_cgpGeneFileParam           = re.search(p_cgpGeneFileParam,           argList[i])
+    match_cgpProteinFileParam        = re.search(p_cgpProteinFileParam,        argList[i])
     match_primaryCallsParam          = re.search(p_primaryCallsParam,          argList[i])
     match_primaryCallsPathFileParam  = re.search(p_primaryCallsPathFileParam,  argList[i])
     match_geneticCodeParam           = re.search(p_geneticCodeParam,           argList[i])
@@ -381,6 +387,14 @@ for i in range(0,argCount):
     if match_proteinFileParam:
         if i < argCount:
             infile_protein = argList[i+1] 
+
+    if match_cgpGeneFileParam:
+        if i < argCount:
+            infile_cgpGene = argList[i+1] 
+
+    if match_cgpProteinFileParam:
+        if i < argCount:
+            infile_cgpProtein = argList[i+1] 
 
     # Other parameterized arguments
 
@@ -966,18 +980,30 @@ if PHATE_PROGRESS:
     print("phate_sequenceAnnotation_main says, Writing genes file")
 LOGFILE_H.write("%s\n" % ("Writing genes file"))
 # Print out newly created gene list
-fastaOut["mtype"] = "gene"
-fastaOut["headerType"] = "full"  #*** Should this be "compound" ???
-fastaOut["filename"] = infile_gene 
+fastaOut["mtype"]      = "gene"
+fastaOut["headerType"] = "full" 
+fastaOut["filename"]   = infile_gene 
+myGenome.printFastas2file(fastaOut)
+# Print newly created gene list in CGP format also
+fastaOut["headerType"] = "cgp"  
+fastaOut["filename"]   = infile_cgpGene
+if DEBUG:
+    print("TESTING: Printing CGP fastas to file. params: ",fastaOut)
 myGenome.printFastas2file(fastaOut)
 
 if PHATE_PROGRESS:
     print("phate_sequenceAnnotation_main says, Writing peptides file")
 LOGFILE_H.write("%s\n" % ("Writing peptides file"))
 # Print out newly created protein list 
-fastaOut["mtype"] = "protein"   #*** Should this be "compound" ???
+fastaOut["mtype"]      = "protein" 
 fastaOut["headerType"] = "full"
-fastaOut["filename"] = infile_protein 
+fastaOut["filename"]   = infile_protein 
+myGenome.printFastas2file(fastaOut)
+# Print out newly created protein list in CGP format also
+fastaOut["headerType"] = "cgp"  
+fastaOut["filename"]   = infile_cgpProtein
+if DEBUG:
+    print("TESTING: Printing CGP fastas to file. params: ",fastaOut)
 myGenome.printFastas2file(fastaOut)
 
 if PHATE_PROGRESS:
@@ -989,8 +1015,8 @@ if TRANSLATE_ONLY:
     if PHATE_PROGRESS:
         print("phate_sequenceAnnotation_main says, Translate only: computations completed.")
     LOGFILE_H.write("%s%s\n" % ("Translating only: computations completed at ",datetime.datetime.now()))
-else:
-    ######################################################## ANNOTATE ####################################################
+
+else:    ######################################################## ANNOTATE ####################################################
     # Create a blast object and set parameters
     if RUN_BLAST:
         if PHATE_PROGRESS:

@@ -5,7 +5,7 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Last update: 16 October 2020
+# Last update: 17 December 2020
 #
 # Description:
 # This program compares the gene calls from 2 genomes and identifies genes that 
@@ -49,6 +49,7 @@ import cgp_fastaSequence as fastaSequence
 import cgp_annotation as annotation
 import cgp_genomeSequence as genomeSequence
 import cgp_blastAnalysis as blastAnalysis
+import multiprocessing
 
 # Set messaging booleans
 
@@ -64,6 +65,11 @@ if PHATE_MESSAGES_STRING.lower() == 'true':
     PHATE_MESSAGES = True
 if PHATE_WARNINGS_STRING.lower() == 'true':
     PHATE_WARNINGS = True
+
+# Overrride
+#PHATE_PROGRESS = True
+#PHATE_MESSAGES = True
+#PHATE_WARNINGS = True
 
 # More environmental variables
 
@@ -136,7 +142,7 @@ USAGE_STRING = "Usage:  compareGeneProfiles_main.py -g1 <genome1.fasta> -a1 <gen
 
 INPUT_STRING = "You may enter parameters interactively (via prompt) by typing: compareGeneProfiles_main.py -interactive\nYou will then be promted for the following required command-line parameters: \n   genome1.fasta\n   genome2.fasta\n   annotation1.gff\n   annotation2.gff\nOptionally, you may provide any/all of the following cutoff values as integers ranging from 0 to 100, with restrictions, by entering them at the command line prompt, or you may accept the defaults:\n   gene match sequence identity\n   gene match minumum coverage\n   gene similarity identity\n   gene similarity coverage\n   domain match identity\n   domain match coverage\n   domain similarity identity\n   domain similarity coverage\n   paralog match identity\n   paralog match coverage\n   paralog domain similarity identity\n   paralog domain similarity coverage\nType: compareGeneProfiles_main.py -interactive"   
 
-ACCEPTABLE_ARG_COUNT = (2,3,9,11) # 2 if "help", "input", or "interactive"; 9 if 4 files provided with command-line labels (ie, '-g1')
+ACCEPTABLE_ARG_COUNT = (2,3,9,11,13,14,15) # 2 if "help", "input", or "interactive"; 9 if 4 files provided with command-line labels (ie, '-g1')
                                # 3 if "config" mode; 11 if also including projectDirectory
 
 ##### BLAST default parameters
@@ -161,6 +167,7 @@ rootFilename     = ""
 annotationFile1  = "" # a1
 annotationFile2  = "" # a2
 projectDirectory = "" # d
+kludge           = '0'
 
 #### VARIABLES: files
 
@@ -424,6 +431,8 @@ ERROR_LOG = open(errorLog,"a")
 ERROR_LOG.write("%s%s\n" % ("Reading command-line input at ",today.read()))
 
 argCount = len(sys.argv)
+print("TESTING: cgp_compareGeneProfiles_main says, argCount is ",argCount)
+print("TESTING: cgp_compareGeneProfiles_main says, sys.argv is ",sys.argv)
 if PHATE_PROGRESS:
     print ("cgp_compareGeneProfiles_main says, Reading input arguments")
 if PHATE_MESSAGES:
@@ -449,7 +458,8 @@ if argCount in ACCEPTABLE_ARG_COUNT:
         configString = sys.argv[2]
         GetConfig(configString)
 
-    if argCount == 9 or argCount == 11:
+    if argCount == 9 or argCount == 11 or argCount == 13 or argCount == 15:
+        print("TESTING: cgp_compareGeneProfiles_main says, checking input parameters")
         if PHATE_PROGRESS:
             print ("cgp_compareGeneProfiles_main says, Reading input parameters")
         for i in range(argCount):
@@ -464,6 +474,12 @@ if argCount in ACCEPTABLE_ARG_COUNT:
             if sys.argv[i] == "-d":
                 files["projectDirectory"] = sys.argv[i+1]
                 BASE_DIR = files["projectDirectory"]
+            if sys.argv[i] == "-k":
+                kludge = sys.argv[i+1]
+                print("TESTING: cgp_compareGeneProfiles_main says, Just read kludge, which is ",kludge)
+            if sys.argv[i] == "-S":
+                subdir = sys.argv[i+1]  # also a kludge
+                print("TESTING: cgp_compareGeneProfiles_main says, Just read subdir, which is ",subdir)
         if PHATE_PROGRESS:
             print ("  genomeFile1 is", files["genomeFile1"])
             print ("  genomeFile2 is", files["genomeFile2"])
@@ -577,7 +593,8 @@ today    = os.popen('date')
 if SERVER:
     fixTime = re.sub(':','',dateTime) # Remove ':' from dir name (else EMBOSS has trouble)
     newTime = re.sub('\.','_',fixTime) # Remove '.' from dir name
-    OUT_DIR = os.path.join(files["projectDirectory"], "Results_" + newTime + "/")  #
+    #OUT_DIR = os.path.join(files["projectDirectory"], "Results_" + newTime + "/")  #*** previously dir names were Results + random numbers
+    OUT_DIR = os.path.join(files["projectDirectory"], "Results_" + subdir + "/")  # kludge: now we tell subordinate code how to name Results dirs
 else:
     OUT_DIR = "./"
 
@@ -585,7 +602,8 @@ if PHATE_MESSAGES:
     print ("cgp_compareGeneProfiles_main says, Making directory", OUT_DIR)
 
 command = "mkdir " + OUT_DIR
-os.system(command)
+if kludge == '1' or kludge == '12':
+    os.system(command)
 outFile             = os.path.join(OUT_DIR, OUT_FILE)     # Contains misc output
 reportFile          = os.path.join(OUT_DIR, REPORT_FILE)  # Contains binary genome comparison data
 summaryFile         = os.path.join(OUT_DIR, SUMMARY_FILE) # Contains summary data pertaining to binary comparison
@@ -665,6 +683,7 @@ else:
 
 #*** Move this function up to where it belongs with other functions.
 # Extract gene calls from GFF file (lines), then create and store new gene and protein objects.
+#def x_ExtractGeneCalls(genomeX,lines): 
 def ExtractGeneCalls(genomeX,lines): 
     geneCount    = 0
     geneCountCDS = 0
@@ -748,8 +767,6 @@ def ExtractGeneCalls(genomeX,lines):
             gene["contig"]         = fields[0]
             gene["sequence"] = genomeX.getSubsequence(gff["start"],gff["end"],gene["parentSequence"])
             if gff["strand"] == '-':  # Reverse complement sequence if on reverse strand
-                #reverseComplement = gene["sequence"].translate(complements)[::-1]
-                #gene["sequence"] = reverseComplement
                 tempGene = Seq(gene["sequence"])
                 gene["sequence"] = tempGene.reverse_complement()
             header = gene["name"] + "/" + gff["strand"] + "/" + str(gff["start"]) + "/" + str(gff["end"]) + "/"
@@ -787,8 +804,19 @@ def ExtractGeneCalls(genomeX,lines):
 # ...translate gene sequences to protein, then create and insert protein multiFasta objects.
 # Write gene and protein fastas to files.
 #########################################################################################
+#*** kludge is needed so that this code can be run twice: first to create the blast
+#*** databses in serial, and second, to run CGP in parallel. This was necessary due 
+#*** to the structure of this CGP code, which was is legacy code that was not intended
+#*** to be run in parallel, and was not perfectly efficient wrt creating the blast
+#*** databases for pairwise genome comparisons. Therefore, CGP should be re-written
+#*** as fully object-oriented, and makeblastdb and parallelism handled more elegantly.
 
 ##### Genome #1 genes and proteins
+##### Extract genes and proteins from files provided by PhATE
+##### Load into myGenome object
+
+#ExtractGenes("gene",cgpGeneFile)
+#ExtractProteins("protein",cgpProteinFile)
 
 # Extract and process gene calls from GFF file (also creates protein fasta list object) 
 fLines = ANNOTATION_FILE1.read().splitlines()
@@ -803,7 +831,8 @@ printFastas2fileArgs = {  # for passing parameters to class genome/
     }
 if PHATE_PROGRESS:
     print("cgp_compareGeneProfiles says, Printing genome1 gene sequences to file,",printFastas2fileArgs["filename"])
-success = genome1.printFastas2file(printFastas2fileArgs)
+if kludge == '1' or kludge == '12':
+    success = genome1.printFastas2file(printFastas2fileArgs)
 
 # Print protein sequences to file
 printFastas2fileArgs = {  # for passing parameters to class genome/
@@ -813,10 +842,10 @@ printFastas2fileArgs = {  # for passing parameters to class genome/
     }
 if PHATE_PROGRESS:
     print("cgp_compareGeneProfiles says, Printing genome1 protein sequences to file,",printFastas2fileArgs["filename"])
-success = genome1.printFastas2file(printFastas2fileArgs)
+if kludge == '1' or kludge == '12':
+    success = genome1.printFastas2file(printFastas2fileArgs)
 
 ##### Genome #2 genes
-
 # Extract and process gene calls from GFF file
 fLines = ANNOTATION_FILE2.read().splitlines()
 ExtractGeneCalls(genome2,fLines)
@@ -830,7 +859,8 @@ printFastas2fileArgs = {  # for passing parameters to class genome/
     }
 if PHATE_PROGRESS:
     print("cgp_compareGeneProfiles says, Printing genome2 gene sequences to file,",printFastas2fileArgs["filename"])
-success = genome2.printFastas2file(printFastas2fileArgs)
+if kludge == '1' or kludge == '12':
+    success = genome2.printFastas2file(printFastas2fileArgs)
 
 # Print protein sequences to file
 printFastas2fileArgs = {  # for passing parameters to class genome/
@@ -840,7 +870,8 @@ printFastas2fileArgs = {  # for passing parameters to class genome/
     }
 if PHATE_PROGRESS:
     print("cgp_compareGeneProfiles says, Printing genome2 protein sequences to file,",printFastas2fileArgs["filename"])
-success = genome2.printFastas2file(printFastas2fileArgs)
+if kludge == '1' or kludge == '12':
+    success = genome2.printFastas2file(printFastas2fileArgs)
 
 #########################################################################################################
 # Create blast databases for gene and protein multi-fasta files 
@@ -859,21 +890,31 @@ if PHATE_PROGRESS:
 
 myBlast = blastAnalysis.blast()                # Make blast object
 
+# NOTE: Commenting out calls to makeBlastDB below because blastdb making has been moved out of CGP module
+#       See multiPhate.py
 blastDBargs["dbType"] = "nucl"         # Set up for nucleotide blast
 blastDBargs["filename"] = files["geneFile1"]
-myBlast.makeBlastDB(blastDBargs)
+if kludge == '1' or kludge == '12':
+    myBlast.makeBlastDB(blastDBargs)
 blastDBargs["filename"] = files["geneFile2"]
-myBlast.makeBlastDB(blastDBargs)
+if kludge == '1' or kludge == '12':
+    myBlast.makeBlastDB(blastDBargs)
 
 if PROTEIN:
     blastDBargs["dbType"] = "prot"         # Set up for protein blast
     blastDBargs["filename"] = files["proteinFile1"]
-    myBlast.makeBlastDB(blastDBargs)
+    if kludge == '1' or kludge == '12':
+        myBlast.makeBlastDB(blastDBargs)
     blastDBargs["filename"] = files["proteinFile2"]
-    myBlast.makeBlastDB(blastDBargs)
+    if kludge == '1' or kludge == '12':
+        myBlast.makeBlastDB(blastDBargs)
 
 if PHATE_PROGRESS:
     print ("cgp_compareGeneProfiles_main says, Blast database creation complete.")
+
+if kludge == '1':
+    print("TESTING: cgp_compareGeneProfiles says, KLUDGE: exiting after makeblastdb")
+    exit(0)
 
 #####################################################################################
 # Perform blast of gene and protein sets between genomes and against self
@@ -920,7 +961,8 @@ if PHATE_PROGRESS:
 blastArgs["outfile"] = outfile
 files["g1_g2_blastn"] = outfile
 if BLAST_ON:
-    result = myBlast.performBlast(blastArgs)
+    if kludge == '2' or kludge == '12':
+        result = myBlast.performBlast(blastArgs)
     if PHATE_MESSAGES:
         print ("cgp_compareGeneProfiles_main says, Result of blasting genes genome1-genome2:", result)
 
@@ -938,7 +980,8 @@ if PHATE_MESSAGES:
 blastArgs["outfile"] = outfile
 files["g2_g1_blastn"] = outfile
 if BLAST_ON:
-    result = myBlast.performBlast(blastArgs)
+    if kludge == '2' or kludge == '12':
+        result = myBlast.performBlast(blastArgs)
     if PHATE_PROGRESS:
         print ("cgp_compareGeneProfiles_main says, Result of blasting genes genome2-genome1:", result)
 
@@ -954,7 +997,8 @@ outfile = OUT_DIR + files["geneFile1_root"] + "_" + files["geneFile1_root"] + "_
 blastArgs["outfile"] = outfile
 files["g1_g1_blastn"] = outfile
 if BLAST_ON:
-    result = myBlast.performBlast(blastArgs)
+    if kludge == '2' or kludge == '12':
+        result = myBlast.performBlast(blastArgs)
     if PHATE_PROGRESS:
         print ("cgp_compareGeneProfiles_main says, Result of blasting genes genome1-genome1:", result)
 
@@ -970,7 +1014,8 @@ outfile = OUT_DIR + files["geneFile2_root"] + "_" + files["geneFile2_root"] + "_
 blastArgs["outfile"] = outfile
 files["g2_g2_blastn"] = outfile
 if BLAST_ON:
-    result = myBlast.performBlast(blastArgs)
+    if kludge == '2' or kludge == '12':
+        result = myBlast.performBlast(blastArgs)
     if PHATE_PROGRESS:
         print ("cgp_compareGeneProfiles_main says, Result of blasting genes genome2-genome1:", result)
 
@@ -993,7 +1038,8 @@ if PROTEIN:
     blastArgs["outfile"] = outfile
     files["g1_g2_blastp"] = outfile
     if BLAST_ON:
-        result = myBlast.performBlast(blastArgs)
+        if kludge == '2' or kludge == '12':
+            result = myBlast.performBlast(blastArgs)
         if PHATE_PROGRESS:
             print ("cgp_compareGeneProfiles_main says, Result of blasting proteins genome1-genome2:", result)
 
@@ -1009,7 +1055,8 @@ if PROTEIN:
     blastArgs["outfile"] = outfile
     files["g2_g1_blastp"] = outfile
     if BLAST_ON:
-        result = myBlast.performBlast(blastArgs)
+        if kludge == '2' or kludge == '12':
+            result = myBlast.performBlast(blastArgs)
         if PHATE_PROGRESS:
             print ("cgp_compareGeneProfiles says, Result of blasting proteins genome2-genome1:", result)
 
@@ -1025,7 +1072,8 @@ if PROTEIN:
     blastArgs["outfile"] = outfile
     files["g1_g1_blastp"] = outfile
     if BLAST_ON:
-        result = myBlast.performBlast(blastArgs)
+        if kludge == '2' or kludge == '12':
+            result = myBlast.performBlast(blastArgs)
         if PHATE_PROGRESS:
             print ("cgp_compareGeneProfiles_main says, Result of blasting proteins genome1-genome1:", result)
  
@@ -1041,7 +1089,8 @@ if PROTEIN:
     blastArgs["outfile"] = outfile
     files["g2_g2_blastp"] = outfile
     if BLAST_ON:
-        result = myBlast.performBlast(blastArgs)
+        if kludge == '2' or kludge == '12':
+            result = myBlast.performBlast(blastArgs)
         if PHATE_PROGRESS:
             print ("cgp_compareGeneProfiles_main says, Result of blasting proteins genome2-genome2:", result)
 

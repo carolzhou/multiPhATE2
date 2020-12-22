@@ -5,7 +5,7 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Last Update: 9 December 2020
+# Last Update: 17 December 2020
 #
 # Description:
 # This script uses a config file to run compareGeneProfiles.py
@@ -78,6 +78,9 @@ if PHATE_MESSAGES_STRING.lower() == 'true':
 if PHATE_WARNINGS_STRING.lower() == 'true':
     PHATE_WARNINGS = True
 
+#### SEMIPHORE
+os.environ["CGP_LOCK"] = '1'  # Initially lock is open
+
 #### FILE
 
 logFile = os.path.join(CODE_BASE_DIR,"cgp_wrapper.log")
@@ -139,8 +142,8 @@ if str(cgpThreads).lower() == 'all' or str(cgpThreads).lower == 'max':
     cgpThreads = os.cpu_count()
 if int(float(cgpThreads)) >= 1: # Compatible with what's on github repo
     THREADING_ON = True
-#elif int(float(cgpThreads)) >= 1:
-#    THREADING_ON = True
+    if int(float(cgpThreads)) >= 2:
+        CGP_SEMIPHORE = True
 
 ##### Parse config file; construct lists of BASE_DIRS and FILES
 
@@ -200,26 +203,59 @@ if PHATE_PROGRESS:
 
 if THREADING_ON:
     LOGFILE.write("%s%s\n" % ("Threading is on; cgpThreads is ",cgpThreads))
-    count = 0; commandList = []
+    count = 0; commandList = []; commandList_1 = []; commandList_2 = []
     for fileSet in inFileList:
         count += 1
         directory = fileSet["dir"]
+        # kludge
+        print("TESTING: cgp_wrapper says, g1 and g2 are: ",fileSet["g1"], fileSet["g2"])
+        g1 = ""; g2 = ""
+
+        if re.search('\.fasta$',fileSet["g1"]):
+            g1 = os.path.basename(fileSet["g1"]).rstrip('.fasta')
+        elif re.search('\.fa$',fileSet["g1"]):
+            g1 = os.path.basename(fileSet["g1"]).rstrip('.fa')
+        else:
+            g1 = os.path.basename(fileSet["g1"])
+
+        if re.search('\.fasta$',fileSet["g2"]):
+            g2 = os.path.basename(fileSet["g2"]).rstrip('.fasta')
+        elif re.search('\.fa$',fileSet["g2"]):
+            g2 = os.path.basename(fileSet["g2"]).rstrip('.fa')
+        else:
+            g2 = os.path.basename(fileSet["g2"])
+
+        subdir = g1 + '_x_' + g2  # kludge
+        print("TESTING: cgp_wrapper says, subdir is ",subdir)
         genome1   = fileSet["g1"]; genome1 = os.path.join(directory, genome1)  # Need to prepend project dir to get full path
         genome2   = fileSet["g2"]; genome2 = os.path.join(directory, genome2)
         annot1    = fileSet["a1"]; annot1  = os.path.join(directory, annot1)
         annot2    = fileSet["a2"]; annot2  = os.path.join(directory, annot2)
-        nextCommand = "python " + COMPARE_GENE_PROFILES_CODE + " -g1 " + genome1 + " -g2 " + genome2 + " -a1 " + annot1 + " -a2 " + annot2 + " -d " + projectDirectory
-        commandList.append(nextCommand)
+        # Construct commands ("-k" stands for "kludge", btw)
+        #nextCommand = "python " + COMPARE_GENE_PROFILES_CODE + " -g1 " + genome1 + " -g2 " + genome2 + " -a1 " + annot1 + " -a2 " + annot2 + " -d " + projectDirectory
+        nextCommand_1 = "python " + COMPARE_GENE_PROFILES_CODE + " -g1 " + genome1 + " -g2 " + genome2 + " -a1 " + annot1 + " -a2 " + annot2 + " -d " + projectDirectory + " -k 1" + " -S " + subdir
+        nextCommand_2 = "python " + COMPARE_GENE_PROFILES_CODE + " -g1 " + genome1 + " -g2 " + genome2 + " -a1 " + annot1 + " -a2 " + annot2 + " -d " + projectDirectory + " -k 2" + " -S " + subdir
+        commandList_1.append(nextCommand_1)
+        commandList_2.append(nextCommand_2)
+    for command in commandList_1:
+        os.system(command)  # Perform all makeblastdb executions in serial
     if __name__ == '__main__':
         LOGFILE.write("%s%s" % ("cgp_wrapper / __main__: List of commands: ",commandList))
         cgp_pool = Pool(int(float(cgpThreads)))
-        cgp_pool.map(cgp_threaded, commandList)
+        #cgp_pool.map(cgp_threaded, commandList) 
+        cgp_pool.map(cgp_threaded, commandList_2) # Perform all blast operations in parallel
         cgp_pool.close() 
 else:
     LOGFILE.write("%s\n" % ("Threading is off; skipping thread pool."))
     count = 0
     for fileSet in inFileList:
         count += 1
+        # kludge
+        print("TESTING: cgp_wrapper says, g1 and g2 are: ",fileSet["g1"], fileSet["g2"])
+        g1 = os.path.basename(fileSet["g1"]).rstrip('.fasta')
+        g2 = os.path.basename(fileSet["g2"]).rstrip('.fasta')
+        subdir = g1 + '_x_' + g2  # kludge
+        print("TESTING: cgp_wrapper says, subdir is ",subdir)
         directory = fileSet["dir"]
         genome1   = fileSet["g1"]; genome1 = os.path.join(directory, genome1)  # Need to prepend project dir to get full path
         genome2   = fileSet["g2"]; genome2 = os.path.join(directory, genome2)
@@ -231,7 +267,8 @@ else:
         LOGFILE.write("%s%s\n" % ("-a1 annot1:  ",annot1))
         LOGFILE.write("%s%s\n" % ("-a2 annot2:  ",annot2))
         LOGFILE.write("%s%s\n" % ("-d  userDir: ",projectDirectory))
-        call(["python",COMPARE_GENE_PROFILES_CODE,"-g1",genome1,"-g2",genome2,"-a1",annot1,"-a2",annot2,"-d",projectDirectory])
+        #call(["python",COMPARE_GENE_PROFILES_CODE,"-g1",genome1,"-g2",genome2,"-a1",annot1,"-a2",annot2,"-d",projectDirectory])
+        call(["python",COMPARE_GENE_PROFILES_CODE,"-g1",genome1,"-g2",genome2,"-a1",annot1,"-a2",annot2,"-d",projectDirectory,"-k","12","-S",subdir])
 
 currentTime = int(time.time())
 LOGFILE.write("%s%s%s%s\n" % ("Execution complete. ",count," jobs completed at ",currentTime))

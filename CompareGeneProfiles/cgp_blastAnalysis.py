@@ -3,7 +3,7 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Date of last update:  9 December 2020
+# Date of last update:  17 December 2020
 #
 # Description:
 # Module comprising data structures and methods for blasting the genes and proteins
@@ -50,6 +50,10 @@ import cgp_annotation as annotation
 import re, os, copy
 import operator
 from itertools import groupby   # used in mergeAll method # changed sort method 16july2013
+import random
+import time
+
+RANDOM_LIMIT = 25 
 
 # Boolean control: verbosity
 
@@ -778,6 +782,7 @@ class blast(object):
     def printHits2file(self,hitList,FILE_HANDLE):
         hitList.printAll2file(FILE_HANDLE)
 
+    # Moving this method to multiPhate.py, as makeblastdb cannot be run in parallel
     def makeBlastDB(self,kvargs):  # Create blastDBs for contigs, genes, proteins
         if "dbType" in kvargs.keys():
             databaseType = kvargs["dbType"].lower()
@@ -787,13 +792,14 @@ class blast(object):
             filename = kvargs["filename"]
         else:
             return False
+
+        # Prepare and run command for creating blast database 
         if databaseType == "nucl" or databaseType == "nt" or databaseType == "dna":
             command = "makeblastdb -in " + filename + " -dbtype nucl -logfile " + filename + ".blastdb1_nucl_log"
         elif databaseType == "prot" or databaseType == "aa" or databaseType == "protein":
             command = "makeblastdb -in " + filename + " -dbtype prot -logfile " + filename + ".blastdb1_prot_log"
-        else:
-            return False
         myResult = os.system(command)
+
         return myResult
 
     def performBlast(self,kvargs):

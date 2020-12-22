@@ -6,7 +6,7 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Last Update:  09 December 2020
+# Last Update:  17 December 2020
 #
 # Description: Script multiPhate.py is a driver program that runs the multiPhATE2 bacteriophage annotation system,
 #    which comprises four modules:  Gene Calling, PhATE, Compare Gene Profiles, and Genomics. See the README file
@@ -42,6 +42,7 @@
 #    SequenceAnnotation/   - PhATE sequence annotation codes
 #    Utility/              - miscellaneous codes
 #    phate_runPipeline.py  - PhATE pipeline driver
+#    phate_tran.py         - code for running tRNAscan
 #    PipelineIntput/       - contains myGenome.fasta (and optional custom gene calls)
 #    PipelineOutput/       - output files are written here and to genome-specific subdirectories
 #    multiphate.config     - configuration file (copy/modify sample.config)
@@ -57,20 +58,18 @@
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
 # THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
 
+from os import path
 import datetime
 import time
+
+CHECK_USER_DATABASES = True     # Verify that user's databases are in place and path/file is correct
+#CHECK_USER_DATABASES = False 
+#DO_DB_CHECK_ONLY = True         # Halt execution after checking user's databases
+DO_DB_CHECK_ONLY = False 
 
 TEST_NUMBER = '0'
 MESSAGE = ""
 #MESSAGE = ": allDBs; allSearches; 9 phate processes; 10 blast threads; 36 cgp processes; 9 genomes"
-#MESSAGE = ": specialtyDBs; allSearches; 7 phate processes; 4 blast threads; 0 cgp processes; 6 genomes"
-#MESSAGE = ": specialtyDBs; allSearches; 3 phate processes; 4 blast threads; 0 cgp processes; 3 genomes"
-#MESSAGE = ": specialtyDBs; allSearches; 0 phate processes; 4 blast threads; 0 cgp processes; 1 genome"
-#MESSAGE = ": gene-calling only; 0 phate processes; 0 blast threads; 0 cgp processes; 1/7 genomes"
-#MESSAGE = ": gene-calling only; 0 phate processes; 0 blast threads; 0 cgp processes; 3 test genomes"
-#MESSAGE = ": 2 phate processes; 4 blast threads; 2 cgp processes; 2 bac genomes"
-#MESSAGE = ": cgp only; 0 phate processes; 4 blast threads; 21 cgp processes; 7 genomes"
-#MESSAGE = ": specialty DBs + refseqP; all searches; 9 phate processes; 4 blast threads; 36 cgp processes9 genomes; "
 
 timeLog = "./time.log"
 TIME_LOG = open(timeLog,'a')
@@ -82,7 +81,7 @@ timeStart = time.time()
 import sys, os, re, string, copy, time, datetime
 import subprocess
 import json
-from multiprocessing import Pool
+import multiprocessing
 import platform
 
 # Because grep works differently in Python 3.x, and works differently on Mac OSX, need to set this environment
@@ -161,6 +160,11 @@ PHATE_MESSAGES = PHATE_MESSAGES_DEFAULT
 PHATE_WARNINGS = PHATE_WARNINGS_DEFAULT
 CGP_PROGRESS   = CGP_PROGRESS_DEFAULT
 
+# DEBUGGING
+# Override
+#PHATE_WARNINGS = True
+PHATE_MESSAGES = True
+#PHATE_PROGRESS = True
 DEBUG = False
 #DEBUG = True     # Controls debug settings in this (local) code only
 
@@ -249,20 +253,20 @@ pfamHmm                  = False
 smartHmm                 = False
 phageEnzymeHmm           = False
 # database locations
-ncbiVirusGenomeHmmDBpath  = "pathNotSet"
-ncbiVirusProteinHmmDBpath = "pathNotSet"
-keggVirusHmmDBpath        = "pathNotSet"
-nrHmmDBpath               = "pathNotSet"
-refseqGeneHmmDBpath       = "pathNotSet"
-refseqProteinHmmDBpath    = "pathNotSet"
-phantomeHmmDBpath         = "pathNotSet"
-pvogsHmmDBpath            = "pathNotSet"
-vogsHmmDBpath             = "pathNotSet"
-uniprotHmmDBpath          = "pathNotSet"
-swissprotHmmDBpath        = "pathNotSet"
-pfamHmmDBpath             = "pathNotSet"
-smartHmmDBpath            = "pathNotSet"
-phageEnzymeHmmDBpath      = "pathNotSet"
+ncbiVirusGenomeHmmDBpath  = ""
+ncbiVirusProteinHmmDBpath = ""
+keggVirusHmmDBpath        = ""
+nrHmmDBpath               = ""
+refseqGeneHmmDBpath       = ""
+refseqProteinHmmDBpath    = ""
+phantomeHmmDBpath         = ""
+pvogsHmmDBpath            = ""
+vogsHmmDBpath             = ""
+uniprotHmmDBpath          = ""
+swissprotHmmDBpath        = ""
+pfamHmmDBpath             = ""
+smartHmmDBpath            = ""
+phageEnzymeHmmDBpath      = ""
 
 # parameters controlling custom hmm processes: booleans, custom names, and paths
 customHmm                = False
@@ -360,89 +364,72 @@ os.environ["PHATE_PHANOTATE_PATH"]          = ""   # should be installed globall
 os.environ["PHATE_PRODIGAL_PATH"]           = ""   # global, if installed via conda
 os.environ["PHATE_GLIMMER_PATH"]            = ""   # global, if installed via conda
 os.environ["PHATE_GENEMARKS_PATH"]          = ""   # global, but not a conda package
-os.environ["PHATE_tRNAscanSE_HOME"]         = ""    # global, if installed via conda
-os.environ["PHATE_EMBOSS_PHATE_HOME"]       = ""    # global, if installed via conda
+os.environ["PHATE_tRNAscanSE_HOME"]         = ""   # global, if installed via conda
+os.environ["PHATE_EMBOSS_PHATE_HOME"]       = ""   # global, if installed via conda
 os.environ["PHATE_CGC_PATH"]                = BASE_DIR_DEFAULT + "CompareCalls/"
 
-# Data sets (Subject to change based on user input to config file)
+# Data sets (based on user input to config file)
 # BLAST
-os.environ["PHATE_NCBI_VIRUS_BASE_DIR"]             = DATABASE_DIR_DEFAULT + "NCBI/"
-os.environ["PHATE_NCBI_VIRUS_GENOME_BLAST_HOME"]    = os.environ["PHATE_NCBI_VIRUS_BASE_DIR"] + "Virus_Genome/"  + "viral.genomic.fna"
-os.environ["PHATE_NCBI_VIRUS_PROTEIN_BLAST_HOME"]   = os.environ["PHATE_NCBI_VIRUS_BASE_DIR"] + "Virus_Protein/" + "viral.protein.faa"
-os.environ["PHATE_NCBI_TAXON_DIR"]                  = os.environ["PHATE_NCBI_VIRUS_BASE_DIR"] + "Virus_Genome/"
-os.environ["PHATE_REFSEQ_PROTEIN_BASE_DIR"]         = DATABASE_DIR_DEFAULT + "Refseq/Protein/"
-os.environ["PHATE_REFSEQ_PROTEIN_BLAST_HOME"]       = os.environ["PHATE_REFSEQ_PROTEIN_BASE_DIR"] + "refseq_protein"
-os.environ["PHATE_REFSEQ_GENE_BASE_DIR"]            = DATABASE_DIR_DEFAULT + "Refseq/Gene/"
-os.environ["PHATE_REFSEQ_GENE_BLAST_HOME"]          = os.environ["PHATE_REFSEQ_GENE_BASE_DIR"] + "refseqgene"
-os.environ["PHATE_PVOGS_BASE_DIR"]                  = DATABASE_DIR_DEFAULT + "pVOGs/"
-os.environ["PHATE_PVOGS_BLAST_HOME"]                = os.environ["PHATE_PVOGS_BASE_DIR"] + "pVOGs.faa"
-os.environ["PHATE_PVOGS_HEADER_FILE"]               = os.environ["PHATE_PVOGS_BASE_DIR"] + "pVOGs.headers.lst"
+os.environ["PHATE_NCBI_VIRUS_BASE_DIR"]             = "" 
+os.environ["PHATE_NCBI_VIRUS_GENOME_BLAST_HOME"]    = "" 
+os.environ["PHATE_NCBI_VIRUS_PROTEIN_BLAST_HOME"]   = "" 
+os.environ["PHATE_NCBI_TAXON_DIR"]                  = "" 
+os.environ["PHATE_REFSEQ_PROTEIN_BASE_DIR"]         = "" 
+os.environ["PHATE_REFSEQ_PROTEIN_BLAST_HOME"]       = "" 
+os.environ["PHATE_REFSEQ_GENE_BASE_DIR"]            = "" 
+os.environ["PHATE_REFSEQ_GENE_BLAST_HOME"]          = "" 
+os.environ["PHATE_PVOGS_BASE_DIR"]                  = "" 
+os.environ["PHATE_PVOGS_BLAST_HOME"]                = "" 
+os.environ["PHATE_PVOGS_HEADER_FILE"]               = "" 
 # VOG gene and protein fasta data sets need to be pre-processed via dbPrep_getDBs.py to insert VOG identifiers in fasta headers
-os.environ["PHATE_VOGS_BASE_DIR"]                   = DATABASE_DIR_DEFAULT + "VOGs/"
-os.environ["PHATE_VOG_PROTEIN_BASE_DIR"]            = os.environ["PHATE_VOGS_BASE_DIR"]
-#os.environ["PHATE_VOG_ANNOTATION_FILE"]             = os.environ["PHATE_VOGS_BASE_DIR"] + "vog.annotations.tsv"
+os.environ["PHATE_VOGS_BASE_DIR"]                   = "" 
+os.environ["PHATE_VOG_PROTEIN_BASE_DIR"]            = "" 
 os.environ["PHATE_VOG_ANNOTATION_FILE"]             = ""
-#os.environ["PHATE_VOG_GENE_BLAST_HOME"]             = os.environ["PHATE_VOGS_BASE_DIR"] + "VOG_genes.fnt"      
-#os.environ["PHATE_VOG_PROTEIN_BLAST_HOME"]          = os.environ["PHATE_VOGS_BASE_DIR"] + "VOG_protein.faa"
+os.environ["PHATE_VOG_GENE_BASE_DIR"]               = ""      
 os.environ["PHATE_VOG_GENE_BLAST_HOME"]             = ""      
+os.environ["PHATE_VOG_GENE_HEADER_FILE"]            = ""      
 os.environ["PHATE_VOG_PROTEIN_BLAST_HOME"]          = ""
-os.environ["PHATE_VOG_PROTEIN_HEADER_FILE"]         = ""  # This should be called PHATE_VOG_HEADER_FILE, since applies to gene and protein
-os.environ["PHATE_VOG_PROTEIN_ANNOTATION_FILE"]     = ""  # This should be called PHATE_VOG_ANNOTATION_FILE, since applies to gene and protein
-os.environ["PHATE_PHANTOME_BASE_DIR"]               = DATABASE_DIR_DEFAULT + "Phantome/"
-os.environ["PHATE_PHANTOME_BLAST_HOME"]             = os.environ["PHATE_PHANTOME_BASE_DIR"] + "Phantome_Phage_genes.faa"
-os.environ["PHATE_PHAGE_ENZYME_BASE_DIR"]           = DATABASE_DIR_DEFAULT + "PhageEnzyme/" # not yet in service
-os.environ["PHATE_PHAGE_ENZYME_BLAST_HOME"]         = os.environ["PHATE_PHAGE_ENZYME_BASE_DIR"] + "phageEnzyme"
-os.environ["PHATE_KEGG_VIRUS_BASE_DIR"]             = DATABASE_DIR_DEFAULT + "KEGG/"
-os.environ["PHATE_KEGG_VIRUS_BLAST_HOME"]           = os.environ["PHATE_KEGG_VIRUS_BASE_DIR"] + "T40000.pep"
-os.environ["PHATE_PFAM_BASE_DIR"]                   = DATABASE_DIR_DEFAULT + "Pfam/" # not yet in service
-os.environ["PHATE_PFAM_BLAST_HOME"]                 = os.environ["PHATE_PFAM_BASE_DIR"] + "pfam"
-os.environ["PHATE_SMART_BASE_DIR"]                  = DATABASE_DIR_DEFAULT + "Smart/"
-os.environ["PHATE_SMART_BLAST_HOME"]                = os.environ["PHATE_SMART_BASE_DIR"] + "smart"
-os.environ["PHATE_SWISSPROT_BASE_DIR"]              = DATABASE_DIR_DEFAULT + "Swissprot/"
-os.environ["PHATE_SWISSPROT_BLAST_HOME"]            = os.environ["PHATE_SWISSPROT_BASE_DIR"] + "swissprot"
-os.environ["PHATE_UNIPROT_BASE_DIR"]                = DATABASE_DIR_DEFAULT + "Uniprot/" # not yet in service
-os.environ["PHATE_UNIPROT_BLAST_HOME"]              = os.environ["PHATE_UNIPROT_BASE_DIR"] + "uniprot"
-os.environ["PHATE_NR_BLAST_BASE_DIR"]               = DATABASE_DIR_DEFAULT + "NR/"
-os.environ["PHATE_NR_BLAST_HOME"]                   = os.environ["PHATE_NR_BLAST_BASE_DIR"] + "nr"
-os.environ["PHATE_CAZY_BASE_DIR"]                   = DATABASE_DIR_DEFAULT + "CAZY/" 
-os.environ["PHATE_CAZY_BLAST_BASE_DIR"]             = DATABASE_DIR_DEFAULT + "CAZY/"
-os.environ["PHATE_CAZY_BLAST_HOME"]                 = os.environ["PHATE_CAZY_BLAST_BASE_DIR"] + "cazy.faa"
-os.environ["PHATE_CAZY_ANNOTATION_PATH"]            = ""  # read from config file
-os.environ["PHATE_CUSTOM_GENOME_BLAST_HOME"]        = ""  # read from config file
-os.environ["PHATE_CUSTOM_GENE_BLAST_HOME"]          = ""  # read from config file
-os.environ["PHATE_CUSTOM_PROTEIN_BLAST_HOME"]       = ""  # read from config file
+os.environ["PHATE_VOG_PROTEIN_HEADER_FILE"]         = "" 
+os.environ["PHATE_VOG_PROTEIN_ANNOTATION_FILE"]     = "" 
+os.environ["PHATE_PHANTOME_BASE_DIR"]               = "" 
+os.environ["PHATE_PHANTOME_BLAST_HOME"]             = "" 
+os.environ["PHATE_PHAGE_ENZYME_BASE_DIR"]           = "" 
+os.environ["PHATE_PHAGE_ENZYME_BLAST_HOME"]         = "" 
+os.environ["PHATE_KEGG_VIRUS_BASE_DIR"]             = "" 
+os.environ["PHATE_KEGG_VIRUS_BLAST_HOME"]           = "" 
+os.environ["PHATE_PFAM_BASE_DIR"]                   = "" 
+os.environ["PHATE_PFAM_BLAST_HOME"]                 = "" 
+os.environ["PHATE_SMART_BASE_DIR"]                  = "" 
+os.environ["PHATE_SMART_BLAST_HOME"]                = "" 
+os.environ["PHATE_SWISSPROT_BASE_DIR"]              = "" 
+os.environ["PHATE_SWISSPROT_BLAST_HOME"]            = "" 
+os.environ["PHATE_UNIPROT_BASE_DIR"]                = "" 
+os.environ["PHATE_UNIPROT_BLAST_HOME"]              = "" 
+os.environ["PHATE_NR_BLAST_BASE_DIR"]               = "" 
+os.environ["PHATE_NR_BLAST_HOME"]                   = "" 
+os.environ["PHATE_CAZY_BASE_DIR"]                   = ""  
+os.environ["PHATE_CAZY_BLAST_HOME"]                 = "" 
+os.environ["PHATE_CAZY_ANNOTATION_PATH"]            = ""  
+os.environ["PHATE_CUSTOM_GENOME_BLAST_HOME"]        = "" 
+os.environ["PHATE_CUSTOM_GENE_BLAST_HOME"]          = ""
+os.environ["PHATE_CUSTOM_PROTEIN_BLAST_HOME"]       = ""
 
-# HMM (Subject to change based on user input to config file)
-os.environ["PHATE_NCBI_VIRUS_PROTEIN_HMM_BASE_DIR"] = DATABASE_DIR_DEFAULT + "NCBI/Virus_Protein/" # not yet in service
-os.environ["PHATE_NCBI_VIRUS_PROTEIN_HMM_HOME"]     = os.environ["PHATE_NCBI_VIRUS_PROTEIN_HMM_BASE_DIR"] + "unknown"
-os.environ["PHATE_NCBI_VIRUS_GENOME_HMM_BASE_DIR"]  = DATABASE_DIR_DEFAULT + "NCBI/Virus_Genome/" # not yet in service
-os.environ["PHATE_NCBI_VIRUS_GENOME_HMM_HOME"]      = os.environ["PHATE_NCBI_VIRUS_GENOME_HMM_BASE_DIR"] + "unknown"
-os.environ["PHATE_REFSEQ_PROTEIN_HMM_BASE_DIR"]     = DATABASE_DIR_DEFAULT + "Refseq/Protein_hmm/" # not yet in service
-os.environ["PHATE_REFSEQ_PROTEIN_HMM_HOME"]         = os.environ["PHATE_REFSEQ_PROTEIN_HMM_BASE_DIR"] + "unknown"
-os.environ["PHATE_REFSEQ_GENE_HMM_BASE_DIR"]        = DATABASE_DIR_DEFAULT + "Refseq/Gene_hmm/" # not yet in service
-os.environ["PHATE_REFSEQ_GENE_HMM_HOME"]            = os.environ["PHATE_REFSEQ_GENE_HMM_BASE_DIR"] + "unknown"
-os.environ["PHATE_PVOGS_HMM_BASE_DIR"]              = DATABASE_DIR_DEFAULT + "pVOGhmms/"
-os.environ["PHATE_PVOGS_HMM_HOME"]                  = os.environ["PHATE_PVOGS_HMM_BASE_DIR"] + "AllvogHMMprofiles/"
-os.environ["PHATE_VOGS_HMM_BASE_DIR"]               = DATABASE_DIR_DEFAULT + "VOGhmms/"
-os.environ["PHATE_VOGS_HMM_HOME"]                   = os.environ["PHATE_VOGS_HMM_BASE_DIR"] + "VOGsHMMdb/"
-os.environ["PHATE_PHANTOME_HMM_BASE_DIR"]           = DATABASE_DIR_DEFAULT + "PHANTOME_hmm/" # not yet in service
-os.environ["PHATE_PHANTOME_HMM_HOME"]               = os.environ["PHATE_PHANTOME_HMM_BASE_DIR"] + "unknown" # not yet in service
-os.environ["PHATE_PHAGE_ENZYME_HMM_BASE_DIR"]       = DATABASE_DIR_DEFAULT + "phageEnzyme_hmm/"  # not yet in service
-os.environ["PHATE_PHAGE_ENZYME_HMM_HOME"]           = os.environ["PHATE_PHAGE_ENZYME_HMM_BASE_DIR"] + "unknown" # not yet in service
-os.environ["PHATE_KEGG_VIRUS_HMM_BASE_DIR"]         = DATABASE_DIR_DEFAULT + "KEGG_hmm/" # not yet in service
-os.environ["PHATE_KEGG_VIRUS_HMM_HOME"]             = os.environ["PHATE_KEGG_VIRUS_HMM_BASE_DIR"] + "unknown"
-os.environ["PHATE_PFAM_HMM_BASE_DIR"]               = DATABASE_DIR_DEFAULT + "Pfam_hmm/"  # not yet in service
-os.environ["PHATE_PFAM_HMM_HOME"]                   = os.environ["PHATE_PFAM_HMM_BASE_DIR"] + "unknown" # not yet in service
-os.environ["PHATE_SMART_HMM_BASE_DIR"]              = DATABASE_DIR_DEFAULT + "SMART_hmm/" # not yet in service
-os.environ["PHATE_SMART_HMM_HOME"]                  = os.environ["PHATE_SMART_HMM_BASE_DIR"] + "unknown" # not yet in service
-os.environ["PHATE_SWISSPROT_HMM_BASE_DIR"]          = DATABASE_DIR_DEFAULT + "Swissprot_hmm/"
-os.environ["PHATE_SWISSPROT_HMM_HOME"]              = os.environ["PHATE_SWISSPROT_HMM_BASE_DIR"] + "unknown" # not yet in service
-os.environ["PHATE_UNIPROT_HMM_BASE_DIR"]            = DATABASE_DIR_DEFAULT + "UNIPROT_hmm/" # not yet in service
-os.environ["PHATE_UNIPROT_HMM_HOME"]                = os.environ["PHATE_UNIPROT_HMM_BASE_DIR"] + "unknown" # not yet in service
-os.environ["PHATE_NR_HMM_BASE_DIR"]                 = DATABASE_DIR_DEFAULT + "NR_hmm/"  # not yet in service
-os.environ["PHATE_NR_HMM_HOME"]                     = os.environ["PHATE_NR_HMM_BASE_DIR"] + "unknown" # not yet in service
-os.environ["PHATE_CUSTOM_HMM_BASE_DIR"]             = DATABASE_DIR_DEFAULT + "custom_hmm/"  # not yet in service
-os.environ["PHATE_CUSTOM_HMM_HOME"]                 = ""   # read from config file
+# HMM (based on user input to config file)
+os.environ["PHATE_NCBI_VIRUS_PROTEIN_HMM_HOME"]     = "" 
+os.environ["PHATE_NCBI_VIRUS_GENOME_HMM_HOME"]      = "" 
+os.environ["PHATE_REFSEQ_PROTEIN_HMM_HOME"]         = "" 
+os.environ["PHATE_REFSEQ_GENE_HMM_HOME"]            = "" 
+os.environ["PHATE_PVOGS_HMM_HOME"]                  = "" 
+os.environ["PHATE_VOGS_HMM_HOME"]                   = "" 
+os.environ["PHATE_PHANTOME_HMM_HOME"]               = "" 
+os.environ["PHATE_PHAGE_ENZYME_HMM_HOME"]           = "" 
+os.environ["PHATE_KEGG_VIRUS_HMM_HOME"]             = "" 
+os.environ["PHATE_PFAM_HMM_HOME"]                   = "" 
+os.environ["PHATE_SMART_HMM_HOME"]                  = "" 
+os.environ["PHATE_SWISSPROT_HMM_HOME"]              = "" 
+os.environ["PHATE_UNIPROT_HMM_HOME"]                = "" 
+os.environ["PHATE_NR_HMM_HOME"]                     = "" 
+os.environ["PHATE_CUSTOM_HMM_HOME"]                 = "" 
 
 # BLAST
 os.environ["PHATE_BLAST_HOME"]                      = ""    # global, if installed via conda; use blast+, not legacy blast
@@ -592,7 +579,7 @@ p_swissprotBlast              = re.compile("swissprot_blast='(.*)'")
 p_uniprotBlast                = re.compile("uniprot_blast='(.*)'")    # not in service
 p_nrBlast                     = re.compile("nr_blast='(.*)'")
 p_cazyBlast                   = re.compile("cazy_blast='(.*)'")
-# Blast Database Locations; these may be read in from config file, but are set as environment vars
+# Blast Database Locations; these are read in from config file, and are set as environment vars
 p_ncbiVirusGenomeDBpath       = re.compile("ncbi_virus_genome_database_path='(.*)'")
 p_ncbiVirusProteinDBpath      = re.compile("ncbi_virus_protein_database_path='(.*)'")
 p_refseqProteinDBpath         = re.compile("refseq_protein_database_path='(.*)'")
@@ -614,17 +601,17 @@ p_cazyAnnotationPath          = re.compile("cazy_annotation_path='(.*)'")
 
 # Custom blast processes and parameters
 # Custom blast processes to run (true/false)
-p_customGenomeBlast           = re.compile("custom_genome_blast='(.*)'")                 # not yet in service
-p_customGeneBlast             = re.compile("custom_gene_blast='(.*)'")                   # not yet in service
-p_customProteinBlast          = re.compile("custom_protein_blast='(.*)'")                # not yet in service
+p_customGenomeBlast           = re.compile("custom_genome_blast='(.*)'")                 # 
+p_customGeneBlast             = re.compile("custom_gene_blast='(.*)'")                   # 
+p_customProteinBlast          = re.compile("custom_protein_blast='(.*)'")                # 
 # Custom blast database names
-p_customGenomeDBname          = re.compile("custom_genome_blast_database_name='(.*)'")   # not yet in service
-p_customGeneDBname            = re.compile("custom_gene_blast_database_name='(.*)'")     # not yet in service
-p_customProteinDBname         = re.compile("custom_protein_blast_database_name='(.*)'")  # not yet in service
+p_customGenomeDBname          = re.compile("custom_genome_blast_database_name='(.*)'")   # 
+p_customGeneDBname            = re.compile("custom_gene_blast_database_name='(.*)'")     # 
+p_customProteinDBname         = re.compile("custom_protein_blast_database_name='(.*)'")  # 
 # Paths to custom databases
-p_customGenomeDBpath          = re.compile("custom_genome_blast_database_path='(.*)'")   # not yet in service
-p_customGeneDBpath            = re.compile("custom_gene_blast_database_path='(.*)'")     # not yet in service
-p_customProteinDBpath         = re.compile("custom_protein_blast_database_path='(.*)'")  # not yet in service
+p_customGenomeDBpath          = re.compile("custom_genome_blast_database_path='(.*)'")   # 
+p_customGeneDBpath            = re.compile("custom_gene_blast_database_path='(.*)'")     # 
+p_customProteinDBpath         = re.compile("custom_protein_blast_database_path='(.*)'")  # 
 
 # HMM PROCESSING
 
@@ -673,10 +660,10 @@ p_cgpBlastn                   = re.compile("cgp_blastn='(.*)'")
 p_cgpBlastp                   = re.compile("cgp_blastp='(.*)'")
 # Process control
 p_runCGP                      = re.compile("CGP='(.*)'")        # run CGP followed by Genomics module
-p_hmmbuild                    = re.compile("hmmbuild='(.*)'")   # not yet in service; hmmbuild creates profiles from homology groups
+p_hmmbuild                    = re.compile("hmmbuild='(.*)'")   # hmmbuild creates profiles from homology groups
 p_hmmsearch                   = re.compile("hmmsearch='(.*)'")  # not yet in service; hmmscan is the program, hmmsearch uses hmmscan w/profile query 
 
-# DEPENDENT CODE LOCATIONS: These codes should be installed globally, except for phanotate.
+# DEPENDENT CODE LOCATIONS: These codes should be installed globally.
 p_blastPlusHome               = re.compile("blast_plus_home='(.*)'")
 p_embossHome                  = re.compile("emboss_home='(.*)'")
 p_tRNAscanSEhome              = re.compile("tRNAscanSE_home='(.*)'")
@@ -701,12 +688,12 @@ p_checkpoint_genomics         = re.compile("checkpoint_genomics='(.*)'")
 p_phateWarnings               = re.compile("phate_warnings='(.*)'")
 p_phateMessages               = re.compile("phate_messages='(.*)'")
 p_phateProgress               = re.compile("phate_progress='(.*)'")
-p_cgcWarnings                 = re.compile("cgc_warnings='(.*)'")    # CGC warnings, messages, and progress are now linked w/ those of phate
-p_cgcMessages                 = re.compile("cgc_messages='(.*)'")
-p_cgcProgress                 = re.compile("cgc_progress='(.*)'")
-p_cgpWarnings                 = re.compile("cgp_warnings='(.*)'")
-p_cgpMessages                 = re.compile("cgp_messages='(.*)'")
-p_cgpProgress                 = re.compile("cgp_progress='(.*)'")
+#p_cgcWarnings                 = re.compile("cgc_warnings='(.*)'")    # CGC warnings, messages, and progress are now linked w/ those of phate
+#p_cgcMessages                 = re.compile("cgc_messages='(.*)'")
+#p_cgcProgress                 = re.compile("cgc_progress='(.*)'")
+#p_cgpWarnings                 = re.compile("cgp_warnings='(.*)'")
+#p_cgpMessages                 = re.compile("cgp_messages='(.*)'")
+#p_cgpProgress                 = re.compile("cgp_progress='(.*)'")
 p_cleanRawData                = re.compile("clean_raw_data='(.*)'")
 
 ##### GET INPUT PARAMETERS #####
@@ -961,12 +948,12 @@ for cLine in cLines:
     match_phateWarnings             = re.search(p_phateWarnings,cLine)
     match_phateMessages             = re.search(p_phateMessages,cLine)
     match_phateProgress             = re.search(p_phateProgress,cLine)
-    match_cgcWarnings               = re.search(p_cgcWarnings,cLine)
-    match_cgcMessages               = re.search(p_cgcMessages,cLine)
-    match_cgcProgress               = re.search(p_cgcProgress,cLine)
-    match_cgpWarnings               = re.search(p_cgpWarnings,cLine)
-    match_cgpMessages               = re.search(p_cgpMessages,cLine)
-    match_cgpProgress               = re.search(p_cgpProgress,cLine)
+    #match_cgcWarnings               = re.search(p_cgcWarnings,cLine)
+    #match_cgcMessages               = re.search(p_cgcMessages,cLine)
+    #match_cgcProgress               = re.search(p_cgcProgress,cLine)
+    #match_cgpWarnings               = re.search(p_cgpWarnings,cLine)
+    #match_cgpMessages               = re.search(p_cgpMessages,cLine)
+    #match_cgpProgress               = re.search(p_cgpProgress,cLine)
     match_cleanRawData              = re.search(p_cleanRawData,cLine)
 
     ##### Capture list of genomes and associated data #####
@@ -1005,7 +992,13 @@ for cLine in cLines:
             GENOME_FILE = "unknown"
             if PHATE_WARNINGS:
                 print("multiPhate says, WARNING:  GENOME_FILE is", GENOME_FILE)
-        nextGenomeData["genomeFile"] = GENOME_FILE
+        # Check whether genome file exists in PipelineInput/ directory
+        inFileCheck = os.path.join(PIPELINE_INPUT_DIR,GENOME_FILE)
+        if path.exists(inFileCheck):
+            nextGenomeData["genomeFile"] = GENOME_FILE
+        else:
+            print("multiPhate says, ERROR: input genome fasta file,",inFileCheck,", not found. Check your config file and PipelineInput/ directory")
+            exit(0)
         if not HPC:
             LOG.write("%s%s\n" % ("GENOME_FILE is ",GENOME_FILE))
         genomeDataItems += 1
@@ -1052,15 +1045,16 @@ for cLine in cLines:
 
     elif match_outputSubdir: #*** Note that if the output dir is not read before subdir; depends on user not changing order in config - Clean this up!
         value = match_outputSubdir.group(1)
-        if value != '':
-            value = value.rstrip('/')  # be sure that name of subdir ends in exactly one '/' (user might omit the slash)
+        hasBadChars = re.search('[^(\w\d\_\-\.\/)]',value)  # Let's insist on chars that are safe
+        if hasBadChars or value == '' or value == '/':
+            print("multiPhate says, ERROR: Genome PhATE output subdir, ",value,", not valid. Please check your configuration file.")
+            exit(0)
+        else:
+            # Ensure that dir name ends with single slash
+            value = value.rstrip('/')
             value = value + '/'
             nextGenomeData["outputSubdir"] = value
-        else:
-            nextGenomeData["outputSubdir"] = "unknown"
-            if PHATE_WARNINGS:
-                print("multiPhate says, WARNING: pipeline output subdir is ", "unknown")
-        genomeDataItems += 1
+            genomeDataItems += 1
 
     elif match_end:  # List of genomes complete; record last genome's data
         if genomeDataItems != DATA_ITEMS_NUM:
@@ -1241,11 +1235,6 @@ for cLine in cLines:
         value = match_pvogsBlast.group(1)
         if value.lower() == 'true' or value.lower() == 'yes' or value.lower() == 'on':
             pvogsBlast = True
-
-    #elif match_vogsBlast:   #*** To be deprecated
-    #    value = match_vogsBlast.group(1)
-    #    if value.lower() == 'true' or value.lower() == 'yes' or value.lower() == 'on':
-    #        vogsBlast = True
 
     elif match_vogGeneBlast:
         value = match_vogGeneBlast.group(1)
@@ -1436,23 +1425,7 @@ for cLine in cLines:
         if value.lower() == 'true' or value.lower() == 'yes' or value.lower() == 'on':
             hmmsearch = True
 
-    #elif match_cgpBlastn:         # modify default CGP blastn cutoff 
-    #    value = match_cgpBlastn.group(1)
-    #    if int(value) > 0 and int(value) < 101:
-    #        cgpBlastn = int(value) 
-    #    else:
-    #        cgpBlastn = CGP_BLASTN_DEFAULT
-    #    os.environ["CGP_BLASTN"] = str(cgpBlastn)
-
-    #elif match_cgpBlastp:         # modify default CGP blastp cutoff 
-    #    value = match_cgpBlastp.group(1)
-    #    if int(value) > 0 and int(value) < 101:
-    #        cgpBlastp = int(value) 
-    #    else:
-    #        cgpBlastp = CGP_BLASTP_DEFAULT
-    #    os.environ["CGP_BLASTP"] = str(cgpBlastp)
-
-    elif match_cgpIdentityCutoff:         # modify default CGP blast cutoff 
+    elif match_cgpIdentityCutoff: # modify default CGP blast cutoff; same for gene/protein, but should improve this
         value = match_cgpIdentityCutoff.group(1)
         if int(value) > 0 and int(value) < 101:
             cgpIdentityCutoff = int(value) 
@@ -1461,6 +1434,9 @@ for cLine in cLines:
         os.environ["CGP_IDENTITY_CUTOFF"] = str(cgpIdentityCutoff)
 
     ##### DEPENDENT CODE LOCATIONS #####
+    # This section is used only if the user specifies different version of a code
+    # Codes should normally be installed globally.
+    # (Essentially deprecated, and removed from sample.multiphate.config)
 
     elif match_blastPlusHome:
         if match_blastPlusHome.group(1) != '':
@@ -1495,205 +1471,138 @@ for cLine in cLines:
     # Blast database locations
 
     elif match_ncbiVirusGenomeDBpath:
-        if match_ncbiVirusGenomeDBpath.group(1) != '':
-            os.environ["PHATE_NCBI_VIRUS_GENOME_BLAST_HOME"] = match_ncbiVirusGenomeDBpath.group(1)
+        os.environ["PHATE_NCBI_VIRUS_GENOME_BLAST_HOME"] = match_ncbiVirusGenomeDBpath.group(1)
 
     elif match_ncbiVirusProteinDBpath:
-        if match_ncbiVirusProteinDBpath.group(1) != '':
-            os.environ["PHATE_NCBI_VIRUS_PROTEIN_BLAST_HOME"] = match_ncbiVirusProteinDBpath.group(1)
+        os.environ["PHATE_NCBI_VIRUS_PROTEIN_BLAST_HOME"] = match_ncbiVirusProteinDBpath.group(1)
 
     elif match_refseqGeneDBpath:
-        if match_refseqGeneDBpath.group(1) != '':
-            os.environ["PHATE_REFSEQ_GENE_BLAST_HOME"] = match_refseqGeneDBpath.group(1)
+        os.environ["PHATE_REFSEQ_GENE_BLAST_HOME"] = match_refseqGeneDBpath.group(1)
 
     elif match_refseqProteinDBpath:
-        if match_refseqProteinDBpath.group(1) != '':
-            os.environ["PHATE_REFSEQ_PROTEIN_BLAST_HOME"] = match_refseqProteinDBpath.group(1)
+        os.environ["PHATE_REFSEQ_PROTEIN_BLAST_HOME"] = match_refseqProteinDBpath.group(1)
 
     elif match_pvogsDBpath:
-        if match_pvogsDBpath.group(1) != '':
-            os.environ["PHATE_PVOGS_BLAST_HOME"] = match_pvogsDBpath.group(1)
-            PHATE_PVOG_BASE_DIR = os.path.dirname(match_pvogsDBpath.group(1)) + '/'
-            os.environ["PHATE_PVOG_BASE_DIR"] = PHATE_PVOG_BASE_DIR
-            os.environ["PHATE_PVOGS_HEADER_FILE"] = os.path.join(PHATE_PVOG_BASE_DIR,PVOG_HEADER_FILENAME)
-
-    elif match_vogsDBpath:   #*** To be deprecated
-        if match_vogsDBpath.group(1) != '':
-            os.environ["PHATE_VOGS_BLAST_HOME"] = match_vogsDBpath.group(1)
+        os.environ["PHATE_PVOGS_BLAST_HOME"] = match_pvogsDBpath.group(1)
+        PHATE_PVOG_BASE_DIR = os.path.dirname(match_pvogsDBpath.group(1)) + '/'
+        os.environ["PHATE_PVOG_BASE_DIR"] = PHATE_PVOG_BASE_DIR
+        os.environ["PHATE_PVOGS_HEADER_FILE"] = os.path.join(PHATE_PVOG_BASE_DIR,PVOG_HEADER_FILENAME)
 
     elif match_vogGeneDBpath:   
-        if match_vogGeneDBpath.group(1) != '':
-            os.environ["PHATE_VOG_GENE_BLAST_HOME"] = match_vogGeneDBpath.group(1)
-            PHATE_VOG_GENE_BASE_DIR = os.path.dirname(match_vogGeneDBpath.group(1)) + '/'
-            os.environ["PHATE_VOG_GENE_BASE_DIR"]    = PHATE_VOG_GENE_BASE_DIR 
-            os.environ["PHATE_VOG_GENE_HEADER_FILE"] = os.path.join(PHATE_VOG_GENE_BASE_DIR,VOG_GENE_HEADER_FILENAME)
-            os.environ["PHATE_VOG_ANNOTATION_FILE"]  = os.path.join(PHATE_VOG_GENE_BASE_DIR,VOG_ANNOTATION_FILENAME)
-            # Create Vog Gene headers file
-            try:
-                command = "grep '>' " + os.environ["PHATE_VOG_GENE_BLAST_HOME"] + ' > ' + os.environ["PHATE_VOG_GENE_HEADER_FILE"]
-                success = os.system(command)
-            except:
-                print ("multiPhate says, ERROR: Could not create PHATE_VOG_GENE_HEADER_FILE")
+        os.environ["PHATE_VOG_GENE_BLAST_HOME"] = match_vogGeneDBpath.group(1)
+        PHATE_VOG_GENE_BASE_DIR = os.path.dirname(match_vogGeneDBpath.group(1)) + '/'
+        os.environ["PHATE_VOG_GENE_BASE_DIR"]    = PHATE_VOG_GENE_BASE_DIR 
+        os.environ["PHATE_VOG_GENE_HEADER_FILE"] = os.path.join(PHATE_VOG_GENE_BASE_DIR,VOG_GENE_HEADER_FILENAME)
+        os.environ["PHATE_VOG_ANNOTATION_FILE"]  = os.path.join(PHATE_VOG_GENE_BASE_DIR,VOG_ANNOTATION_FILENAME)
+        # Create Vog Gene headers file
+        try:
+            command = "grep '>' " + os.environ["PHATE_VOG_GENE_BLAST_HOME"] + ' > ' + os.environ["PHATE_VOG_GENE_HEADER_FILE"]
+            success = os.system(command)
+        except:
+            print ("multiPhate says, ERROR: Could not create PHATE_VOG_GENE_HEADER_FILE")
 
     elif match_vogProteinDBpath:   
-        if match_vogProteinDBpath.group(1) != '':
-            os.environ["PHATE_VOG_PROTEIN_BLAST_HOME"] = match_vogProteinDBpath.group(1)
-            PHATE_VOG_PROTEIN_BASE_DIR = os.path.dirname(match_vogProteinDBpath.group(1)) + '/'
-            os.environ["PHATE_VOG_PROTEIN_BASE_DIR"]        = PHATE_VOG_PROTEIN_BASE_DIR 
-            os.environ["PHATE_VOG_PROTEIN_HEADER_FILE"]     = os.path.join(PHATE_VOG_PROTEIN_BASE_DIR,VOG_PROTEIN_HEADER_FILENAME)
-            os.environ["PHATE_VOG_ANNOTATION_FILE"] = os.path.join(PHATE_VOG_PROTEIN_BASE_DIR,VOG_ANNOTATION_FILENAME)
-            # Create Vog Protein headers file
-            try:
-                command = "grep '>' " + os.environ["PHATE_VOG_PROTEIN_BLAST_HOME"] + ' > ' + os.environ["PHATE_VOG_PROTEIN_HEADER_FILE"]
-                success = os.system(command)
-            except:
-                print ("multiPhate says, ERROR: Could not create PHATE_VOG_PROTEIN_HEADER_FILE")
+        os.environ["PHATE_VOG_PROTEIN_BLAST_HOME"] = match_vogProteinDBpath.group(1)
+        PHATE_VOG_PROTEIN_BASE_DIR = os.path.dirname(match_vogProteinDBpath.group(1)) + '/'
+        os.environ["PHATE_VOG_PROTEIN_BASE_DIR"]        = PHATE_VOG_PROTEIN_BASE_DIR 
+        os.environ["PHATE_VOG_PROTEIN_HEADER_FILE"]     = os.path.join(PHATE_VOG_PROTEIN_BASE_DIR,VOG_PROTEIN_HEADER_FILENAME)
+        os.environ["PHATE_VOG_ANNOTATION_FILE"] = os.path.join(PHATE_VOG_PROTEIN_BASE_DIR,VOG_ANNOTATION_FILENAME)
+        # Create Vog Protein headers file
+        try:
+            command = "grep '>' " + os.environ["PHATE_VOG_PROTEIN_BLAST_HOME"] + ' > ' + os.environ["PHATE_VOG_PROTEIN_HEADER_FILE"]
+            success = os.system(command)
+        except:
+            print ("multiPhate says, ERROR: Could not create PHATE_VOG_PROTEIN_HEADER_FILE")
 
     elif match_phantomeDBpath:
-        if match_phantomeDBpath.group(1) != '':
-            os.environ["PHATE_PHANTOME_BLAST_HOME"] = match_phantomeDBpath.group(1)
-            os.environ["PHATE_PHANTOME_BASE_DIR"] = os.path.dirname(match_phantomeDBpath.group(1)) + '/'
+        os.environ["PHATE_PHANTOME_BLAST_HOME"] = match_phantomeDBpath.group(1)
+        os.environ["PHATE_PHANTOME_BASE_DIR"] = os.path.dirname(match_phantomeDBpath.group(1)) + '/'
 
     elif match_phageEnzymeDBpath:
-        if match_phageEnzymeDBpath.group(1) != '':
-            os.environ["PHATE_PHAGE_ENZYME_BLAST_HOME"] = match_phageEnzymeDBpath.group(1)
+        os.environ["PHATE_PHAGE_ENZYME_BLAST_HOME"] = match_phageEnzymeDBpath.group(1)
 
     elif match_keggVirusDBpath:
-        if match_keggVirusDBpath.group(1) != '':
-            os.environ["PHATE_KEGG_VIRUS_BLAST_HOME"] = match_keggVirusDBpath.group(1)
-            os.environ["PHATE_KEGG_VIRUS_BASE_DIR"] = os.path.dirname(match_keggVirusDBpath.group(1)) + '/'
+        os.environ["PHATE_KEGG_VIRUS_BLAST_HOME"] = match_keggVirusDBpath.group(1)
+        os.environ["PHATE_KEGG_VIRUS_BASE_DIR"] = os.path.dirname(match_keggVirusDBpath.group(1)) + '/'
 
     elif match_pfamDBpath:
-        if match_pfamDBpath.group(1) != '':
-            os.environ["PHATE_PFAM_BLAST_HOME"] = match_pfamDBpath.group(1)
+        os.environ["PHATE_PFAM_BLAST_HOME"] = match_pfamDBpath.group(1)
 
     elif match_smartDBpath:
-        if match_smartDBpath.group(1) != '':
-            os.environ["PHATE_SMART_BLAST_HOME"] = match_smartDBpath.group(1)
+        os.environ["PHATE_SMART_BLAST_HOME"] = match_smartDBpath.group(1)
 
     elif match_swissprotDBpath:
-        if match_swissprotDBpath.group(1) != '':
-            os.environ["PHATE_SWISSPROT_BLAST_HOME"] = match_swissprotDBpath.group(1)
+        os.environ["PHATE_SWISSPROT_BLAST_HOME"] = match_swissprotDBpath.group(1)
 
     elif match_uniprotDBpath:
-        if match_uniprotDBpath.group(1) != '':
-            os.environ["PHATE_UNIPROT_BLAST_HOME"] = match_uniprotDBpath.group(1)
+        os.environ["PHATE_UNIPROT_BLAST_HOME"] = match_uniprotDBpath.group(1)
 
     elif match_nrDBpath:
-        if match_nrDBpath.group(1) != '':
-            os.environ["PHATE_NR_BLAST_HOME"] = match_nrDBpath.group(1)
+        os.environ["PHATE_NR_BLAST_HOME"] = match_nrDBpath.group(1)
      
     elif match_cazyDBpath:
-        if match_cazyDBpath.group(1) != '':
-            phateCAZyBlastHome = match_cazyDBpath.group(1)
-            os.environ["PHATE_CAZY_BLAST_HOME"] = phateCAZyBlastHome 
-            os.environ["PHATE_CAZY_BASE_DIR"]   = os.path.dirname(phateCAZyBlastHome) + '/'
+        phateCAZyBlastHome = match_cazyDBpath.group(1)
+        os.environ["PHATE_CAZY_BLAST_HOME"] = phateCAZyBlastHome 
+        os.environ["PHATE_CAZY_BASE_DIR"]   = os.path.dirname(phateCAZyBlastHome) + '/'
 
     elif match_cazyAnnotationPath:
-        if match_cazyAnnotationPath.group(1) != '':
-            os.environ["PHATE_CAZY_ANNOTATION_PATH"] = match_cazyAnnotationPath.group(1)
+        os.environ["PHATE_CAZY_ANNOTATION_PATH"] = match_cazyAnnotationPath.group(1)
      
     elif match_customGenomeDBpath:
-        value = match_customGenomeDBpath.group(1)
-        if value != '':
-            customGenomeDBpath = value
-        os.environ["PHATE_CUSTOM_GENOME_BLAST_HOME"] = customGenomeDBpath
+        os.environ["PHATE_CUSTOM_GENOME_BLAST_HOME"] = match_customGenomeDBpath.group(1)
 
     elif match_customGeneDBpath:
-        value = match_customGeneDBpath.group(1)
-        if value != '':
-            customGeneDBpath = value
-        os.environ["PHATE_CUSTOM_GENE_BLAST_HOME"] = customGeneDBpath
+        os.environ["PHATE_CUSTOM_GENE_BLAST_HOME"] = match_customGeneDBpath.group(1)
 
     elif match_customProteinDBpath:
-        value = match_customProteinDBpath.group(1)
-        if value != '':
-            customProteinDBpath = value
-        os.environ["PHATE_CUSTOM_PROTEIN_BLAST_HOME"] = customProteinDBpath
-    
+        os.environ["PHATE_CUSTOM_PROTEIN_BLAST_HOME"] = match_customProteinDBpath.group(1)
+
     # Hmm database locations
 
     elif match_ncbiVirusGenomeHmmDBpath:
-        if match_ncbiVirusGenomeHmmDBpath.group(1) != '':
-            os.environ["PHATE_NCBI_VIRUS_GENOME_HMM_HOME"] = match_ncbiVirusGenomeHmmDBpath.group(1)
+        os.environ["PHATE_NCBI_VIRUS_GENOME_HMM_HOME"] = match_ncbiVirusGenomeHmmDBpath.group(1)
 
     elif match_ncbiVirusProteinHmmDBpath:
-        if match_ncbiVirusProteinHmmDBpath.group(1) != '':
-            os.environ["PHATE_NCBI_VIRUS_PROTEIN_HMM_HOME"] = match_ncbiVirusProteinHmmDBpath.group(1)
+        os.environ["PHATE_NCBI_VIRUS_PROTEIN_HMM_HOME"] = match_ncbiVirusProteinHmmDBpath.group(1)
 
     elif match_refseqGeneHmmDBpath:
-        if match_refseqGeneHmmDBpath.group(1) != '':
-            os.environ["PHATE_REFSEQ_GENE_HMM_HOME"] = match_refseqGeneHmmDBpath.group(1)
+        os.environ["PHATE_REFSEQ_GENE_HMM_HOME"] = match_refseqGeneHmmDBpath.group(1)
 
     elif match_refseqProteinHmmDBpath:
-        if match_refseqProteinHmmDBpath.group(1) != '':
-            os.environ["PHATE_REFSEQ_PROTEIN_HMM_HOME"] = match_refseqProteinHmmDBpath.group(1)
+        os.environ["PHATE_REFSEQ_PROTEIN_HMM_HOME"] = match_refseqProteinHmmDBpath.group(1)
 
     elif match_pvogsHmmDBpath:
-        value = match_pvogsHmmDBpath.group(1)
-        if value != '':
-            pvogsHmmDBpath = value
-        os.environ["PHATE_PVOGS_HMM_HOME"] = pvogsHmmDBpath
+        os.environ["PHATE_PVOGS_HMM_HOME"] = match_pvogsHmmDBpath.group(1) 
 
     elif match_vogsHmmDBpath:
-        value = match_vogsHmmDBpath.group(1)
-        if value != '':
-            vogsHmmDBpath = value
-        os.environ["PHATE_VOGS_HMM_HOME"] = vogsHmmDBpath
+        os.environ["PHATE_VOGS_HMM_HOME"] = match_vogsHmmDBpath.group(1)
 
     elif match_phantomeHmmDBpath:
-        value = match_phantomeHmmDBpath.group(1)
-        if value != '':
-            phantomeHmmDBpath = value
-        os.environ["PHATE_PHANTOME_HMM_HOME"] = phantomeHmmDBpath
+        os.environ["PHATE_PHANTOME_HMM_HOME"] = match_phantomeHmmDBpath.group(1)
 
     elif match_phageEnzymeHmmDBpath:
-        value = match_phageEnzymeHmmDBpath.group(1)
-        if value != '':
-            phageEnzymeHmmDBpath = value
-        os.environ["PHATE_PHAGE_ENZYME_HMM_HOME"] = phageEnzymeHmmDBpath
+        os.environ["PHATE_PHAGE_ENZYME_HMM_HOME"] = match_phageEnzymeHmmDBpath.group(1)
 
     elif match_keggVirusHmmDBpath:
-        value = match_keggVirusHmmDBpath.group(1)
-        if value != '':
-            keggVirusHmmDBpath = value
-        os.environ["PHATE_KEGG_HMM_HOME"] = keggVirusHmmDBpath
+        os.environ["PHATE_KEGG_HMM_HOME"] = match_keggVirusHmmDBpath.group(1)
 
     elif match_pfamHmmDBpath:
-        value = match_pfamHmmDBpath.group(1)
-        if value != '':
-            pfamHmmDBpath = value
-        os.environ["PHATE_PFAM_HMM_HOME"] = pfamHmmDBpath
+        os.environ["PHATE_PFAM_HMM_HOME"] = match_pfamHmmDBpath.group(1)
 
     elif match_smartHmmDBpath:
-        value = match_smartHmmDBpath.group(1)
-        if value != '':
-            smartHmmDBpath = value
-        os.environ["PHATE_SMART_HMM_HOME"] = smartHmmDBpath
+        os.environ["PHATE_SMART_HMM_HOME"] = match_smartHmmDBpath.group(1)
 
     elif match_swissprotHmmDBpath:
-        value = match_swissprotHmmDBpath.group(1)
-        if value != '':
-            swissprotHmmDBpath = value
-        os.environ["PHATE_SWISSPROT_HMM_HOME"] = swissprotHmmDBpath
+        os.environ["PHATE_SWISSPROT_HMM_HOME"] = match_swissprotHmmDBpath.group(1)
 
     elif match_uniprotHmmDBpath:
-        value = match_uniprotHmmDBpath.group(1)
-        if value != '':
-            uniprotHmmDBpath = value
-        os.environ["PHATE_UNIPROT_HMM_HOME"] = uniprotHmmDBpath
+        os.environ["PHATE_UNIPROT_HMM_HOME"] = match_uniprotHmmDBpath.group(1)
 
     elif match_nrHmmDBpath:
-        value = match_nrHmmDBpath.group(1)
-        if value != '':
-            nrHmmDBpath = value
-        os.environ["PHATE_NR_HMM_HOME"] = nrHmmDBpath
+        os.environ["PHATE_NR_HMM_HOME"] = match_nrHmmDBpath.group(1)
 
     elif match_customHmmDBpath:
-        value = match_customHmmDBpath.group(1)
-        if value != '':
-            customHmmDBpath = value
-        os.environ["PHATE_CUSTOM_HMM_HOME"] = customHmmDBpath
+        os.environ["PHATE_CUSTOM_HMM_HOME"] = match_customHmmDBpath.group(1)
 
     ##### PARALLELISM #####
 
@@ -1777,47 +1686,47 @@ for cLine in cLines:
             os.environ["PHATE_PHATE_PROGRESS"] = 'False'
             PHATE_PROGRESS = False
 
-    elif match_cgcWarnings:
-        value = match_cgcWarnings.group(1)
-        if value.lower() == 'true' or value.lower() == 'yes' or value.lower() == 'on':
-            os.environ["PHATE_CGC_WARNINGS"] = 'True'
-        else:
-            os.environ["PHATE_CGC_WARNINGS"] = 'False'
+    #elif match_cgcWarnings:
+    #    value = match_cgcWarnings.group(1)
+    #    if value.lower() == 'true' or value.lower() == 'yes' or value.lower() == 'on':
+    #        os.environ["PHATE_CGC_WARNINGS"] = 'True'
+    #    else:
+    #        os.environ["PHATE_CGC_WARNINGS"] = 'False'
 
-    elif match_cgcMessages:
-        value = match_cgcMessages.group(1)
-        if value.lower() == 'true' or value.lower() == 'yes' or value.lower() == 'on':
-            os.environ["PHATE_CGC_MESSAGES"] = 'True'
-        else:
-            os.environ["PHATE_CGC_MESSAGES"] = 'False'
+    #elif match_cgcMessages:
+    #    value = match_cgcMessages.group(1)
+    #    if value.lower() == 'true' or value.lower() == 'yes' or value.lower() == 'on':
+    #        os.environ["PHATE_CGC_MESSAGES"] = 'True'
+    #    else:
+    #        os.environ["PHATE_CGC_MESSAGES"] = 'False'
 
-    elif match_cgcProgress:
-        value = match_cgcProgress.group(1)
-        if value.lower() == 'true' or value.lower() == 'yes' or value.lower() == 'on':
-            os.environ["PHATE_CGC_PROGRESS"] = 'True'
-        else:
-            os.environ["PHATE_CGC_PROGRESS"] = 'False'
+    #elif match_cgcProgress:
+    #    value = match_cgcProgress.group(1)
+    #    if value.lower() == 'true' or value.lower() == 'yes' or value.lower() == 'on':
+    #        os.environ["PHATE_CGC_PROGRESS"] = 'True'
+    #    else:
+    #        os.environ["PHATE_CGC_PROGRESS"] = 'False'
 
-    elif match_cgpWarnings:
-        value = match_cgpWarnings.group(1)
-        if value.lower() == 'true' or value.lower() == 'yes' or value.lower() == 'on':
-            os.environ["PHATE_CGP_WARNINGS"] = 'True'
-        else:
-            os.environ["PHATE_CGP_WARNINGS"] = 'False'
+    #elif match_cgpWarnings:
+    #    value = match_cgpWarnings.group(1)
+    #    if value.lower() == 'true' or value.lower() == 'yes' or value.lower() == 'on':
+    #        os.environ["PHATE_CGP_WARNINGS"] = 'True'
+    #    else:
+    #        os.environ["PHATE_CGP_WARNINGS"] = 'False'
 
-    elif match_cgpMessages:
-        value = match_cgpMessages.group(1)
-        if value.lower() == 'true' or value.lower() == 'yes' or value.lower() == 'on':
-            os.environ["PHATE_CGP_MESSAGES"] = 'True'
-        else:
-            os.environ["PHATE_CGP_MESSAGES"] = 'False'
+    #elif match_cgpMessages:
+    #    value = match_cgpMessages.group(1)
+    #    if value.lower() == 'true' or value.lower() == 'yes' or value.lower() == 'on':
+    #        os.environ["PHATE_CGP_MESSAGES"] = 'True'
+    #    else:
+    #        os.environ["PHATE_CGP_MESSAGES"] = 'False'
 
-    elif match_cgpProgress:
-        value = match_cgpProgress.group(1)
-        if value.lower() == 'true' or value.lower() == 'yes' or value.lower() == 'on':
-            os.environ["PHATE_CGP_PROGRESS"] = 'True'
-        else:
-            os.environ["PHATE_CGP_PROGRESS"] = 'False'
+    #elif match_cgpProgress:
+    #    value = match_cgpProgress.group(1)
+    #    if value.lower() == 'true' or value.lower() == 'yes' or value.lower() == 'on':
+    #        os.environ["PHATE_CGP_PROGRESS"] = 'True'
+    #    else:
+    #        os.environ["PHATE_CGP_PROGRESS"] = 'False'
 
     elif match_cleanRawData:
         value = match_cleanRawData.group(1)
@@ -1831,6 +1740,309 @@ for cLine in cLines:
             LOG.write("%s%s\n" % ("ERROR: Unrecognized line in config file: ", cLine))
         print("multiPhate says, ERROR: unrecognized line in config file:", cLine)
 
+# Verify whether the user's databases actually exist in the locations specified
+# If a blast database is not found, flag an error and halt code execution.
+# If a sequence database is not found, flag a warning and continue.
+# Why? Because some databases are so huge that people usually do not download the
+# sequence database, but rather download only the blast-formatted data.
+# The user config file will direct multiPhATE to attempt to run hmm searches against
+# any user-specified blast database that has been designated 'True'.
+
+# First, check sequence and blast databases
+# Recall that blastp requires a blast database, and phmmer and jackhmmer require sequence databases.
+# Processing will be halted if blastp is True and the blast databases is not found.
+# A warning message will be printed if phmmer and/or jackhmmer is True and the sequence database is not found.
+
+if CHECK_USER_DATABASES:
+
+    if ncbiVirusGenomeBlast:
+
+        if PHATE_MESSAGES:
+            print("multiPhate says, Checking for ",os.environ["PHATE_NCBI_VIRUS_GENOME_BLAST_HOME"])
+
+        file2check = os.environ["PHATE_NCBI_VIRUS_GENOME_BLAST_HOME"] + '.nin'
+        if not path.exists(file2check): 
+            print("multiPhate says, ERROR: Cannot locate blast database for ",os.environ["PHATE_NCBI_VIRUS_GENOME_BLAST_HOME"]," Please check your configuration file and Databases/ directory.")
+            exit(0)
+        else:
+            if PHATE_MESSAGES:
+                print("multiPhate says, ncbiVirusGenomeBlast database(s) found; we are good to go.")
+
+    if ncbiVirusProteinBlast and (blastpSearch or phmmerSearch or jackhmmerSearch):
+        if PHATE_MESSAGES:
+            print("multiPhate says, Checking for ",os.environ["PHATE_NCBI_VIRUS_PROTEIN_BLAST_HOME"])
+
+        file2check = os.environ["PHATE_NCBI_VIRUS_PROTEIN_BLAST_HOME"]
+        if phmmerSearch or jackhmmerSearch:
+            if not path.exists(file2check): 
+                print("multiPhate says, WARNING: Cannot locate sequence database ",file2check," HMM search will not be done for NCBI Virus Proteins.")
+
+        if blastpSearch:
+            file2check += '.pin'
+            if not path.exists(file2check): 
+                print("multiPhate says, ERROR: Cannot verify blast database for ",os.environ["PHATE_NCBI_VIRUS_PROTEIN_BLAST_HOME"]," Please check your configuration file and Databases/ directory.")
+                exit(0)
+        else:
+            if PHATE_MESSAGES:
+                print("multiPhate says,  blastp database found; we are good to go.")
+
+    if refseqProteinBlast and (blastpSearch or phmmerSearch or jackhmmerSearch):
+        if PHATE_MESSAGES:
+            print("multiPhate says, Checking for ",os.environ["PHATE_REFSEQ_PROTEIN_BLAST_HOME"])
+ 
+        file2check = os.environ["PHATE_REFSEQ_PROTEIN_BLAST_HOME"]
+        if phmmerSearch or jackhmmerSearch:
+            if not path.exists(file2check):
+                print("multiPhate says, WARNING: Cannot locate sequence database ",file2check," HMM search will not be done for Refseq Proteins.")
+
+        if blastpSearch:
+            file2check += '.00.pin'  # Check only for 1st index file; assume all the others would be there
+            if not path.exists(file2check): 
+                print("multiPhate says, ERROR: Cannot verify blast database for ",os.environ["PHATE_REFSEQ_PROTEIN_BLAST_HOME"]," Please check your configuration file and Databases/ directory.")
+                exit(0)
+            else:
+                if PHATE_MESSAGES:
+                    print("multiPhate says,  blastp database found; we are good to go.")
+
+    if pvogsBlast and (blastpSearch or phmmerSearch or jackhmmerSearch):
+        if PHATE_MESSAGES:
+            print("multiPhate says, Checking for ",os.environ["PHATE_PVOGS_BLAST_HOME"])
+ 
+        file2check = os.environ["PHATE_PVOGS_BLAST_HOME"]
+        if phmmerSearch or jackhmmerSearch:
+            if not path.exists(file2check): 
+                print("multiPhate says, WARNING: Cannot locate sequence database ",file2check," HMM search will not be done for PVOGs.")
+
+        if blastpSearch:
+            file2check += '.pin'
+            if not path.exists(file2check):
+                print("multiPhate says, ERROR: Cannot verify blast database for ",os.environ["PHATE_PVOGS_BLAST_HOME"]," Please check your configuration file and Databases/ directory.")
+                exit(0)
+            else:
+                if PHATE_MESSAGES:
+                    print("multiPhate says,  blastp database found; we are good to go.")
+
+    if vogGeneBlast:
+        if PHATE_MESSAGES:
+            print("multiPhate says, Checking for ",os.environ["PHATE_VOG_GENE_BLAST_HOME"])
+
+        file2check = os.environ["PHATE_VOG_GENE_BLAST_HOME"] + '.nin'
+        if not path.exists(file2check):
+            print("multiPhate says, ERROR: Cannot verify nucleotide blast database for ",os.environ["PHATE_VOG_GENE_BLAST_HOME"]," Please check your configuration file and Databases/ directory.")
+            exit(0)
+        else:
+            if PHATE_MESSAGES:
+                print("multiPhate says,  blastp database found; we are good to go.")
+
+    if vogProteinBlast and (blastpSearch or phmmerSearch or jackhmmerSearch):
+        if PHATE_MESSAGES:
+            print("multiPhate says, Checking for ",os.environ["PHATE_VOG_PROTEIN_BLAST_HOME"])
+
+        file2check = os.environ["PHATE_VOG_PROTEIN_BLAST_HOME"]
+        if phmmerSearch or jackhmmerSearch:
+            if not path.exists(file2check): 
+                print("multiPhate says, WARNING: Cannot locate protein sequence database ",file2check," HMM search will not be done for VOG Proteins.")
+
+        if blastpSearch:
+            file2check += '.pin'
+            if not path.exists(file2check): 
+                print("multiPhate says, ERROR: Cannot locate blast database for ",os.environ["PHATE_VOG_PROTEIN_BLAST_HOME"]," Please check your configuration file and Databases/ directory.")
+                exit(0)
+        else:
+            if PHATE_MESSAGES:
+                print("multiPhate says, blastp database found; we are good to go.")
+
+    if phantomeBlast and (blastpSearch or phmmerSearch or jackhmmerSearch):
+        if PHATE_MESSAGES:
+            print("multiPhate says, Checking for ",os.environ["PHATE_PHANTOME_BLAST_HOME"])
+
+        file2check = os.environ["PHATE_PHANTOME_BLAST_HOME"]
+        if phmmerSearch or jackhmmerSearch:
+            if not path.exists(file2check): 
+                print("multiPhate says, WARNING: Cannot locate sequence database ",file2check," HMM search will not be done for Phantome.")
+
+        if blastpSearch:
+            file2check += '.pin'
+            if not path.exists(file2check): 
+                print("multiPhate says, ERROR: Cannot verify blast database ",os.environ["PHATE_PHANTOME_BLAST_HOME"]," Please check your configuration file and Databases/ directory.")
+                exit(0)
+            else:
+                if PHATE_MESSAGES:
+                    print("multiPhate says, blastp database found; we are good to go.")
+
+    if phageEnzymeBlast and (blastpSearch or phmmerSearch or jackhmmerSearch): #*** Phage Enzyme blast not yet in service (coming soon?)
+        if PHATE_MESSAGES:
+            print("multiPhate says, Checking for ",os.environ["PHATE_PHAGE_ENZYME_BLAST_HOME"])
+
+        file2check = os.environ["PHATE_PHAGE_ENZYME_BLAST_HOME"]
+        if phmmerSearch or jackhmmerSearch:
+            if not path.exists(file2check):
+                print("multiPhate says, WARNING: Cannot locate sequence database ",file2check," HMM search will not be done for Phage Enzymes.")
+
+        if blastpSearch:
+            file2check += '.pin'
+            if not path.exists(file2check): 
+                print("multiPhate says, ERROR: Cannot verify blast database ",os.environ["PHATE_PHAGE_ENZYME_BLAST_HOME"]," Please check your configuration file and Databases/ directory.")
+                exit(0)
+            else:
+                if PHATE_MESSAGES:
+                    print("multiPhate says, blastp database found; we are good to go.")
+
+    if keggVirusBlast and (blastpSearch or phmmerSearch or jackhmmerSearch):
+        if PHATE_MESSAGES:
+            print("multiPhate says, Checking for ",os.environ["PHATE_KEGG_VIRUS_BLAST_HOME"])
+
+        file2check = os.environ["PHATE_KEGG_VIRUS_BLAST_HOME"]
+        if phmmerSearch or jackhmmerSearch:
+            if not path.exists(file2check):
+                print("multiPhate says, WARNING: Cannot locate sequence databases ",file2check," HMM search will not be done for Kegg proteins.")
+
+        if blastpSearch:
+            file2check += '.pin'
+            if not path.exists(file2check): 
+                print("multiPhate says, ERROR: Cannot verify blast database for ",os.environ["PHATE_KEGG_VIRUS_BLAST_HOME"]," Please check your configuration file and Databases/ directory.")
+                exit(0)
+            else:
+                if PHATE_MESSAGES:
+                    print("multiPhate says,  database found; we are good to go.")
+
+    if swissprotBlast and (blastpSearch or phmmerSearch or jackhmmerSearch):
+        if PHATE_MESSAGES:
+            print("multiPhate says, Checking for ",os.environ["PHATE_SWISSPROT_BLAST_HOME"])
+ 
+        file2check = os.environ["PHATE_SWISSPROT_BLAST_HOME"]
+        if phmmerSearch or jackhmmerSearch:
+            if not path.exists(file2check): 
+                print("multiPhate says, WARNING: Cannot locate sequence database ",os.environ["PHATE_SWISSPROT_BLAST_HOME"]," HMM search will not be done for Swissprot proteins.")
+
+        if blastpSearch:
+            file2check += '.pin'
+            if not path.exists(file2check):
+                print("multiPhate says, ERROR: Cannot verify blast database for ",os.environ["PHATE_SWISSPROT_BLAST_HOME"]," Please check your configuration file and Databases/ directory.")
+                exit(0)
+            else:
+                if PHATE_MESSAGES:
+                    print("multiPhate says, Swissprot blast database found; we are good to go.")
+
+    if nrBlast and (blastpSearch or phmmerSearch or jackhmmerSearch):
+        if PHATE_MESSAGES:
+            print("multiPhate says, Checking for ",os.environ["PHATE_NR_BLAST_HOME"])
+
+        file2check = os.environ["PHATE_NR_BLAST_HOME"]
+        if phmmerSearch or jackhmmerSearch:
+            if not path.exists(file2check): 
+                print("multiPhate says, ERROR: Cannot locate sequence database ",os.environ["PHATE_NR_BLAST_HOME"]," HMM search will not be done for NR proteins.")
+
+        file2check += '.pin'
+        if blastpSearch:
+            if not path.exists(file2check):
+                print("multiPhate says, ERROR: Cannot verify blast database for ",os.environ["PHATE_NR_BLAST_HOME"]," Please check your configuration file and Databases/ directory.")
+                exit(0)
+        else:
+            if PHATE_MESSAGES:
+                print("multiPhate says, NR blast database found; we are good to go.")
+
+    if cazyBlast and (blastpSearch or phmmerSearch or jackhmmerSearch):
+        if PHATE_MESSAGES:
+            print("multiPhate says, Checking for ",os.environ["PHATE_CAZY_BLAST_HOME"])
+
+        file2check_seq = os.environ["PHATE_CAZY_BLAST_HOME"]
+        file2check_pin = os.environ["PHATE_CAZY_BLAST_HOME"] + '.pin'
+        file2check_ann = os.environ["PHATE_CAZY_ANNOTATION_PATH"] 
+
+        # Annotation database is required for blast or hmm search
+        if not path.exists(file2check_ann):
+            print("multiPhate says, ERROR: Cannot find CAZY annotation database file for ",file2check_seq," Please check your configuration file and Databases/ directory.")
+            exit(0)
+
+        # HMM search requires sequence database, but don't halt execution:  just warn
+        if phmmerSearch or jackhmmerSearch:
+            if not path.exists(file2check_seq):
+                print("multiPhate says, WARNING: Cannot find CAZY sequence database file ",file2check_seq," HMM search will not be done for CAZY proteins.")
+
+        # Blast search requires blast-formatted database
+        if blastpSearch:
+            if not path.exists(file2check_pin):
+                print("multiPhate says, ERROR: Cannot verify CAZY blast database file for ",file2check_seq," Please check your configuration file and Databases/ directory.")
+                exit(0)
+
+        if PHATE_MESSAGES:
+            print("multiPhate says, CAZY database(s) verified; we are good to go.")
+
+    if customGenomeBlast:
+        if PHATE_MESSAGES:
+            print("multiPhate says, Checking for ",os.environ["PHATE_CUSTOM_GENOME_BLAST_HOME"])
+
+        file2check_a = os.environ["PHATE_CUSTOM_GENOME_BLAST_HOME"] + '.nin'
+        file2check_b = os.environ["PHATE_CUSTOM_GENOME_BLAST_HOME"] + '.00.nin'  # database might be segmented
+        if not path.exists(file2check_a) and not path.exists(file2check_b): 
+            print("multiPhate says, ERROR: Cannot locate database ",os.environ["PHATE_CUSTOM_GENOME_BLAST_HOME"]," Please check your configuration file and/or Databases/ directory.")
+            exit(0)
+        else:
+            if PHATE_MESSAGES:
+                print("multiPhate says, custom genome blast database found; we are good to go.")
+
+    if customGeneBlast:
+        if PHATE_MESSAGES:
+            print("multiPhate says, Checking for ",os.environ["PHATE_CUSTOM_GENE_BLAST_HOME"])
+
+        file2check_a = os.environ["PHATE_CUSTOM_GENE_BLAST_HOME"] + '.nin'
+        file2check_b = os.environ["PHATE_CUSTOM_GENE_BLAST_HOME"] + '.00.nin'  # database might be segmented
+        if not path.exists(file2check_a) and path.exists(file2check_b): 
+            print("multiPhate says, ERROR: Cannot locate database ",os.environ["PHATE_CUSTOM_GENE_BLAST_HOME"]," Please check your configuration file and/or Databases/ directory.")
+            exit(0)
+        else:
+            if PHATE_MESSAGES:
+                print("multiPhate says, custom gene blast database found; we are good to go.")
+
+    if customProteinBlast and blastpSearch:
+        if PHATE_MESSAGES:
+            print("multiPhate says, Checking for ",os.environ["PHATE_CUSTOM_PROTEIN_BLAST_HOME"])
+
+        file2check_a = os.environ["PHATE_CUSTOM_PROTEIN_BLAST_HOME"] + '.pin'
+        file2check_b = os.environ["PHATE_CUSTOM_PROTEIN_BLAST_HOME"] + '.00.pin' # database might be segmented
+        if not path.exists(file2check_a) and not path.exists(file2check_b): 
+            print("multiPhate says, ERROR: Cannot locate database ",os.environ["PHATE_CUSTOM_PROTEIN_BLAST_HOME"]," Please check your configuration file and/or Databases/ directory.")
+            exit(0)
+        else:
+            if PHATE_MESSAGES:
+                print("multiPhate says, custom protein blast database found; we are good to go.")
+
+    # hmmscan with profile databases
+
+    if hmmscan and pvogsHmm:
+        if PHATE_MESSAGES:
+            print("multiPhate says, Checking for ",os.environ["PHATE_PVOGS_HMM_HOME"])
+        file2check_1 = os.environ["PHATE_PVOGS_HMM_HOME"] + '.h3f'
+        file2check_2 = os.environ["PHATE_PVOGS_HMM_HOME"] + '.h3i'
+        file2check_3 = os.environ["PHATE_PVOGS_HMM_HOME"] + '.h3m'
+        file2check_4 = os.environ["PHATE_PVOGS_HMM_HOME"] + '.h3p'
+        if not (path.exists(file2check_1) and path.exists(file2check_2) and path.exists(file2check_3) and path.exists(file2check_4)): 
+            print("multiPhate says, ERROR: Cannot locate database or database segment(s) for ",os.environ["PHATE_PVOGS_HMM_HOME"]," Please check your configuration file and Databases directory.")
+            exit(0)
+        else:
+            if PHATE_MESSAGES:
+                print("multiPhate says, PVOGs HMM database found; we are good to go.")
+
+    if hmmscan and vogsHmm:
+        if PHATE_MESSAGES:
+            print("multiPhate says, Checking for ",os.environ["PHATE_VOGS_HMM_HOME"])
+        file2check_1 = os.environ["PHATE_VOGS_HMM_HOME"] + '.h3f'
+        file2check_2 = os.environ["PHATE_VOGS_HMM_HOME"] + '.h3i'
+        file2check_3 = os.environ["PHATE_VOGS_HMM_HOME"] + '.h3m'
+        file2check_4 = os.environ["PHATE_VOGS_HMM_HOME"] + '.h3p'
+        if not (path.exists(file2check_1) and path.exists(file2check_2) and path.exists(file2check_3) and path.exists(file2check_4)): 
+            print("multiPhate says, ERROR: Cannot locate database ",os.environ["PHATE_VOGS_HMM_HOME"]," Please check your configuration file and Databases directroy.")
+            exit(0)
+        else:
+            if PHATE_MESSAGES:
+                print("multiPhate says, VOGs HMM database found; we are good to go.")
+
+if DO_DB_CHECK_ONLY:
+    print("multiPhate says, DEBUG: User input has been checked. Exiting now.")
+    exit(0)
+
+# Write to multiPhate's log, if not running in HPC mode
 if not HPC: # Skip logging if running in high-throughput, else multiPhate.log files will clash
     LOG.write("%s\n" % ("Input parameters and configurables:"))
     LOG.write("%s%s\n" % ("   BASE_DIR is ",os.environ["PHATE_BASE_DIR"]))
@@ -1983,10 +2195,12 @@ for genome in genomeList:
     if not HPC:
         LOG.write("%s%c%s%c%s%c%s%c%s%c%s\n" % (genome["genomeNumber"],' ',genome["genomeName"],' ',genome["genomeType"],' ',genome["genomeSpecies"],' ',genome["genomeFile"],' ',genome["outputSubdir"]))
 
-##### BEGIN MAIN ########################################################################################
+#########################################################################################################
+##### BEGIN MULTIPHATE MAIN #####
+#########################################################################################################
 
 #########################################################################################################
-# PHATE ANNOTATION PIPELINE
+# PHATE PIPELINE 
 
 # For each genome, create a phate.json file for running phate_runPipeline.py
 
@@ -2135,7 +2349,7 @@ THREADING_ON = True
 if RepresentsInt(phateThreads):
     if int(phateThreads) == 0:
         THREADING_ON = False
-        LOG.write("%s%s\n" % ("THREADING_ON is ",THREADING_ON))
+        LOG.write("%s%s\n" % ("THREADING_ON has been turned off. Value is: ",THREADING_ON))
     
 if not CHECKPOINT_CGP and not CHECKPOINT_GENOMICS:
     LOG.write("%s%s%s%s\n" % ("CHECKPOINT_CGP is:",CHECKPOINT_CGP," and CHECKPOINT_GENOMICS is:",CHECKPOINT_GENOMICS))

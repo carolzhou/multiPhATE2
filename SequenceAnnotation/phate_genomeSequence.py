@@ -4,7 +4,7 @@
 #
 # Programmer: Carol L. Ecale Zhou
 #
-# Most recent update: 20 October 2020
+# Most recent update: 15 December 2020
 #
 # Description:
 # Module comprising data structures for organizing genome information
@@ -549,6 +549,8 @@ class genome(object):
                     hdr = fa.getTruncHeader()
                 elif hdrType.lower() == "full":
                     hdr = fa.getHeader("full")
+                elif hdrType.lower() == "cgp":
+                    hdr = fa.getCGPheader()
                 else:
                     hdr = fa.getHeader("full")
                 seq = fa.sequence
@@ -560,6 +562,8 @@ class genome(object):
             for fa in self.proteinSet.fastaList:
                 if hdrType.lower() == "short":
                     hdr = fa.getShortHeader()
+                elif hdrType.lower() == "cgp":
+                    hdr = fa.getCGPheader()
                 else:
                     hdr = fa.getHeader("full")
                 seq = fa.sequence

@@ -3,7 +3,7 @@
 #
 # Programmer: Carol L. Ecale Zhou
 #
-# Last Update: 08 December 2020
+# Last Update: 17 December 2020
 # 
 # Description:
 # Module comprising data structures for organizing genome information
@@ -52,12 +52,15 @@
 
 import string
 from Bio.Seq import Seq
-#from Bio.Alphabet import generic_dna, generic_protein
 import cgp_fastaSequence as fastaSequence
 import cgp_annotation as annotation
 import re, os, copy
 import subprocess
- 
+import random
+import time
+
+#RANDOM_LIMIT = 10
+
 BLAST_HOME          = os.environ["PHATE_BLAST_HOME"] 
 EMBOSS_PHATE_HOME   = os.environ["PHATE_EMBOSS_PHATE_HOME"] 
 CODE_BASE_DIR       = ""
@@ -282,18 +285,12 @@ class genome(object):
                     if PHATE_WARNINGS == 'True':
                         print("cgp_genomeSequence says, ERROR: anomalous strand setting in processGeneCalls, phate_genomeSequence module:", newGene.strand)
 
-                #*** BANDAID - to compensate for PHANOTATE sometimes starting gene at 0
-                #if newGene.start == 0:
-                #    newGene.start = 1
-
                 # Extract gene from genome sequence
                 sequence = self.getCGCsubsequence(newGene.start,newGene.end,newGene.strand,contig)
                 newGene.sequence = sequence
 
                 # Reverse complement the string if on reverse strand
                 if newGene.strand == '-':
-                    #reverseComplement = newGene.sequence.translate(complements)[::-1] 
-                    #newGene.sequence = reverseComplement 
                     tempGene = Seq(newGene.sequence)
                     newGene.sequence = tempGene.reverse_complement()
 
@@ -301,7 +298,6 @@ class genome(object):
                 newProtein = copy.deepcopy(fastaObj)
                 newProtein.moleculeType = self.proteinSet.moleculeType   # "Inherits" moleculeType from its "parent"
                 newProtein.assignHeader(geneName)   # Note: using method assignHeader establishes all header variants
-                #newProtein.parentSequence = newGene.sequence
                 newProtein.parentSequence = newGene.parentSequence # for reporting, need to capture contig name
                 newProtein.order = int(geneNo)
                 newProtein.sequenceType = 'aa'
@@ -488,10 +484,6 @@ class genome(object):
         if PHATE_PROGRESS:
             print("cgp_genomeSequence says, There are", len(self.geneSet.fastaList), "genes, and", len(self.proteinSet.fastaList), "proteins")
             print("cgp_genomeSequence says, Writing data to GFF file")
-        #for gene in self.geneSet.fastaList:
-        #    gene.printData2file_GFF(FILE_HANDLE,'gene')
-        #for protein in self.proteinSet.fastaList:
-        #    protein.printData2file_GFF(FILE_HANDLE,'CDS')
         #*** NOTE: The following code assumes that the list of proteins corresponds precisely to
         #*** the list of genes.  Oh, for the want of a pointer!!!
         for i in range(0, len(self.geneSet.fastaList)-1):
@@ -632,7 +624,7 @@ class genome(object):
         return result 
     
     # MOVING THIS METHOD TO CLASS BLAST    
-    def makeBlastDB(self,kvargs): # Create blast DBs for contigs, genes, proteins
+    def x_makeBlastDB(self,kvargs): # Create blast DBs for contigs, genes, proteins
         if "dbType" in list(kvargs.keys()):
             databaseType = kvargs["dbType"].lower()
         else:
@@ -647,7 +639,31 @@ class genome(object):
             command = "makeblastdb -in " + filename + " -dbtype prot -logfile " + filename + ".blastdb1_prot_log"
         else:
             return False
-        myResult = os.system(command)
+
+        # Run makeblastdb when semiphore lock is available 
+        MAKEBLASTDB_DONE = False
+        count = 0
+        time.sleep(random.randint(1,RANDOM_LIMIT))
+        if os.environ["CGP_LOCK"] == '1':
+            os.environ["CGP_LOCK"] = '0'
+            myResult = os.system(command)
+            os.environ["CGP_LOCK"] = '1'
+            MAKEBLASTDB_DONE = True
+        else:
+            while os.environ["CGP_LOCK"] == '0':
+                time.sleep(random.randint(1,RANDOM_LIMIT))
+                count += 1
+                if os.environ["CGP_LOCK"] == '1':
+                    os.environ["CGP_LOCK"] = '0'
+                    myResult = os.system(command)
+                    os.environ["CGP_LOCK"] = '1'
+                    MAKEBLASTDB_DONE = True
+                if count > 100:
+                    break
+        if not MAKEBLASTDB_DONE:
+            print("cgp_genomeSequence says, ERROR: semiphore-controlled makeblastdb was not executed!!!")
+            exit(0)
+
         return myResult
 
     def write2proteinSet(self,faLines):  # input list of lines containing protein fasta sequences
@@ -674,6 +690,5 @@ class genome(object):
     def cleanUpAfterEMBOSS(self):  # removes the pesky characters that EMBOSS adds to fasta sequence
         self.proteinSet.removeEMBOSSpostfix()
         self.proteinSet.removeTerminalAsterisk()
-        #self.proteinSet.restorSlashesAfterEMBOSS()
         return 
 
