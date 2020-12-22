@@ -40,6 +40,8 @@ checkpointPhate = False                          # set by json parameter; contro
 # Output file names 
 GENE_FILE              = 'gene.fnt'                              #
 PROTEIN_FILE           = 'protein.faa'                           #
+CGP_GENE_FILE          = '_cgp_gene.fnt'                         #
+CGP_PROTEIN_FILE       = '_cgp_protein.faa'                      #
 
 ##### ENVIRONMENT VARIABLES - These are set by multiPhate.py
 
@@ -179,6 +181,7 @@ DETAIL_STRING = """No details to describe at this time.\n"""
 geneFile                = GENE_FILE
 proteinFile             = PROTEIN_FILE
 PIPELINE_OUTPUT_SUBDIR  = 'unknown'                               # Will be read in from phate.config file 
+# Compute cgpGeneFile and cgpProteinFile later, when PIPELINE_OUTPUT_SUBDIR is known
 
 ##### GET INPUT PARAMETERS
 
@@ -373,6 +376,8 @@ runLog = os.path.join(PIPELINE_OUTPUT_SUBDIR,"runPhATE.log")
 LOGFILE.write("%s%s\n" % ("PIPELINE_OUTPUT_SUBDIR is ",PIPELINE_OUTPUT_SUBDIR))
 #GENOME_FILE = genomeName + '.fasta' 
 #LOGFILE.write("%s%s\n" % ("GENOME_FILE is ",GENOME_FILE))
+cgpGeneFileName    = outputSubdir.rstrip('/') + CGP_GENE_FILE
+cgpProteinFileName = outputSubdir.rstrip('/') + CGP_PROTEIN_FILE
 
 # Create user's output subdirectory, if doesn't already exist
 try:
@@ -556,13 +561,17 @@ primaryCallsPathFile = os.path.join(PIPELINE_OUTPUT_SUBDIR,primaryCallsFile)
 # Reassign geneFile and proteinFile as path/filename
 geneFile             = os.path.join(PIPELINE_OUTPUT_SUBDIR,GENE_FILE)
 proteinFile          = os.path.join(PIPELINE_OUTPUT_SUBDIR,PROTEIN_FILE)
+cgpGeneFile          = os.path.join(PIPELINE_OUTPUT_SUBDIR,cgpGeneFileName)
+cgpProteinFile       = os.path.join(PIPELINE_OUTPUT_SUBDIR,cgpProteinFileName)
 outputDir            = PIPELINE_OUTPUT_SUBDIR
 
-RUNLOG.write("%s%s\n" % ("inputDir is ",    inputDir))
-RUNLOG.write("%s%s\n" % ("genomeFile is ",  genomeFile))
+RUNLOG.write("%s%s\n" % ("inputDir is ",            inputDir))
+RUNLOG.write("%s%s\n" % ("genomeFile is ",          genomeFile))
 RUNLOG.write("%s%s\n" % ("primaryCallsPathFile is ",primaryCallsPathFile))
-RUNLOG.write("%s%s\n" % ("geneFile is ",    geneFile))
-RUNLOG.write("%s%s\n" % ("proteinFile is ", proteinFile))
+RUNLOG.write("%s%s\n" % ("geneFile is ",            geneFile))
+RUNLOG.write("%s%s\n" % ("proteinFile is ",         proteinFile))
+RUNLOG.write("%s%s\n" % ("cgpGeneFile is ",         cgpGeneFile))
+RUNLOG.write("%s%s\n" % ("cgpProteinFile is ",      cgpProteinFile))
 
 if PHATE_PROGRESS:
     print("phate_runPipeline says, Checking files...")
@@ -845,17 +854,18 @@ if profileDatabaseParameterString == '':
     profileDatabaseParameterString = 'none'
 
 commandRoot1  = "python " + SEQANNOTATION_CODE      + " -o " + outputDir  # code and output direction
-commandRoot2  = " -G "    + genomeFile              + " -g " + geneFile             + " -p " + proteinFile   # genome files
-commandRoot3  = " -c "    + primaryCalls            + " -f " + primaryCallsPathFile                          # gene-call information
-commandRoot4  = " -t "    + genomeType              + " -n " + genomeName           + " -s " + genomeSpecies # genome meta-data
-commandRoot5  = " -i "    + blastpIdentity          + " -j " + blastnIdentity                                # blast identity parameters 
-commandRoot6  = " -h "    + blastpHitCount          + " -H " + blastnHitCount                                # blast hit count parameters
-commandRoot7  = " -B "    + blastProgramParameterString   + " -b " + blastDatabaseParameterString            # blast and hmm search of blast/sequence database(s)
-commandRoot8  = " -M "    + hmmProgramParameterString     + " -m " + seqDatabaseParameterString              # hmm search of hmm profile database(s)
-commandRoot9  = " -R "    + profileProgramParameterString + " -r " + profileDatabaseParameterString          # program and databases for hmm search
-commandRoot10 = " -z "    + blastThreadsParameterString
+commandRoot2  = " -G "    + genomeFile              + " -g " + geneFile             + " -p " + proteinFile     # genome files for Phate-formatted headers
+commandRoot3  =                                       " -v " + cgpGeneFile          + " -w " + cgpProteinFile  # genome files for CGP formatted headers
+commandRoot4  = " -c "    + primaryCalls            + " -f " + primaryCallsPathFile                            # gene-call information
+commandRoot5  = " -t "    + genomeType              + " -n " + genomeName           + " -s " + genomeSpecies   # genome meta-data
+commandRoot6  = " -i "    + blastpIdentity          + " -j " + blastnIdentity                                  # blast identity parameters 
+commandRoot7  = " -h "    + blastpHitCount          + " -H " + blastnHitCount                                  # blast hit count parameters
+commandRoot8  = " -B "    + blastProgramParameterString   + " -b " + blastDatabaseParameterString              # blast and hmm search of blast/sequence database(s)
+commandRoot9  = " -M "    + hmmProgramParameterString     + " -m " + seqDatabaseParameterString                # hmm search of hmm profile database(s)
+commandRoot10  = " -R "    + profileProgramParameterString + " -r " + profileDatabaseParameterString            # program and databases for hmm search
+commandRoot11 = " -z "    + blastThreadsParameterString
 commandRootA  = commandRoot1 + commandRoot2 + commandRoot3 + commandRoot4 + commandRoot5  + commandRoot6
-commandRoot   = commandRootA + commandRoot7 + commandRoot8 + commandRoot9 + commandRoot10
+commandRoot   = commandRootA + commandRoot7 + commandRoot8 + commandRoot9 + commandRoot10 + commandRoot11
 
 # As appropriate, append additional parameters
 if translateOnly:
