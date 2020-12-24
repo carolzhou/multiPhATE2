@@ -4,7 +4,7 @@
 #
 # Programmer: Carol L. Ecale Zhou
 #
-# Most recent update: 15 December 2020
+# Most recent update: 23 December 2020
 #
 # Description:
 # Module comprising data structures for organizing genome information
@@ -79,7 +79,10 @@ if PHATE_MESSAGES_STRING.lower() == 'true':
     PHATE_MESSAGES = True
 if PHATE_PROGRESS_STRING.lower() == 'true':
     PHATE_PROGRESS = True
-
+# Override
+#PHATE_WARNINGS = True
+#PHATE_MESSAGES = True
+#PHATE_PROGRESS = True
 
 DEBUG            = False
 #DEBUG           = True 
@@ -90,6 +93,7 @@ GFF_COMMENT = "##gff-version 3"
 # Templates
 annotationObj = phate_annotation.annotationRecord()
 fastaObj      = phate_fastaSequence.fasta()
+trnaObj       = phate_fastaSequence.fasta()
 
 # Reverse complement
 MAKETRANS_OLD = False   # Differences in Python2 vs. Python3  (Python3.6 vs. Python 3.7???)
@@ -114,12 +118,15 @@ class genome(object):
         self.contigSet               = phate_fastaSequence.multiFasta()
         self.geneSet                 = phate_fastaSequence.multiFasta()
         self.proteinSet              = phate_fastaSequence.multiFasta()
+        self.trnaSet                 = phate_fastaSequence.multiFasta()
         self.contigSet.moleculeType  = 'contig'
         self.contigSet.sequenceType  = 'nt'
         self.geneSet.moleculeType    = 'gene'
         self.geneSet.sequenceType    = 'nt'
         self.proteinSet.moleculeType = 'peptide'
         self.proteinSet.sequenceType = 'aa'
+        self.trnaSet.moleculeType    = 'trna'
+        self.trnaSet.sequenceType    = 'nt'
         self.codeBaseDir             = ""       # needs to be set
         self.outputDir               = ""       # needs to be set
 
@@ -145,14 +152,17 @@ class genome(object):
     def setSpecies(self,species):
         self.species = species
 
-    def getCGCsubsequence(self,start,end,strand,contig):  # Tailored for output from CGCparser.py
+    def getCGCsubsequence(self,start,end,strand,in_contig):  # Tailored for output from CGCparser.py
         subSeq = ""
+        # For safety, strip white space(s) from incoming contig
+        cleanContig = in_contig.lstrip()
+        contig = cleanContig.rstrip()
         for fa in self.contigSet.fastaList:
             if fa.header == contig:
                 subSeq = fa.getSubsequence(int(start)-1,int(end)) #*** ???
             else:
                 if PHATE_WARNINGS:
-                    print("phate_genomeSequence says, WARNING: fa.header", fa.header, "did not match contig", contig)
+                    print("phate_genomeSequence says, WARNING: fa.header -", fa.header, "- did not match contig -", contig, "-")
         return subSeq           
 
     def getSubsequence(self,start,end,contig):  # Note: tailored to RAST
@@ -176,6 +186,76 @@ class genome(object):
         return subSeq
 
     # INPUT/PROCESS SEQUENCES 
+
+    def processTrnaGeneCalls(self,kvargs):
+        if PHATE_MESSAGES: 
+            print("phate_genomeSequence says, Running processTrnaGeneCalls.")
+        TRNA_GENES_FILE = ''; contig = ''; trnaNo = ''; begin = ''; end = ''; codon = ''; aCodon = ''; iBegin = ''; iEnd = ''; score = ''; annot = ''
+        if isinstance(kvargs,dict):
+            if "trnaGenesFile" in kvargs.keys():
+                TRNA_GENES_FILE = kvargs["trnaGenesFile"]
+        if os.path.exists(TRNA_GENES_FILE):
+            TRNA_H = open(TRNA_GENES_FILE,'r')
+            fLines = TRNA_H.read().splitlines()
+            count = -3 
+            for fLine in fLines:
+                count += 1   
+                if count > 0:  # skip 1st 3 lines of file
+                    fields = fLine.split('\t')
+                    if len(fields) >= 9:
+                        contig = fields[0].rstrip()  # Name
+                        trnaNo = fields[1]  # tRNA #
+                        begin  = fields[2]  # tRNA Begin 
+                        end    = fields[3]  # Bounds End 
+                        codon  = fields[4]  # tRNA Type 
+                        aCodon = fields[5]  # Anti Codon 
+                        iBegin = fields[6]  # Intron Begin 
+                        iEnd   = fields[7]  # Bounds End 
+                        score  = fields[8]  # Inf Score 
+                    if len(fields) == 10:
+                        annot  = fields[9]  # Note
+                    trnaName = contig + '_trna_' + str(count)
+                    newTrna = copy.deepcopy(fastaObj)
+                    newTrna.moleculeType   = self.trnaSet.moleculeType
+                    newTrna.assignHeader(trnaName)
+                    newTrna.parentSequence = contig
+                    newTrna.parentName     = contig
+                    newTrna.number         = count
+                    newTrna.order          = count
+                    newTrna.sequenceType   = 'nt'
+                    newTrna.geneCallFile   = TRNA_GENES_FILE 
+                    newTrna.geneCaller     = 'trnascan-se'
+                    newTrna.geneCallRank   = 0
+                    newTrna.score          = score
+                    if int(begin) < int(end):
+                        newTrna.strand     = '+'
+                        newTrna.start      = begin
+                        newTrna.end        = end
+                    elif int(begin) > int(end):
+                        newTrna.strand     = '-'
+                        newTrna.start      = end
+                        newTrna.end        = begin
+                    else:
+                        newGene.strand     = 'x'
+                        newTrna.start      = begin
+                        newTrna.end        = end
+                        if PHATE_WARNINGS:
+                            print("phate_genomeSequence says, WARNING/ERROR: anomalous strand setting in processGeneCalls, phate_genomeSequence module:", newTrna.strand, newTrna.contig, newTrna.number)
+                    # Extract trna from genome sequence
+                    sequence = self.getCGCsubsequence(newTrna.start,newTrna.end,newTrna.strand,contig)
+                    newTrna.sequence = sequence
+
+                    # Reverse complement the string if on reverse strand
+                    if newTrna.strand == '-':
+                        reverseComplement = newTrna.sequence.translate(complements)[::-1]
+                        newTrna.sequence = reverseComplement
+
+                    # Record new trna
+                    if PHATE_MESSAGES:
+                        print("phate_genomeSequence says, Recording new trna: ",self.trnaSet)
+                    self.addTrna(newTrna)   # Add this new trna to the trna list
+            TRNA_H.close()
+        return
 
     def processGeneCalls(self,geneCallInfo,GENE_CALL_H):  # GeneCalls formatted by CGCparser.py
         # Gene calls: tabbed in 6 columns: No. \t strand(+/-) \t leftEnd \t rightEnd \t contig
@@ -246,7 +326,7 @@ class genome(object):
                 geneNo   = columns[0]
                 strand   = columns[1]
                 length   = columns[4]
-                contig   = columns[5]  #*** NOTE: contig name should be in PHANOTATE gene call file, but currently not
+                contig   = columns[5].rstrip()  #*** NOTE: contig name should be in PHANOTATE gene call file, but currently not
                 geneName = contig + '_' + geneCaller + '_' + geneNo + '_geneCall'
 
                 # Remove '<' and '>' symbols in leftEnd, rightEnd, if present
@@ -335,6 +415,10 @@ class genome(object):
         newProtein.moleculeType = self.proteinSet.moleculeType
         self.proteinSet.addFasta(newProtein)
 
+    def addTrna(self,newTrna):
+        newTrna.moleculeType = self.trnaSet.moleculeType
+        self.trnaSet.addFasta(newTrna)
+
     # ANNOTATION
 
     def addAnnotation(self,newAnnot):
@@ -344,15 +428,18 @@ class genome(object):
         annotationCount = 0
 
         # Count total annotations at all levels
-        annotationCount += len(self.annotationList)
-        annotationCount += len(self.contigSet.annotationList)
-        for fasta in self.contigSet.fastaList:
+        annotationCount += len(self.annotationList)            # genomic level
+        annotationCount += len(self.contigSet.annotationList)  # contig set level
+        for fasta in self.contigSet.fastaList:                 # contig level
+            annotationCount += len(fasta.annotationList)       
+        annotationCount += len(self.geneSet.annotationList)    # gene set level
+        for fasta in self.geneSet.fastaList:                   # gene level
             annotationCount += len(fasta.annotationList)
-        annotationCount += len(self.geneSet.annotationList)
-        for fasta in self.geneSet.fastaList:
+        annotationCount += len(self.proteinSet.annotationList) # protein set level
+        for fasta in self.proteinSet.fastaList:                # protein gene level
             annotationCount += len(fasta.annotationList)
-        annotationCount += len(self.proteinSet.annotationList)
-        for fasta in self.proteinSet.fastaList:
+        annotationCount += len(self.trnaSet.annotationList)    # trna set level
+        for fasta in self.trnaSet.fastaList:                   # trna gene level
             annotationCount += len(fasta.annotationList)
         
         return annotationCount
@@ -364,13 +451,15 @@ class genome(object):
         geneCount       = len(self.geneSet.fastaList)
         proteinCount    = len(self.proteinSet.fastaList)
         annotationCount = len(self.annotationList)
+        trnaCount       = len(self.trnaList)
         print(self.genomeType, "genome", self.name, self.genomeName, self.species)
         print("Number of contigs:", contigCount)
         print("Names of contigs:")
         for fa in self.contigSet.fastaList:
             print(fa.header)
-        print("  gene calls:", geneCount)
-        print("  proteins:", proteinCount)
+        print("  gene calls: ", geneCount)
+        print("  proteins:   ", proteinCount)
+        print("  trnas:      ", trnaCount)
         print("  annotations:", annotationCount)
         if annotationCount > 0:
             print("Annotations:")
@@ -382,6 +471,7 @@ class genome(object):
         contigCount     = str(len(self.contigSet.fastaList))
         geneCount       = str(len(self.geneSet.fastaList))
         proteinCount    = str(len(self.proteinSet.fastaList))
+        trnaCount       = str(len(self.trnaSet.fastaList))
         annotationCount = str(len(self.annotationList))
 
         # Print summary for this genome
@@ -421,11 +511,19 @@ class genome(object):
             for protein in self.proteinSet.fastaList:
                 protein.printAll_tab()
 
+        # Print annotations for the trnas in the protein set
+        if self.trnaSet:
+            for annotation in self.trnaSet.annotationList:
+                annotation.printAnnotationRecord()
+            for trna in self.trnaSet.fastaList:
+                trna.printAll_tab()
+
     def printGenomeData2file_tab(self,FILE_HANDLE):
         FIRST = True
         contigCount     = str(len(self.contigSet.fastaList))
         geneCount       = str(len(self.geneSet.fastaList))
         proteinCount    = str(len(self.proteinSet.fastaList))
+        trnaCount       = str(len(self.trnaSet.fastaList))
         annotationCount = str(len(self.annotationList))  #*** CHECK: why is this being calc'd 2 ways???
 
         # Print summary for this genome
@@ -465,15 +563,24 @@ class genome(object):
             for protein in self.proteinSet.fastaList:
                 protein.printAll2file_tab(FILE_HANDLE)
 
+        # Print annotations for the trnas in the trna set
+        if self.trnaSet:
+            for annotation in self.trnaSet.annotationList:
+                annotation.printAnnotationRecord2file_tab(FILE_HANDLE)
+            for trna in self.trnaSet.fastaList:
+                trna.printAll2file_tab(FILE_HANDLE)
+
     def printGenomeData2file(self,FILE_HANDLE):  # For reporting / debugging
-        contigCount = len(self.contigSet.fastaList)
-        geneCount = len(self.geneSet.fastaList)
+        contigCount  = len(self.contigSet.fastaList)
+        geneCount    = len(self.geneSet.fastaList)
         proteinCount = len(self.proteinSet.fastaList)
+        trnaCount    = len(self.trnaSet.fastaList)
         annotationCount = len(self.annotationList)
         FILE_HANDLE.write("%s%s%s%s%s" % (self.genomeType,"genome",self.name,self.species,"\n"))
         FILE_HANDLE.write("%s%s%s" % ("Number of contigs:",contigCount,"\n"))
         FILE_HANDLE.write("%s%s%s" % ("  gene calls:",geneCount,"\n"))
         FILE_HANDLE.write("%s%s%s" % ("  proteins:",proteinCount,"\n"))
+        FILE_HANDLE.write("%s%s%s" % ("  trnas:",trnaCount,"\n"))
         FILE_HANDLE.write("%s%s%s" % ("  annotations:",annotationCount,"\n"))
         if annotationCount > 0:
             FILE_HANDLE.write("%s" % ("Annotations:\n"))
@@ -482,24 +589,26 @@ class genome(object):
 
     def printGenomeData2file_GFF(self,FILE_HANDLE):
         FILE_HANDLE.write("%s\n" % (GFF_COMMENT))
+        if PHATE_PROGRESS:
+            print("phate_genomeSequence says, There are",len(self.geneSet.fastaList),"genes,",len(self.proteinSet.fastaList),"proteins, and",len(self.trnaSet.fastaList),"trna genes")
+            print("phate_genomeSequence says, Writing data to GFF file.")
+        geneCount = 0; trnaCount = 0
+        for contig in self.contigSet.fastaList:
+            contigName = contig.header  #*** WHICH HEADER TYPE corresponds to gene and protein records?
+            for i in range(0,len(self.geneSet.fastaList)):
+                if contigName == self.geneSet.fastaList[i].parentName: 
+                    geneCount += 1
+                    self.geneSet.fastaList[i].printData2file_GFF(FILE_HANDLE,'gene',contigName)
+                    # protein is in same order in respective fastaList as corresponding gene
+                    self.proteinSet.fastaList[i].printData2file_GFF(FILE_HANDLE,'CDS',contigName) 
+            # Once genes and proteins have been printed, print the trnas from this contig; #*** could use gene[i+1]'s left end to know when to print trna 
+            for trna in self.trnaSet.fastaList:
+                if contigName == trna.parentName:
+                    trnaCount += 1
+                    trna.printData2file_GFF(FILE_HANDLE,'trna',contigName)
         if PHATE_MESSAGES:
-            print("phate_genomeSequence says, There are", len(self.geneSet.fastaList), "genes, and", len(self.proteinSet.fastaList), "proteins")
-            print("phate_genomeSequence says, Writing data to GFF file")
-
-        #*** NOTE: The following code assumes that the list of proteins corresponds precisely to
-        #*** the list of genes.  Oh, for the want of a pointer!!!
-
-        lastContig = "notAname"; nextContig = ""
-        for i in range(0, len(self.geneSet.fastaList)):
-            nextContig = self.geneSet.fastaList[i].parentName
-            if lastContig != nextContig:
-                contig = self.geneSet.fastaList[i].parentName
-                end    = self.geneSet.fastaList[i].parentSequenceLength
-                FILE_HANDLE.write("%s%s%s%s\n" % ("##sequence-region,contig ",contig,' 0 ',str(end)))
-                lastContig = nextContig
-            # Print data lines
-            self.geneSet.fastaList[i].printData2file_GFF(FILE_HANDLE,'gene',contig)
-            self.proteinSet.fastaList[i].printData2file_GFF(FILE_HANDLE,'CDS',contig)
+            print("phate_genomeSequence says, Printing of GFF file is complete:",geneCount,"genes and",trnaCount,"trnas.")
+        return
 
     def printAll(self):
         print("Contigs =====================================================")

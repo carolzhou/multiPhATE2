@@ -72,8 +72,8 @@ if PHATE_MESSAGES_STRING.lower() == 'true':
 if PHATE_WARNINGS_STRING.lower() == 'true':
     PHATE_WARNINGS = True 
 
-DEBUG = True
-#DEBUG = False
+#DEBUG = True
+DEBUG = False
 
 IDENTITY_CUTOFF = int(os.environ["CGP_IDENTITY_CUTOFF"])
 

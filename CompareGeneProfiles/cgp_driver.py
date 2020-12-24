@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #######################################################
 #
@@ -6,7 +6,7 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Last update: 9 December 2020
+# Last update: 21 December 2020
 #
 # Description:#
 # This script inputs a config file, cgpNxN.config, which lists the
@@ -136,7 +136,8 @@ LOGFILE.write("%s%s\n" % ("Compare Gene Profiles pipeline execution start time i
 LOGFILE.write("%s%s%s%s\n" % ("Executing Step 1: Running code constructConfigFile.py with ", in_configFile, " to generate file ", cgpm_configFile))
 if PHATE_PROGRESS:
     print ("cgp_driver says, Executing Step 1...")
-command = "python " + CONSTRUCT_CONFIG_FILE_CODE + " " + in_configFile + " " + cgpm_configFile
+#command = "python " + CONSTRUCT_CONFIG_FILE_CODE + " " + in_configFile + " " + cgpm_configFile
+command = os.environ["PHATE_PYTHON"] + ' ' + CONSTRUCT_CONFIG_FILE_CODE + " " + in_configFile + " " + cgpm_configFile
 os.system(command)
 if PHATE_PROGRESS:
     print ("cgp_driver says, Step 1 complete.")
@@ -148,7 +149,8 @@ today = os.popen('date')
 LOGFILE.write("%s%s\n" % ("Executing Step 2 at ",today.read()))
 if PHATE_PROGRESS:
     print ("cgp_driver says, Executing Step 2...")
-command = "python " + COMPARE_GENE_PROFILES_WRAPPER_CODE + " " + projectDirectory + ' ' + cgpThreads
+#command = "python " + COMPARE_GENE_PROFILES_WRAPPER_CODE + " " + projectDirectory + ' ' + cgpThreads
+command = os.environ["PHATE_PYTHON"] + ' ' + COMPARE_GENE_PROFILES_WRAPPER_CODE + " " + projectDirectory + ' ' + cgpThreads
 LOGFILE.write("%s%s\n" % ("Running command: ",command))
 os.system(command)
 if PHATE_PROGRESS:

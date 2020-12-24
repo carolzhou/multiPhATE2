@@ -3,7 +3,7 @@
 #
 # Programmer: Carol L. Ecale Zhou
 #
-# Most recent update: 15 December 2020
+# Most recent update: 23 December 2020
 # 
 # Module containing classes and methods for representing a multi-fasta sequence and associated methods
 # Classes and methods: 
@@ -126,6 +126,11 @@ if PHATE_MESSAGES_STRING.lower() == 'true':
 if PHATE_PROGRESS_STRING.lower() == 'true':
     PHATE_PROGRESS = True
 
+# Override
+#PHATE_WARNINGS = True
+#PHATE_MESSAGES = True
+#PHATE_PROGRESS = True
+
 #######################################################################################
 
 class fasta(object):
@@ -155,7 +160,7 @@ class fasta(object):
         self.sequenceLength = 0           # length of sequence
         self.sequenceType = "unknown"     # "nt" or "aa"; not "gene" or "dna" or the like
         self.moleculeType = "unknown"     # eg, 'contig', 'peptide', 'protein', or 'gene'
-        self.parentSequence = ""          # eg, for gene, the contig that the gene is on
+        self.parentSequence = ""          # eg, for gene or trna, the contig that it is on
         self.parentSequenceLength = 0     # need this for passing info to method for printing GFF output; 
         self.truncation = 15              # number of characters (N) in header to retain, by default
         self.annotationList = []          # list of annotationRecord objects 
@@ -180,6 +185,7 @@ class fasta(object):
         self.pVOGassociationList = []     # list of pVOGs associated with this fasta
         self.pVOGcount = 0                # for dignostics in constructing pVOG fasta data set
         self.contig = "unknown"           # name of contig this fasta is associated with
+        self.score = ''                   # score of prediction (e.g., for trna from trnascan-se)
 
     def queryNRsequence(self,gi,nrLocation):  # Specific to NR; any other database has different format 
         # Given an NCBI gi identifier and the dir/file of an NR database, pull the sequence from NR database
@@ -508,7 +514,8 @@ class fasta(object):
 
     def printData2file_GFF(self,FILE_HANDLE,feature,contigName):
         # Note: pragmas are printed by calling method (ex: phate_genomeSequence/printGenomeData2file_GFF)
-
+ 
+        GFF_SCORE = '.'   # usually null value
         GFF_annotationString = ''
         GFF_type = "unknown"
         FIRST = True
@@ -516,17 +523,24 @@ class fasta(object):
         # FIRST, assemble the data, per field
         GFF_parentName = self.parentName         # column 1
         GFF_source     = GFF_SOURCE              # column 2
+        GFF_score      = GFF_SCORE               # column 6 (used for trna genes predicted by trnascan)
 
+        #if self.moleculeType == 'peptide' or self.moleculeType == 'protein' or self.sequenceType == 'aa' or feature == 'CDS':
         if self.moleculeType == 'peptide' or self.moleculeType == 'protein' or self.sequenceType == 'aa' or feature == 'CDS':
             GFF_type    = "CDS"                  # column 3
             GFF_start   = str(self.parentStart)  # column 4
             GFF_end     = str(self.parentEnd)    # column 5
-        elif self.moleculeType == 'gene' or self.sequenceType == 'nt' or feature == 'gene':
+        #elif self.moleculeType == 'gene' or self.sequenceType == 'nt' or feature == 'gene':
+        elif self.moleculeType == 'gene' or feature == 'gene':
             GFF_type    = "gene"                 # column 3
             GFF_start   = str(self.start)        # column 4
             GFF_end     = str(self.end)          # column 5
+        elif self.moleculeType == 'trna' or feature == 'trna':
+            GFF_type    = "trna"                 # column 3
+            GFF_start   = str(self.start)        # column 4
+            GFF_end     = str(self.end)          # column 5
+            GFF_score   = str(self.score)        # column 6  # trnascan-se provides a score
 
-        GFF_score       = GFF_SCORE              # column 6
         GFF_strand      = self.strand            # column 7
         GFF_phase       = GFF_PHASE              # column 8
 
@@ -534,7 +548,7 @@ class fasta(object):
         # Column 9 has many sub-fields, starting with sequence identifier and parent
         if self.moleculeType == 'peptide' or self.moleculeType == 'protein' or self.sequenceType == 'aa':
             GFF_identifier = "ID=" + self.header + "_cds"
-        elif self.moleculeType == 'gene' or self.sequenceType == 'nt':
+        elif self.moleculeType == 'gene' or self.sequenceType == 'nt' or feature == 'gene' or feature == 'trna':
             GFF_identifier = "ID=" + self.header
 
         # NEXT, write the data fields to the file

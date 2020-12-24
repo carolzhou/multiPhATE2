@@ -4,7 +4,7 @@
 #
 # Programmers: Jeff Kimbrel, Carol Zhou
 #
-# Last update: 19 October 2020
+# Last update: 21 December 2020
 #
 # Description: Script phate_genecallPhage.py runs up to four gene callers: PHANOTATE, Prodigal, 
 #    Glimmer and GeneMarkS, on a genome fasta file. Outputs from these gene callers are converted to
@@ -91,7 +91,7 @@ if PHATE_MESSAGES:
     print("phate_genecallPhage says, There are", len(sys.argv), "input parameters:", sys.argv)
 if len(sys.argv) == 1:
     if PHATE_WARNINGS:
-        print("phate_genecallPhage says, Usage: /usr/local/bin/python3.4 annotatePhage.py fastaFile.fa outFolder", "Exiting now.")
+        print("phate_genecallPhage says, Usage: /usr/local/bin/python3 annotatePhage.py fastaFile.fa outFolder", "Exiting now.")
     exit(0)
 
 # Get input parameters
@@ -546,28 +546,34 @@ logfile.write("%s\n" % ("Parsing genecall files into CGC format..."))
 callerCount = 0
 if GENEMARKS_CALLS:
     callerCount += 1
-    systemCall('python ' + cgcPath + '/CGC_parser.py Genemarks ' + outputFolder + 'geneMarkS.gff ' + outputFolder + 'genemark.cgc')
+    #systemCall('python ' + cgcPath + '/CGC_parser.py Genemarks ' + outputFolder + 'geneMarkS.gff ' + outputFolder + 'genemark.cgc')
+    systemCall(os.environ["PHATE_PYTHON"] + ' ' + cgcPath + '/CGC_parser.py Genemarks ' + outputFolder + 'geneMarkS.gff ' + outputFolder + 'genemark.cgc')
 if PRODIGAL_CALLS:
     callerCount += 1
-    systemCall('python ' + cgcPath + '/CGC_parser.py Prodigal ' + outputFolder + 'prodigal.genes.sco ' + outputFolder + 'prodigal.cgc')
+    #systemCall('python ' + cgcPath + '/CGC_parser.py Prodigal ' + outputFolder + 'prodigal.genes.sco ' + outputFolder + 'prodigal.cgc')
+    systemCall(os.environ["PHATE_PYTHON"] + ' ' + cgcPath + '/CGC_parser.py Prodigal ' + outputFolder + 'prodigal.genes.sco ' + outputFolder + 'prodigal.cgc')
 if GLIMMER_CALLS:
     callerCount += 1
     #systemCall('python ' + cgcPath + '/CGC_parser.py Glimmer ' + outputFolder + 'glimmer.coords ' + outputFolder + 'glimmer.cgc')
-    systemCall('python ' + cgcPath + '/CGC_parser.py Glimmer ' + outputFolder + 'glimmer.predict ' + outputFolder + 'glimmer.cgc')
+    #systemCall('python ' + cgcPath + '/CGC_parser.py Glimmer ' + outputFolder + 'glimmer.predict ' + outputFolder + 'glimmer.cgc')
+    systemCall(os.environ["PHATE_PYTHON"] + ' ' + cgcPath + '/CGC_parser.py Glimmer ' + outputFolder + 'glimmer.predict ' + outputFolder + 'glimmer.cgc')
 if PHANOTATE_CALLS:
     callerCount += 1
-    systemCall('python ' + cgcPath + '/CGC_parser.py PHANOTATE ' + outputFolder + 'phanotateOutput.txt ' + outputFolder + 'phanotate.cgc')
+    #systemCall('python ' + cgcPath + '/CGC_parser.py PHANOTATE ' + outputFolder + 'phanotateOutput.txt ' + outputFolder + 'phanotate.cgc')
+    systemCall(os.environ["PHATE_PYTHON"] + ' ' + cgcPath + '/CGC_parser.py PHANOTATE ' + outputFolder + 'phanotateOutput.txt ' + outputFolder + 'phanotate.cgc')
 if CUSTOM_CALLS:
     callerCount += 1
     logfile.write("%s\n" % ("Calling CGC_parser.py with custom calls"))
-    systemCall('python ' + cgcPath + '/CGC_parser.py Custom ' + customCallsGff + ' ' + outputFolder + 'custom.cgc')
+    #systemCall('python ' + cgcPath + '/CGC_parser.py Custom ' + customCallsGff + ' ' + outputFolder + 'custom.cgc')
+    systemCall(os.environ["PHATE_PYTHON"] + ' ' + cgcPath + '/CGC_parser.py Custom ' + customCallsGff + ' ' + outputFolder + 'custom.cgc')
 
 logfile.write("%s%s\n" % ("callerCount is ",callerCount))
 if callerCount >= 2:
     runCGC = True
 
 if runCGC:
-    commandString1 = 'python ' + cgcPath + 'CGC_main.py log=' + cgcLog 
+    #commandString1 = 'python ' + cgcPath + 'CGC_main.py log=' + cgcLog 
+    commandString1 = os.environ["PHATE_PYTHON"] + ' ' + cgcPath + 'CGC_main.py log=' + cgcLog 
     commandString2 = ' cgc=' + cgcGff + ' superset=' + supersetCgc + ' consensus=' + consensusCgc + ' commoncore=' + commoncoreCgc
     commandString3 = ' ' + outputFolder + '*.cgc > ' + outputFolder + 'CGC_results.txt'
     command = commandString1 + commandString2 + commandString3

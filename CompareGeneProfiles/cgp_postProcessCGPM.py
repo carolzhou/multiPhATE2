@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 ###################################################################
 #
@@ -6,7 +6,7 @@
 #
 # Programmer:  Carol L. Ecale Zhou 
 #
-# Last update:  08 December 2020
+# Last update:  21 December 2020
 #
 # Description:
 # This program post-processes the output file produced by code

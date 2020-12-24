@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #######################################################################################
 #
@@ -6,7 +6,7 @@
 #
 # Programmer:  C. E. Zhou
 #
-# Latest update:  07 December 2020
+# Latest update:  21 December 2020
 #
 # Description: This driver code runs the Genomics module, which identifies gene correspondences
 #    among genomes that have been compared using CompareGeneProfiles (CGP), creates fasta

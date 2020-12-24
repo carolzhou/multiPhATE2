@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #######################################################
 #
@@ -184,7 +184,8 @@ for resultDir in dirsList:
         # Run postProcessCGMP.py for the current binary comparison
         currentDir = os.getcwd()  # where are we now
         os.chdir(resultDir)       # change to current Results directory
-        call(["python",POST_PROCESS_CGPM_CODE,"-g1",genomeFiles1["genes"],"-g2",genomeFiles2["genes"],"-r",cgpmReport])
+        #call(["python",POST_PROCESS_CGPM_CODE,"-g1",genomeFiles1["genes"],"-g2",genomeFiles2["genes"],"-r",cgpmReport])
+        call([os.environ["PHATE_PYTHON"],POST_PROCESS_CGPM_CODE,"-g1",genomeFiles1["genes"],"-g2",genomeFiles2["genes"],"-r",cgpmReport])
         os.chdir(currentDir)      # return
         count += 1 
         LOGFILE.write("%s%s\n" % ("Completed post-processing in directory ",resultDir))

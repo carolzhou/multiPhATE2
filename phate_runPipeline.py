@@ -8,7 +8,7 @@
 #    Carol E. Zhou - pipeline programmer: CompareCalls/, DatabasePrep/, SequenceAnnotation/, phate_runPipeline.py
 #    Jeff Kimbrel, Carol Zhou  - GeneCalling/
 #
-# Most recent update:  27 October 2020
+# Most recent update:  21 December 2020
 #
 # Description: Runs the phate annotation pipeline.  This code runs under Python 3.7, and requires
 #    dependent packages.
@@ -29,7 +29,7 @@
 import sys, os, re, string, copy, time, datetime
 import subprocess
 import json
-import phate_trna
+#import phate_trna
 
 # CONSTANTS and CONFIGURABLES
 
@@ -603,7 +603,7 @@ if PHATE_PROGRESS:
     print("phate_runPipeline says, Configuration complete.")
 
 ##### BEGIN MAIN ########################################################################################
-
+"""
 #########################
 ##### Run tRNA scan #####
 #########################
@@ -627,15 +627,12 @@ trnaParameters = {
         }
 
 trna = phate_trna.trna()
-PHATE_MESSAGES = True
 if PHATE_MESSAGES:
     print("phate_runPipeline says, parameters going into trnascan-se:")
     print(trnaParameters)
 trna.setParameters(trnaParameters)
 trna.printParameters()
-PHATE_MESSAGES = False
 
-#trnascan = True   #*** Set this via configuration 
 if trnascan:
     trna.runTrnaScan()
 
@@ -644,7 +641,7 @@ if PHATE_PROGRESS:
 if PHATE_MESSAGES:
     print("phate_runPipeline says, results from trnascan-se execution:")
     trna.printResults()
-
+"""
 ###################################
 ##### Run Gene-calling Module #####
 ###################################
@@ -708,7 +705,8 @@ if MULTIPLE_CALLERS:
     if primaryCalls == 'common_core':
         primaryCallsPathFile = PIPELINE_OUTPUT_SUBDIR + 'common_core.cgc' 
 
-command = "python " + GENECALL_CODE + ' ' + genomeFile + ' ' + param2 + ' ' + param3 + ' ' + primaryCallsPathFile
+#command = "python " + GENECALL_CODE + ' ' + genomeFile + ' ' + param2 + ' ' + param3 + ' ' + primaryCallsPathFile
+command = os.environ["PHATE_PYTHON"] + ' ' + GENECALL_CODE + ' ' + genomeFile + ' ' + param2 + ' ' + param3 + ' ' + primaryCallsPathFile
 if PHATE_PROGRESS:
     print("phate_runPipeline says, Calling the gene-call module.")
 if PHATE_MESSAGES:
@@ -738,7 +736,13 @@ RUNLOG.write("%s\n" % ("Preparing to call sequence annotation module..."))
 if PHATE_PROGRESS:
     print("phate_runPipeline says, Preparing command strings for homology searches...")
 
-# First, construct string listing the names of databases to be blasted
+# Create trnascan paremeter
+
+trnascanParam = 'False'
+if trnascan:
+    trnascanParam = 'True'
+
+# Construct string listing the names of databases to be blasted
 
 blastDatabaseParameterString = ''   # databases
 if ncbiVirusGenomeBlast:
@@ -853,9 +857,10 @@ if profileProgramParameterString == '':
 if profileDatabaseParameterString == '':
     profileDatabaseParameterString = 'none'
 
-commandRoot1  = "python " + SEQANNOTATION_CODE      + " -o " + outputDir  # code and output direction
+#commandRoot1  = "python " + SEQANNOTATION_CODE      + " -o " + outputDir  # code and output direction
+commandRoot1  = os.environ["PHATE_PYTHON"] + ' '    + SEQANNOTATION_CODE            + " -o " + outputDir       # code and output direction
 commandRoot2  = " -G "    + genomeFile              + " -g " + geneFile             + " -p " + proteinFile     # genome files for Phate-formatted headers
-commandRoot3  =                                       " -v " + cgpGeneFile          + " -w " + cgpProteinFile  # genome files for CGP formatted headers
+commandRoot3  = " -T "    + trnascanParam           + " -v " + cgpGeneFile          + " -w " + cgpProteinFile  # whether to run trnascan; genome files for CGP formatted headers
 commandRoot4  = " -c "    + primaryCalls            + " -f " + primaryCallsPathFile                            # gene-call information
 commandRoot5  = " -t "    + genomeType              + " -n " + genomeName           + " -s " + genomeSpecies   # genome meta-data
 commandRoot6  = " -i "    + blastpIdentity          + " -j " + blastnIdentity                                  # blast identity parameters 
@@ -889,11 +894,12 @@ RUNLOG.write("%s%s\n" % ("Sequence annotation processing complete at ", datetime
 ##### Add tRNA predictions (if done and tRNAs found) to the annotation GFF output
 gffFile = SEQANNOTATION_CODE_BASE + ".gff"
 gffPathFile = os.path.join(outputDir,gffFile)
+"""
 if trnascan:
     if PHATE_PROGRESS:
         print("phate_runPipeline says, recording predicted tRNA genes to gff output file ",gffPathFile)
     trna.write2gffFile(gffPathFile) 
-
+"""
 ##### CLEAN UP
 
 if PHATE_PROGRESS:

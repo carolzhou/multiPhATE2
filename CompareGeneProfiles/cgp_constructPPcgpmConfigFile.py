@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 ################################################################
 #
@@ -58,7 +58,7 @@ p_config = re.compile('\.config')
 
 HELP_STRING = "This code constructs a config file comprising input to ppCGPMwrapper.py.\nRun this code in the directory where output files from CGPMwrapper.py have been written.\nThis is the directory where the current analysis is being done.\nInput to this program is the config file that was passed to CGPMwrapper.py \(should be called \"CGPMwrapper.config\"\)\nType: program.py usage|input for more information\n"
 
-USAGE_STRING = "Usage: python constructPPcgpmConfigFile.py <input_configFile>\nNote:  The input_configFile is optional. If not provided, \nthe default will be: \'./constructConfigFile.config\'"
+USAGE_STRING = "Usage: python3 constructPPcgpmConfigFile.py <input_configFile>\nNote:  The input_configFile is optional. If not provided, \nthe default will be: \'./constructConfigFile.config\'"
 
 INPUT_STRING = "Input:  None required, but you may provide a config filename if desired\n"
 

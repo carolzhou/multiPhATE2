@@ -1,11 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #######################################################
 #
 # Name: CGPMwrapper.py (/multiPhATE2/)
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Last Update: 17 December 2020
+# Last Update: 21 December 2020
 #
 # Description:
 # This script uses a config file to run compareGeneProfiles.py
@@ -233,8 +233,10 @@ if THREADING_ON:
         annot2    = fileSet["a2"]; annot2  = os.path.join(directory, annot2)
         # Construct commands ("-k" stands for "kludge", btw)
         #nextCommand = "python " + COMPARE_GENE_PROFILES_CODE + " -g1 " + genome1 + " -g2 " + genome2 + " -a1 " + annot1 + " -a2 " + annot2 + " -d " + projectDirectory
-        nextCommand_1 = "python " + COMPARE_GENE_PROFILES_CODE + " -g1 " + genome1 + " -g2 " + genome2 + " -a1 " + annot1 + " -a2 " + annot2 + " -d " + projectDirectory + " -k 1" + " -S " + subdir
-        nextCommand_2 = "python " + COMPARE_GENE_PROFILES_CODE + " -g1 " + genome1 + " -g2 " + genome2 + " -a1 " + annot1 + " -a2 " + annot2 + " -d " + projectDirectory + " -k 2" + " -S " + subdir
+        #nextCommand_1 = "python " + COMPARE_GENE_PROFILES_CODE + " -g1 " + genome1 + " -g2 " + genome2 + " -a1 " + annot1 + " -a2 " + annot2 + " -d " + projectDirectory + " -k 1" + " -S " + subdir
+        #nextCommand_2 = "python " + COMPARE_GENE_PROFILES_CODE + " -g1 " + genome1 + " -g2 " + genome2 + " -a1 " + annot1 + " -a2 " + annot2 + " -d " + projectDirectory + " -k 2" + " -S " + subdir
+        nextCommand_1 = os.environ["PHATE_PYTHON"] + ' ' + COMPARE_GENE_PROFILES_CODE + " -g1 " + genome1 + " -g2 " + genome2 + " -a1 " + annot1 + " -a2 " + annot2 + " -d " + projectDirectory + " -k 1" + " -S " + subdir
+        nextCommand_2 = os.environ["PHATE_PYTHON"] + ' ' + COMPARE_GENE_PROFILES_CODE + " -g1 " + genome1 + " -g2 " + genome2 + " -a1 " + annot1 + " -a2 " + annot2 + " -d " + projectDirectory + " -k 2" + " -S " + subdir
         commandList_1.append(nextCommand_1)
         commandList_2.append(nextCommand_2)
     for command in commandList_1:
@@ -268,7 +270,8 @@ else:
         LOGFILE.write("%s%s\n" % ("-a2 annot2:  ",annot2))
         LOGFILE.write("%s%s\n" % ("-d  userDir: ",projectDirectory))
         #call(["python",COMPARE_GENE_PROFILES_CODE,"-g1",genome1,"-g2",genome2,"-a1",annot1,"-a2",annot2,"-d",projectDirectory])
-        call(["python",COMPARE_GENE_PROFILES_CODE,"-g1",genome1,"-g2",genome2,"-a1",annot1,"-a2",annot2,"-d",projectDirectory,"-k","12","-S",subdir])
+        #call(["python",COMPARE_GENE_PROFILES_CODE,"-g1",genome1,"-g2",genome2,"-a1",annot1,"-a2",annot2,"-d",projectDirectory,"-k","12","-S",subdir])
+        call([os.environ["PHATE_PYTHON"],COMPARE_GENE_PROFILES_CODE,"-g1",genome1,"-g2",genome2,"-a1",annot1,"-a2",annot2,"-d",projectDirectory,"-k","12","-S",subdir])
 
 currentTime = int(time.time())
 LOGFILE.write("%s%s%s%s\n" % ("Execution complete. ",count," jobs completed at ",currentTime))

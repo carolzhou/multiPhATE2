@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 ################################################################
 #
@@ -6,7 +6,7 @@
 #
 # Programmer: Carol Zhou
 #
-# Date of most recent update:  16 October 2020
+# Date of most recent update:  21 December 2020
 #
 # Description:  Accepts a genbank protein fasta file and outputs a GFF3-formatted list of genes 
 #    Use this script when you need to input genbank's proteins into CGC to compare with PHANOTATE's (or other).
@@ -68,11 +68,11 @@ DEBUG = False
 
 ##### CONSTANTS
 
-HELP_STRING = "This code inputs a genbank protein fasta file and a contig name, and outputs a GFF3-formatted file for input to CGC.  Type: python " + CODE_FILE + " usage|input for more information\n"
+HELP_STRING = "This code inputs a genbank protein fasta file and a contig name, and outputs a GFF3-formatted file for input to CGC.  Type: python3 " + CODE_FILE + " usage|input for more information\n"
 
-USAGE_STRING = "Usage:  python " + CODE_FILE + " <genbankProteinFasta> <outfilename>n\n"
+USAGE_STRING = "Usage:  python3 " + CODE_FILE + " <genbankProteinFasta> <outfilename>n\n"
 
-INPUT_STRING = "Input for " + CODE_FILE + " comprises a genbank protein fasta path/filename followed by a contig name\nExample:  python " + CODE_FILE + " /mydir/NC_000001.faa myContig\n"
+INPUT_STRING = "Input for " + CODE_FILE + " comprises a genbank protein fasta path/filename followed by a contig name\nExample:  python3 " + CODE_FILE + " /mydir/NC_000001.faa myContig\n"
 
 ##### GET INPUT PARAMETERS
 

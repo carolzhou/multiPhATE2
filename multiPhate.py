@@ -6,7 +6,7 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Last Update:  17 December 2020
+# Last Update:  22 December 2020
 #
 # Description: Script multiPhate.py is a driver program that runs the multiPhATE2 bacteriophage annotation system,
 #    which comprises four modules:  Gene Calling, PhATE, Compare Gene Profiles, and Genomics. See the README file
@@ -64,8 +64,8 @@ import time
 
 CHECK_USER_DATABASES = True     # Verify that user's databases are in place and path/file is correct
 #CHECK_USER_DATABASES = False 
-#DO_DB_CHECK_ONLY = True         # Halt execution after checking user's databases
-DO_DB_CHECK_ONLY = False 
+DO_DB_CHECK_ONLY = True         # Halt execution after checking user's databases
+#DO_DB_CHECK_ONLY = False 
 
 TEST_NUMBER = '0'
 MESSAGE = ""
@@ -81,15 +81,17 @@ timeStart = time.time()
 import sys, os, re, string, copy, time, datetime
 import subprocess
 import json
+from multiprocessing import Pool
 import multiprocessing
 import platform
 
+# PYTHON
+os.environ["PHATE_PYTHON"] = "python3"
 # Because grep works differently in Python 3.x, and works differently on Mac OSX, need to set this environment
 # variable so that grep works correctly in SequenceAnnotation/phate_annotation.py:
 # Set MAC_OSX either to True or False by commenting in/out accordingly:
 #MAC_OSX = True
 MAC_OSX = False
-
 MAC_OSX_STRING = ""
 if MAC_OSX:
     MAC_OSX_STRING = 'True'
@@ -510,6 +512,7 @@ except:
 ##### PATTERNS #####
 
 # LOCATIONS
+p_checkUserDatabases          = re.compile("check_databases='(.*)'")
 p_phateDir                    = re.compile("phate_dir='(.*)'")
 p_databaseDir                 = re.compile("database_dir='(.*)'")
 p_softwareDir                 = re.compile("software_dir='(.*)'")
@@ -774,6 +777,9 @@ for cLine in cLines:
     match_comment                   = re.search(p_comment,cLine)
     match_blank                     = re.search(p_blank,cLine)
 
+    # configurations check
+    match_checkUserDatabases        = re.search(p_checkUserDatabases,cLine)
+
     # genome info
     match_genomeList                = re.search(p_genomeList,cLine)
     match_genomeNumber              = re.search(p_genomeNumber,cLine)
@@ -1030,6 +1036,20 @@ for cLine in cLines:
         if not HPC:
             LOG.write("%s%s\n" % ("genome name is ",genomeName))
         genomeDataItems += 1
+
+    elif match_checkUserDatabases: # Determine whether user is asking only for databases check
+        value = match_checkUserDatabases.group(1)
+        if value.lower() == 'yes' or value.lower() == 'true' or value.lower() == 'on':
+            CHECK_USER_DATABASES = True
+            DO_DB_CHECK_ONLY     = True
+        elif value.lower() == 'no' or value.lower() == 'false' or value.lower() == 'off':
+            CHECK_USER_DATABASES = False
+            DO_DB_CHECK_ONLY     = False 
+        else:
+            if PHATE_WARNINGS:
+                print("multiPhate says, WARNING: Invalid string following check_databases parameter in config file:", value)
+            if not HPC:
+                LOG.write("%s%s\n" % ("Invalid string following check_databases parameter in config file: ", value))
 
     elif match_phateDir:
         if match_phateDir.group(1) != '':
@@ -2039,7 +2059,10 @@ if CHECK_USER_DATABASES:
                 print("multiPhate says, VOGs HMM database found; we are good to go.")
 
 if DO_DB_CHECK_ONLY:
-    print("multiPhate says, DEBUG: User input has been checked. Exiting now.")
+    print("multiPhate says, User input has been checked.")
+    print("  If you are satisfied that your databases are correctly configured,")
+    print("  set check_databases to 'false' in your configuration file,")
+    print("  and proceed with multiPhATE processing. Exiting now.")
     exit(0)
 
 # Write to multiPhate's log, if not running in HPC mode
@@ -2327,7 +2350,8 @@ def phate_threaded(jsonFile):
     LOG.write("%s%s%s%s" % ("Running ",jsonFile," on PID ",nextPID))
     if not HPC:
         LOG.write("%s%s\n" % ("Running PhATE using genome json file ",jsonFile))
-    command = "python " + PHATE_BASE_DIR + PHATE_PIPELINE_CODE + " " + jsonFile
+    #command = "python " + PHATE_BASE_DIR + PHATE_PIPELINE_CODE + " " + jsonFile
+    command = os.environ["PHATE_PYTHON"] + ' '  + PHATE_BASE_DIR + PHATE_PIPELINE_CODE + " " + jsonFile
     if not HPC:
         LOG.write("%s%s\n" % ("Command is ",command))
         LOG.write("%s%s\n" % ("Begin PhATE processing at ",datetime.datetime.now()))
@@ -2373,7 +2397,8 @@ if not CHECKPOINT_CGP and not CHECKPOINT_GENOMICS:
         for jsonFile in jsonList:
             if not HPC:
                 LOG.write("%s%s\n" % ("Running PhATE using genome json file ",jsonFile))
-            command = "python " + PHATE_BASE_DIR + PHATE_PIPELINE_CODE + " " + jsonFile
+            #command = "python " + PHATE_BASE_DIR + PHATE_PIPELINE_CODE + " " + jsonFile
+            command = os.environ["PHATE_PYTHON"] + ' ' + PHATE_BASE_DIR + PHATE_PIPELINE_CODE + " " + jsonFile
             if not HPC:
                 LOG.write("%s%s\n" % ("Command is ",command))
                 LOG.write("%s%s\n" % ("Begin PhATE processing at ",datetime.datetime.now()))
@@ -2429,7 +2454,8 @@ if runCGP and not translateOnly and (len(genomeList) > 1):
         cgpThreads = maxCGPthreads
 
     try:
-        command = "python " + CGP_CODE + ' ' + CGP_CONFIG_FILE + ' ' + str(cgpThreads)
+        #command = "python " + CGP_CODE + ' ' + CGP_CONFIG_FILE + ' ' + str(cgpThreads)
+        command = os.environ["PHATE_PYTHON"] + ' ' + CGP_CODE + ' ' + CGP_CONFIG_FILE + ' ' + str(cgpThreads)
         if PHATE_MESSAGES:
             print("multiPhate says, command is:", command)
         if not CHECKPOINT_GENOMICS:
@@ -2508,7 +2534,8 @@ if runGenomics and (len(genomeList) > 1):
         print("multiPhate says, Performing gene-correspondence analysis.")
 
     # Invoke the genomics module
-    command = "python3 " + GENOMICS_CODE + ' ' + referenceGenome
+    #command = "python3 " + GENOMICS_CODE + ' ' + referenceGenome
+    command = os.environ["PHATE_PYTHON"] + ' ' + GENOMICS_CODE + ' ' + referenceGenome
     result = os.system(command)
     if PHATE_MESSAGES:
         print("multiPhate says, Result of genomics processing is:",result)

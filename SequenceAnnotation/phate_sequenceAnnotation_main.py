@@ -1,4 +1,4 @@
-#0!/usr/bin/env python
+#!/usr/bin/env python3
 
 ################################################################
 #
@@ -6,7 +6,7 @@
 #
 # Programmer: CEZhou
 #
-# Latest Update: 15 December 2020
+# Latest Update: 23 December 2020
 #
 # Description:  Performs blast and/or hmm searches on a given input gene or protein databases.
 #    Databases may be blast, sequence, or hmm profiles. Current search programs supported are:
@@ -21,8 +21,8 @@ import sys, os, re, string, copy
 import time, datetime
 from subprocess import call
 
-#DEBUG = False 
-DEBUG = True
+DEBUG = False 
+#DEBUG = True
 
 # Defaults/Parameters
 PRIMARY_CALLS          = 'phanotate'   # Default; can be configured by user
@@ -143,12 +143,18 @@ if PHATE_MESSAGES_STRING.lower() == 'true':
 if PHATE_PROGRESS_STRING.lower() == 'true':
     PHATE_PROGRESS = True
 
+# Override
+#PHATE_WARNINGS = True
+#PHATE_MESSAGES = True
+#PHATE_PROGRESS = True
+
 import phate_fastaSequence  # generic fasta sequence module
 import phate_genomeSequence # manages genomes to be annotated
 import phate_annotation     # records annotations, including gene-call info and secondary annotations
 import phate_blast          # runs blast search against blast database(s) 
 import phate_hmm            # runs hmm search against specified sequence database(s) 
 import phate_profile        # runs hmm search against specified hmm profile database(s)
+import phate_trna           # runs trnascan-se over genome
 
 ##### FILES
 
@@ -183,6 +189,7 @@ geneticCode     = GENETIC_CODE             # default, unless changed
 TRANSLATE_ONLY           = False
 
 # Annotation processes to perform
+RUN_TRNASCAN             = False         # run trnascan-se
 RUN_BLAST                = False         # any flavor of blast
 RUN_HMM_SEARCH           = False         # any flavor of hmm search
 RUN_PROFILE_SEARCH       = False         # any flavor of hmm profile search
@@ -244,6 +251,7 @@ p_outputDirParam             = re.compile('^-o')   # outout directory (e.g., 'LY
 p_genomeFileParam            = re.compile('^-G')   # Genome with a capital 'G'
 p_geneFileParam              = re.compile('^-g')   # gene with a lower-case 'g'
 p_proteinFileParam           = re.compile('^-p')   # protein or peptide
+p_trnascanParam              = re.compile('^-T')   # whether to run trnascan-se
 p_cgpGeneFileParam           = re.compile('^-v')   # gene with a lower-case 'v'
 p_cgpProteinFileParam        = re.compile('^-w')   # protein or peptide with a lower-case 'w'
 p_geneticCodeParam           = re.compile('^-e')   # genetic code
@@ -341,6 +349,7 @@ for i in range(0,argCount):
     match_genomeFileParam            = re.search(p_genomeFileParam,            argList[i])
     match_geneFileParam              = re.search(p_geneFileParam,              argList[i])
     match_proteinFileParam           = re.search(p_proteinFileParam,           argList[i])
+    match_trnascanParam              = re.search(p_trnascanParam,              argList[i])
     match_cgpGeneFileParam           = re.search(p_cgpGeneFileParam,           argList[i])
     match_cgpProteinFileParam        = re.search(p_cgpProteinFileParam,        argList[i])
     match_primaryCallsParam          = re.search(p_primaryCallsParam,          argList[i])
@@ -387,6 +396,12 @@ for i in range(0,argCount):
     if match_proteinFileParam:
         if i < argCount:
             infile_protein = argList[i+1] 
+
+    if match_trnascanParam:
+        if i < argCount:
+            trnascanValue = argList[i+1]
+            if trnascanValue.lower() == 'true' or trnascanValue.lower() == 'yes' or trnascanValue.lower() == 'on':
+                RUN_TRNASCAN = True
 
     if match_cgpGeneFileParam:
         if i < argCount:
@@ -799,6 +814,8 @@ if TRANSLATE_ONLY:
     LOGFILE_H.write("%s\n" % ("Translating only; no annotation."))
 else:
     LOGFILE_H.write("%s\n" % ("Annotating"))
+# trnascan
+LOGFILE_H.write("%s%s\n" % ("RUN_TRNASCAN is ",RUN_TRNASCAN))
 # Blast search against blast databases
 LOGFILE_H.write("%s%s\n" % ("RUN_BLAST is ",RUN_BLAST))
 LOGFILE_H.write("%s%s\n" % ("RUN_GENOME_BLAST is ",RUN_GENOME_BLAST))
@@ -875,6 +892,7 @@ if PHATE_MESSAGES:
         print("  Translating only; no annotation.")
     else:
         print("  Annotating")
+    print("  RUN_TRNASCAN is", RUN_TRNASCAN)
     print("  RUN_BLAST is", RUN_BLAST)
     print("  RUN_GENOME_BLAST is", RUN_GENOME_BLAST)
     print("  RUN_PROTEIN_BLAST is", RUN_PROTEIN_BLAST)
@@ -956,6 +974,59 @@ for i in range(0,len(myGenome.contigSet.fastaList)):
     seqLen     = len(myGenome.contigSet.fastaList[i].sequence)
     contigSeqLen_hash[contigName] = seqLen
 
+######################################################################################
+# tRNA GENE PREDICTION
+
+# Run trnascan
+if RUN_TRNASCAN:
+    if PHATE_PROGRESS:
+        print("phate_sequenceAnnotation_main says, Running trnascan.")
+
+    # Compute file names
+    trnaOutfile       = os.path.join(outputDir,"trnaGenes.out")
+    trnaStructureFile = os.path.join(outputDir,"trnaStructures.out")
+    statisticsFile    = os.path.join(outputDir,"trnaStatistics.out")
+
+    # Set up parameters
+    trnaParameters = {
+            "organismType"       : "bacteria",
+            "useInfernal"        : True,
+            "inputFile"          : infile_genome,
+            "outputFile"         : trnaOutfile,
+            "trnaStructureFile"  : trnaStructureFile,
+            "statisticsFile"     : statisticsFile,
+            "quietMode"          : True,
+            }
+    # Create trna object
+    trna = phate_trna.trna()
+
+    # Set parameters
+    if PHATE_MESSAGES:
+        print("phate_sequenceAnnotation_main says, Parameters going into trnascan are:")
+        trna.printParameters
+    trna.setParameters(trnaParameters)
+
+    # Predict trna genes
+    trna.runTrnaScan()
+    if PHATE_PROGRESS:
+        print("phate_sequenceAnnotation_main says, trnascan execution complete.")
+    if PHATE_MESSAGES:
+        print("phate_sequenceAnnotation_main says, results from trnascan execution:")
+        #TRNA_CALLS_FILE_H = trna.printResults() # method trna.printResults not yet in service
+
+    # Add trna gene calls into genome object
+    trnaCallInfo = {
+            "trnaGenesFile" : trnaOutfile,
+            }
+    if PHATE_PROGRESS:
+        print("phate_sequenceAnnotation_main says, Recording trna gene calls in genome object.")
+    myGenome.processTrnaGeneCalls(trnaCallInfo)
+    if PHATE_PROGRESS:
+        print("phate_sequenceAnnotation_main says, tRNA processing is complete.")
+
+#####################################################################################
+# GENE CALLING
+
 # Extract gene calls
 if PHATE_PROGRESS:
     print("phate_sequenceAnnotation_main says, Processing gene calls...")
@@ -1009,14 +1080,17 @@ myGenome.printFastas2file(fastaOut)
 if PHATE_PROGRESS:
     print("phate_sequenceAnnotation_main says, Gene and protein files created.")
 LOGFILE_H.write("%s%s\n" % ("Gene and protein files created at ",datetime.datetime.now()))
+if PHATE_MESSAGES:
+    print("phate_sequenceAnnotation_main says, Here is the current genome's data:")
+    #myGenome.printAll()
 
-# If user specified to translate only, then skip this segment of the pipeline.
+# If user specified to translate only, then skip the functional annotation segment of the pipeline.
 if TRANSLATE_ONLY:
     if PHATE_PROGRESS:
         print("phate_sequenceAnnotation_main says, Translate only: computations completed.")
     LOGFILE_H.write("%s%s\n" % ("Translating only: computations completed at ",datetime.datetime.now()))
 
-else:    ######################################################## ANNOTATE ####################################################
+else: ################## FUNCTIONAL ANNOTATION ####################################################
     # Create a blast object and set parameters
     if RUN_BLAST:
         if PHATE_PROGRESS:

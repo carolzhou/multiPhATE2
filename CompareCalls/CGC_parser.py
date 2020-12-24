@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 ################################################################
 #
@@ -6,7 +6,7 @@
 #
 # Programmer:  Carol Zhou
 #
-# Last update:  16 October 2020
+# Last update:  21 December 2020
 #
 # Description:  This code inputs the name of a gene caller plus
 #    the gene-caller's output file, and outputs a properly formatted
@@ -122,9 +122,9 @@ DEBUG = False
 
 ##### CONSTANTS
 
-HELP_STRING = "Script " + CODE + " inputs the name of a gene caller plus the output file arising \nfrom that gene caller. Then, the script converts the data to a format that is acceptable as input to \nscript CGC_main.py, which compares gene calls among a set of gene caller outputs.\nType: python" + CODE + " usage|input for more information\n"
+HELP_STRING = "Script " + CODE + " inputs the name of a gene caller plus the output file arising \nfrom that gene caller. Then, the script converts the data to a format that is acceptable as input to \nscript CGC_main.py, which compares gene calls among a set of gene caller outputs.\nType: python3 " + CODE + " usage|input for more information\n"
 
-USAGE_STRING = "Usage:  python " + CODE + " <geneCaller_name> <geneCall_filename> (optional)<output_filename>\n"
+USAGE_STRING = "Usage:  python3 " + CODE + " <geneCaller_name> <geneCall_filename> (optional)<output_filename>\n"
 
 INPUT_STRING = "You may enter the name of a gene caller (e.g., Prodigal, GeneMark, Glimmer, RAST, PHANOTATE), followed by the gene-call file that the program produced. For Prodigal, use the Name.genes.sco file. For GeneMarkS, use the Name.fasta.lst file. For Glimmer2, use the Name.g2.coord file, but for Glimmer3 use the run3.coords file. For RAST, use gff3 output. For PHANOTATE... TBD.\n"
 
