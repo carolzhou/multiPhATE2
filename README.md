@@ -464,6 +464,8 @@ Feel free to report bugs or problems, or to suggest future improvements, by post
 12) multiPhATE now supports multiprocessing to speed computation of the PhATE annotation pipeline and the CompareGeneProfiles module, and by distributing blast+.
 13) multiPhATE uses checkpoints to re-start processing at intermediate stages of the computation (ie, after gene calling, PhATE, CGP).
 14) HMM profiles are now automatically generated for homology groups.
+15) PhATE now runs trnascan-se and reports predicted trna genes to the output gff file.
+16) MultiPhATE runs a database checker to verify user's database locations, for ease of installation.
 
 multiPhATE2 v.2.0
 
