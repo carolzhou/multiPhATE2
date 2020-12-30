@@ -4,7 +4,7 @@
 #
 # Programmer: Carol L. Ecale Zhou
 #
-# Latest update: 20 October 2020
+# Latest update: 28 December 2020
 #
 # Description: Module containing classes and methods for representing annotation results from various sources 
 #
@@ -106,6 +106,7 @@ class annotationRecord(object):
         self.VOGlist           = []        # list of pVOG or VOG identifiers (identified via blast hit)
         self.contig            = "unknown"
         self.start             = 0
+        self.end               = 0
         self.strand            = 'x' 
         self.readingFrame      = 'x'
         self.identifier        = "none"
@@ -583,8 +584,8 @@ class annotationRecord(object):
             annot = '(mrna - ' + self.method + ') ' + self.description
             annotationList.append(annot)
         elif self.annotationType.lower() == 'trna':
-            annot = '(trna - ' + self.method + ') ' + self.description
-            annotationList.append(annot)
+            if self.description:
+                annotationList.append(self.description)
         elif self.annotationType.lower() == 'polypeptide':
             annot = '(polypeptide - ' + self.method + ') ' + self.description
             annotationList.append(annot)

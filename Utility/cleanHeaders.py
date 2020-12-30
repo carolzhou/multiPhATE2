@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #######################################################################################
 #
@@ -7,7 +7,7 @@
 #
 # Programmer:  Carol Zhou
 #
-# Last Update: 19 October 2020
+# Last Update: 21 December 2020
 #
 #######################################################################################
 
@@ -17,7 +17,7 @@
 import re, sys, os
 
 if len(sys.argv) != 2:
-    print("usage: python cleanHeader.py <fastaFile>")
+    print("usage: python3 cleanHeader.py <fastaFile>")
     exit(0)
 else:
     INFILE_H = open(sys.argv[1],'r')

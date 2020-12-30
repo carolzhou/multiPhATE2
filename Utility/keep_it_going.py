@@ -1,4 +1,4 @@
-#!/user/bin/env python
+#!/user/bin/env python3
 
 #######################################################################
 #
@@ -6,7 +6,7 @@
 #
 # Programmer:  Carol Zhou
 #
-# Last Update:  19 October 2020
+# Last Update:  21 December 2020
 #
 # Description:  Run this script in the background to keep you ssh window
 #  active, for example when downloading databases onto a remote server.

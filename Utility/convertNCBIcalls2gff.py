@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #############################################################################
 #
@@ -6,7 +6,7 @@
 #
 # Programmer:  C. E. Zhou
 #
-# Most recent update:  13 Jan 2020 
+# Most recent update:  21 December 2020 
 #
 # Summary:  This script inputs an NCBI gene fasta file and writes a 
 #    CGC-formatted file (single-line tabbed).

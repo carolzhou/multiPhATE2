@@ -6,7 +6,7 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Last Update:  22 December 2020
+# Last Update:  29 December 2020
 #
 # Description: Script multiPhate.py is a driver program that runs the multiPhATE2 bacteriophage annotation system,
 #    which comprises four modules:  Gene Calling, PhATE, Compare Gene Profiles, and Genomics. See the README file
@@ -450,7 +450,8 @@ os.environ["PHATE_HIT_COUNT_MAX"]                   = str(HIT_COUNT_MAX)  #*** T
 # CGP
 os.environ["CGP_BLASTN"]                            = str(CGP_BLASTN_IDENTITY_DEFAULT)
 os.environ["CGP_BLASTP"]                            = str(CGP_BLASTP_IDENTITY_DEFAULT)
-os.environ["CGP_IDENTITY_CUTOFF"]                   = str(CGP_IDENTITY_CUTOFF)  # Instructs cgp_blastAnalysis.py, unless user config changes it.
+os.environ["CGP_IDENTITY_CUTOFF_GENE"]              = str(CGP_IDENTITY_CUTOFF)  # Instructs cgp_blastAnalysis.py, unless user config changes it.
+os.environ["CGP_IDENTITY_CUTOFF_PROTEIN"]           = str(CGP_IDENTITY_CUTOFF)  # Instructs cgp_blastAnalysis.py, unless user config changes it.
 
 # CODES - These should be installed globally (via Conda), but if not, locations go here
 os.environ["PHATE_BLAST_HOME"]                      = ""
@@ -561,7 +562,6 @@ p_blastpSearch                = re.compile("blastp='(.*)'")
 # Blast Parameters (value)
 p_blastpIdentity              = re.compile("blastp_identity='(\d+)'")  
 p_blastnIdentity              = re.compile("blastn_identity='(\d+)'")   
-p_cgpIdentityCutoff           = re.compile("cgp_identity_cutoff='(\d+)'")
 p_blastpHitCount              = re.compile("blastp_hit_count='(\d+)'")
 p_blastnHitCount              = re.compile("blastn_hit_count='(\d+)'")
 # Blast Processes to run (true/false)
@@ -659,8 +659,10 @@ p_customHmmDBpath             = re.compile("custom_hmm_profiles_database_path='(
 
 # COMPARATIVE GENOMICS
 # CGP blast-match parameters
-p_cgpBlastn                   = re.compile("cgp_blastn='(.*)'")
-p_cgpBlastp                   = re.compile("cgp_blastp='(.*)'")
+#p_cgpBlastn                   = re.compile("cgp_blastn='(.*)'")
+#p_cgpBlastp                   = re.compile("cgp_blastp='(.*)'")
+p_cgpIdentityCutoff_gene      = re.compile("cgp_identity_cutoff_gene='(\d+)'")
+p_cgpIdentityCutoff_protein   = re.compile("cgp_identity_cutoff_protein='(\d+)'")
 # Process control
 p_runCGP                      = re.compile("CGP='(.*)'")        # run CGP followed by Genomics module
 p_hmmbuild                    = re.compile("hmmbuild='(.*)'")   # hmmbuild creates profiles from homology groups
@@ -937,7 +939,8 @@ for cLine in cLines:
     match_hmmsearch                 = re.search(p_hmmsearch,cLine)
     #match_cgpBlastn                 = re.search(p_cgpBlastn,cLine)
     #match_cgpBlastp                 = re.search(p_cgpBlastp,cLine)
-    match_cgpIdentityCutoff         = re.search(p_cgpIdentityCutoff,cLine)
+    match_cgpIdentityCutoff_gene    = re.search(p_cgpIdentityCutoff_gene,cLine)
+    match_cgpIdentityCutoff_protein = re.search(p_cgpIdentityCutoff_protein,cLine)
 
     # parallelism
     match_phateThreads              = re.search(p_phateThreads,cLine)
@@ -1445,13 +1448,21 @@ for cLine in cLines:
         if value.lower() == 'true' or value.lower() == 'yes' or value.lower() == 'on':
             hmmsearch = True
 
-    elif match_cgpIdentityCutoff: # modify default CGP blast cutoff; same for gene/protein, but should improve this
-        value = match_cgpIdentityCutoff.group(1)
+    elif match_cgpIdentityCutoff_gene: # modify default CGP blast cutoff for genes
+        value = match_cgpIdentityCutoff_gene.group(1)
         if int(value) > 0 and int(value) < 101:
-            cgpIdentityCutoff = int(value) 
+            cgpIdentityCutoff_gene = int(value) 
         else:
-            cgpIdentityCutoff = CGP_IDENTITY_CUTOFF
-        os.environ["CGP_IDENTITY_CUTOFF"] = str(cgpIdentityCutoff)
+            cgpIdentityCutoff_gene = CGP_IDENTITY_CUTOFF
+        os.environ["CGP_IDENTITY_CUTOFF_GENE"] = str(cgpIdentityCutoff_gene)
+
+    elif match_cgpIdentityCutoff_protein: # modify default CGP blast cutoff for proteins
+        value = match_cgpIdentityCutoff_protein.group(1)
+        if int(value) > 0 and int(value) < 101:
+            cgpIdentityCutoff_protein = int(value) 
+        else:
+            cgpIdentityCutoff_protein = CGP_IDENTITY_CUTOFF
+        os.environ["CGP_IDENTITY_CUTOFF_PROTEIN"] = str(cgpIdentityCutoff_protein)
 
     ##### DEPENDENT CODE LOCATIONS #####
     # This section is used only if the user specifies different version of a code

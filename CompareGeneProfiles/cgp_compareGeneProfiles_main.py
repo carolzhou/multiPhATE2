@@ -5,7 +5,7 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Last update: 17 December 2020
+# Last update: 29 December 2020
 #
 # Description:
 # This program compares the gene calls from 2 genomes and identifies genes that 
@@ -32,14 +32,12 @@
 # This code was developed by Carol L. Ecale Zhou at Lawrence Livermore National Laboratory.
 # THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
 
-#SERVER = False  # True if this version of the code is running on the Django server
-SERVER = True
+SERVER = True  # Always True; this is a remnant from previous instantiation.
 
 BACTERIAL_CODE = 11
 
 import sys, os, re, string, copy
 from Bio.Seq import Seq
-#from Bio.Alphabet import generic_dna, generic_protein
 from time import strftime
 from time import gmtime
 import datetime
@@ -83,13 +81,12 @@ DEBUG = False
 BLAST_ON = True    # controls whether blast is performed (used during development to skip lengthy blast for testing)
 #BLAST_ON = False
 
-PROTEIN = True     # controls whether protein sequences are blasted 
-#PROTEIN = False
+PROTEIN = True     # controls whether protein sequences are blasted; always true in current instantiation (ie, multiPhATE)
 
-REPORT_STATS = True  # controls whether reports are written
+REPORT_STATS = True  # controls whether reports are written; turn off only during development
 #REPORT_STATS = False
 
-REPORT_ON = True  # controls whether reports are written
+REPORT_ON = True  # controls whether reports are written; turn off only during development
 #REPORT_ON = False
 
 #Constants
@@ -148,7 +145,7 @@ ACCEPTABLE_ARG_COUNT = (2,3,9,11,13,14,15) # 2 if "help", "input", or "interacti
 ##### BLAST default parameters
 
 GENETIC_CODE    = 11 # bacterial, by default
-BLAST_IDENTITY  = 60 
+BLAST_IDENTITY  = 30 # Blast should be done at the lowest meaningful value; then select hits with greater stringency
 BLASTN_IDENTITY = os.environ["CGP_BLASTN"] 
 BLASTP_IDENTITY = os.environ["CGP_BLASTP"] 
 SCORE_EDGE      = 0.05
@@ -167,7 +164,8 @@ rootFilename     = ""
 annotationFile1  = "" # a1
 annotationFile2  = "" # a2
 projectDirectory = "" # d
-kludge           = '0'
+# execution control:
+kludge           = '0' # 1 -> makeblastdb; 2 -> blast; 12 -> makeblastdb and blast
 
 #### VARIABLES: files
 
@@ -475,6 +473,7 @@ if argCount in ACCEPTABLE_ARG_COUNT:
                 files["projectDirectory"] = sys.argv[i+1]
                 BASE_DIR = files["projectDirectory"]
             if sys.argv[i] == "-k":
+                # set kludge: 1 -> makeblastdb; 2 -> blast; 12 -> makeblastdb and blast
                 kludge = sys.argv[i+1]
                 print("TESTING: cgp_compareGeneProfiles_main says, Just read kludge, which is ",kludge)
             if sys.argv[i] == "-S":
@@ -591,10 +590,10 @@ if fileError:
 dateTime = str(datetime.datetime.now().time()) # need time down to sub-seconds 
 today    = os.popen('date')
 if SERVER:
-    fixTime = re.sub(':','',dateTime) # Remove ':' from dir name (else EMBOSS has trouble)
-    newTime = re.sub('\.','_',fixTime) # Remove '.' from dir name
+    #fixTime = re.sub(':','',dateTime) # Remove ':' from dir name (else EMBOSS has trouble)
+    #newTime = re.sub('\.','_',fixTime) # Remove '.' from dir name
     #OUT_DIR = os.path.join(files["projectDirectory"], "Results_" + newTime + "/")  #*** previously dir names were Results + random numbers
-    OUT_DIR = os.path.join(files["projectDirectory"], "Results_" + subdir + "/")  # kludge: now we tell subordinate code how to name Results dirs
+    OUT_DIR = os.path.join(files["projectDirectory"], "Results_" + subdir + "/")    # Now we tell subordinate code how to name Results dirs
 else:
     OUT_DIR = "./"
 
@@ -602,7 +601,7 @@ if PHATE_MESSAGES:
     print ("cgp_compareGeneProfiles_main says, Making directory", OUT_DIR)
 
 command = "mkdir " + OUT_DIR
-if kludge == '1' or kludge == '12':
+if kludge == '1' or kludge == '12':  # instruction is to perform makeblastdb
     os.system(command)
 outFile             = os.path.join(OUT_DIR, OUT_FILE)     # Contains misc output
 reportFile          = os.path.join(OUT_DIR, REPORT_FILE)  # Contains binary genome comparison data
@@ -804,12 +803,14 @@ def ExtractGeneCalls(genomeX,lines):
 # ...translate gene sequences to protein, then create and insert protein multiFasta objects.
 # Write gene and protein fastas to files.
 #########################################################################################
+#*** Note:  Because this code was adapted from previous applications to run with multiPhATE,
 #*** kludge is needed so that this code can be run twice: first to create the blast
 #*** databses in serial, and second, to run CGP in parallel. This was necessary due 
 #*** to the structure of this CGP code, which was is legacy code that was not intended
 #*** to be run in parallel, and was not perfectly efficient wrt creating the blast
-#*** databases for pairwise genome comparisons. Therefore, CGP should be re-written
+#*** databases for pairwise genome comparisons. Ideally, CGP should be re-written
 #*** as fully object-oriented, and makeblastdb and parallelism handled more elegantly.
+#*** But for now, this solution works.
 
 ##### Genome #1 genes and proteins
 ##### Extract genes and proteins from files provided by PhATE
@@ -927,9 +928,9 @@ blastArgs = {
     "subject"        : "",
     "mtype"          : "nucl",
     "evalue"         : EVALUE, 
-    "identity"       : BLAST_IDENTITY,
-    "blastnIdentity" : BLASTN_IDENTITY,
-    "blastpIdentity" : BLASTP_IDENTITY,
+    "identity"       : BLAST_IDENTITY,  # Perform blast at the low-ball value of 30%
+    "blastnIdentity" : BLASTN_IDENTITY, # Cutoff for recording hits
+    "blastpIdentity" : BLASTP_IDENTITY, # Cutoff for recording hits
     "scoreEdge"      : SCORE_EDGE,
     "maxTargetSeqs"  : MAX_TARGET_SEQS,
     "overhang"       : OVERHANG,
@@ -954,8 +955,10 @@ if PHATE_PROGRESS:
 blastArgs["query"]   = files["geneFile1"]
 blastArgs["subject"] = files["geneFile2"]
 blastArgs["maxTargetSeqs"] = 1 
+#outfile = OUT_DIR + files["geneFile1_root"] + "_" + files["geneFile2_root"] + "_" + "blastn_" +\
+#    str(blastArgs["evalue"]) + "_" + str(blastArgs["blastnIdentity"]) + ".out"
 outfile = OUT_DIR + files["geneFile1_root"] + "_" + files["geneFile2_root"] + "_" + "blastn_" +\
-    str(blastArgs["evalue"]) + "_" + str(blastArgs["blastnIdentity"]) + ".out"
+    str(blastArgs["evalue"]) + "_" + str(blastArgs["identity"]) + ".out"
 if PHATE_PROGRESS:
     print("cpg_compareGeneProfiles_main says, genome1-genome2 outfile is",outfile)
 blastArgs["outfile"] = outfile
@@ -973,8 +976,10 @@ if PHATE_PROGRESS:
 blastArgs["query"]   = files["geneFile2"]
 blastArgs["subject"] = files["geneFile1"]
 blastArgs["maxTargetSeqs"] = MAX_TARGET_SEQS 
+#outfile = OUT_DIR + files["geneFile2_root"] + "_" + files["geneFile1_root"] + "_" + "blastn_" +\
+#    str(blastArgs["evalue"]) + "_" + str(blastArgs["blastnIdentity"]) + ".out"
 outfile = OUT_DIR + files["geneFile2_root"] + "_" + files["geneFile1_root"] + "_" + "blastn_" +\
-    str(blastArgs["evalue"]) + "_" + str(blastArgs["blastnIdentity"]) + ".out"
+    str(blastArgs["evalue"]) + "_" + str(blastArgs["identity"]) + ".out"
 if PHATE_MESSAGES:
     print("cpg_compareGeneProfiles_main says, genome2-genome1 outfile is",outfile)
 blastArgs["outfile"] = outfile
@@ -992,8 +997,10 @@ if PHATE_PROGRESS:
 blastArgs["query"]   = files["geneFile1"]
 blastArgs["subject"] = files["geneFile1"]
 blastArgs["maxTargetSeqs"] = PARALOG_MAX 
+#outfile = OUT_DIR + files["geneFile1_root"] + "_" + files["geneFile1_root"] + "_" + "blastn_" +\
+#    str(blastArgs["evalue"]) + "_" + str(blastArgs["blastnIdentity"]) + ".out"
 outfile = OUT_DIR + files["geneFile1_root"] + "_" + files["geneFile1_root"] + "_" + "blastn_" +\
-    str(blastArgs["evalue"]) + "_" + str(blastArgs["blastnIdentity"]) + ".out"
+    str(blastArgs["evalue"]) + "_" + str(blastArgs["identity"]) + ".out"
 blastArgs["outfile"] = outfile
 files["g1_g1_blastn"] = outfile
 if BLAST_ON:
@@ -1009,8 +1016,10 @@ if PHATE_PROGRESS:
 blastArgs["query"]   = files["geneFile2"]
 blastArgs["subject"] = files["geneFile2"]
 blastArgs["maxTargetSeqs"] = PARALOG_MAX 
+#outfile = OUT_DIR + files["geneFile2_root"] + "_" + files["geneFile2_root"] + "_" + "blastn_" +\
+#    str(blastArgs["evalue"]) + "_" + str(blastArgs["blastnIdentity"]) + ".out"
 outfile = OUT_DIR + files["geneFile2_root"] + "_" + files["geneFile2_root"] + "_" + "blastn_" +\
-    str(blastArgs["evalue"]) + "_" + str(blastArgs["blastnIdentity"]) + ".out"
+    str(blastArgs["evalue"]) + "_" + str(blastArgs["identity"]) + ".out"
 blastArgs["outfile"] = outfile
 files["g2_g2_blastn"] = outfile
 if BLAST_ON:
@@ -1034,7 +1043,7 @@ if PROTEIN:
     blastArgs["subject"] = files["proteinFile2"]
     blastArgs["maxTargetSeqs"] = MAX_TARGET_SEQS 
     outfile = OUT_DIR + files["protFile1_root"] + "_" + files["protFile2_root"] + "_" + "blastp_" +\
-        str(blastArgs["evalue"]) + "_" + str(blastArgs["blastpIdentity"]) + ".out"
+        str(blastArgs["evalue"]) + "_" + str(blastArgs["identity"]) + ".out"
     blastArgs["outfile"] = outfile
     files["g1_g2_blastp"] = outfile
     if BLAST_ON:
@@ -1051,7 +1060,7 @@ if PROTEIN:
     blastArgs["subject"] = files["proteinFile1"]
     blastArgs["maxTargetSeqs"] = MAX_TARGET_SEQS 
     outfile = OUT_DIR + files["protFile2_root"] + "_" + files["protFile1_root"] + "_" + "blastp_" +\
-        str(blastArgs["evalue"]) + "_" + str(blastArgs["blastpIdentity"]) + ".out"
+        str(blastArgs["evalue"]) + "_" + str(blastArgs["identity"]) + ".out"
     blastArgs["outfile"] = outfile
     files["g2_g1_blastp"] = outfile
     if BLAST_ON:
@@ -1068,7 +1077,7 @@ if PROTEIN:
     blastArgs["subject"] = files["proteinFile1"]
     blastArgs["maxTargetSeqs"] = PARALOG_MAX 
     outfile = OUT_DIR + files["protFile1_root"] + "_" + files["protFile1_root"] + "_" + "blastp_" +\
-        str(blastArgs["evalue"]) + "_" + str(blastArgs["blastpIdentity"]) + ".out"
+        str(blastArgs["evalue"]) + "_" + str(blastArgs["identity"]) + ".out"
     blastArgs["outfile"] = outfile
     files["g1_g1_blastp"] = outfile
     if BLAST_ON:
@@ -1085,7 +1094,7 @@ if PROTEIN:
     blastArgs["subject"] = files["proteinFile2"]
     blastArgs["maxTargetSeqs"] = PARALOG_MAX 
     outfile = OUT_DIR + files["protFile2_root"] + "_" + files["protFile2_root"] + "_" + "blastp_" +\
-        str(blastArgs["evalue"]) + "_" + str(blastArgs["blastpIdentity"]) + ".out"     #*** But blastp does not accept identity parameter !!!
+        str(blastArgs["evalue"]) + "_" + str(blastArgs["identity"]) + ".out"     #*** But blastp does not accept identity parameter !!!
     blastArgs["outfile"] = outfile
     files["g2_g2_blastp"] = outfile
     if BLAST_ON:
@@ -1104,10 +1113,10 @@ if PROTEIN:
 if PHATE_PROGRESS:
     print ("cgp_compareGeneProfiles_main says, Recording gene hits...",)
 
-gene12hitList = myBlast.recordHits(files["g1_g2_blastn"])
-gene21hitList = myBlast.recordHits(files["g2_g1_blastn"])
-gene11hitList = myBlast.recordHits(files["g1_g1_blastn"])
-gene22hitList = myBlast.recordHits(files["g2_g2_blastn"])
+gene12hitList = myBlast.recordHits(files["g1_g2_blastn"],'gene')
+gene21hitList = myBlast.recordHits(files["g2_g1_blastn"],'gene')
+gene11hitList = myBlast.recordHits(files["g1_g1_blastn"],'gene')
+gene22hitList = myBlast.recordHits(files["g2_g2_blastn"],'gene')
 
 if PHATE_PROGRESS:
     print ("cgp_compareGeneProfiles_main says, Recording of gene hits complete.")
@@ -1117,10 +1126,10 @@ if PROTEIN:
     if PHATE_PROGRESS:
         print ("cgp_compareGeneProfiles_main says, Recording protein hits...",)
 
-    prot12hitList = myBlast.recordHits(files["g1_g2_blastp"])
-    prot21hitList = myBlast.recordHits(files["g2_g1_blastp"])
-    prot11hitList = myBlast.recordHits(files["g1_g1_blastp"])
-    prot22hitList = myBlast.recordHits(files["g2_g2_blastp"])
+    prot12hitList = myBlast.recordHits(files["g1_g2_blastp"],'protein')
+    prot21hitList = myBlast.recordHits(files["g2_g1_blastp"],'protein')
+    prot11hitList = myBlast.recordHits(files["g1_g1_blastp"],'protein')
+    prot22hitList = myBlast.recordHits(files["g2_g2_blastp"],'protein')
 
     if PHATE_PROGRESS:
         print ("cgp_compareGeneProfiles_main says, Recording of protein hits complete.")

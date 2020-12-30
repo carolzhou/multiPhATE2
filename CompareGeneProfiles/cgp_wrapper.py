@@ -5,7 +5,7 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Last Update: 21 December 2020
+# Last Update: 29 December 2020
 #
 # Description:
 # This script uses a config file to run compareGeneProfiles.py
@@ -207,10 +207,11 @@ if THREADING_ON:
     for fileSet in inFileList:
         count += 1
         directory = fileSet["dir"]
-        # kludge
-        print("TESTING: cgp_wrapper says, g1 and g2 are: ",fileSet["g1"], fileSet["g2"])
         g1 = ""; g2 = ""
 
+        # Formulate g1 and g2 tags for creating directory and blast output filenames
+        # Get root: assume that user's genome filename ends in 'fasta' or 'fa'; otherwise just
+        # take the whole string
         if re.search('\.fasta$',fileSet["g1"]):
             g1 = os.path.basename(fileSet["g1"]).rstrip('.fasta')
         elif re.search('\.fa$',fileSet["g1"]):
@@ -225,16 +226,15 @@ if THREADING_ON:
         else:
             g2 = os.path.basename(fileSet["g2"])
 
+        # Need to tell subordinate code what the directory/file names are
         subdir = g1 + '_x_' + g2  # kludge
-        print("TESTING: cgp_wrapper says, subdir is ",subdir)
         genome1   = fileSet["g1"]; genome1 = os.path.join(directory, genome1)  # Need to prepend project dir to get full path
         genome2   = fileSet["g2"]; genome2 = os.path.join(directory, genome2)
         annot1    = fileSet["a1"]; annot1  = os.path.join(directory, annot1)
         annot2    = fileSet["a2"]; annot2  = os.path.join(directory, annot2)
+
+        # CompareGeneProfiles code will be called twice: first to do the makeblastdb (in serial), then the blast (in parallel)
         # Construct commands ("-k" stands for "kludge", btw)
-        #nextCommand = "python " + COMPARE_GENE_PROFILES_CODE + " -g1 " + genome1 + " -g2 " + genome2 + " -a1 " + annot1 + " -a2 " + annot2 + " -d " + projectDirectory
-        #nextCommand_1 = "python " + COMPARE_GENE_PROFILES_CODE + " -g1 " + genome1 + " -g2 " + genome2 + " -a1 " + annot1 + " -a2 " + annot2 + " -d " + projectDirectory + " -k 1" + " -S " + subdir
-        #nextCommand_2 = "python " + COMPARE_GENE_PROFILES_CODE + " -g1 " + genome1 + " -g2 " + genome2 + " -a1 " + annot1 + " -a2 " + annot2 + " -d " + projectDirectory + " -k 2" + " -S " + subdir
         nextCommand_1 = os.environ["PHATE_PYTHON"] + ' ' + COMPARE_GENE_PROFILES_CODE + " -g1 " + genome1 + " -g2 " + genome2 + " -a1 " + annot1 + " -a2 " + annot2 + " -d " + projectDirectory + " -k 1" + " -S " + subdir
         nextCommand_2 = os.environ["PHATE_PYTHON"] + ' ' + COMPARE_GENE_PROFILES_CODE + " -g1 " + genome1 + " -g2 " + genome2 + " -a1 " + annot1 + " -a2 " + annot2 + " -d " + projectDirectory + " -k 2" + " -S " + subdir
         commandList_1.append(nextCommand_1)
@@ -244,7 +244,6 @@ if THREADING_ON:
     if __name__ == '__main__':
         LOGFILE.write("%s%s" % ("cgp_wrapper / __main__: List of commands: ",commandList))
         cgp_pool = Pool(int(float(cgpThreads)))
-        #cgp_pool.map(cgp_threaded, commandList) 
         cgp_pool.map(cgp_threaded, commandList_2) # Perform all blast operations in parallel
         cgp_pool.close() 
 else:

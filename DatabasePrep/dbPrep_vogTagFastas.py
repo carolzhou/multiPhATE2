@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 ###########################################################################
 #
@@ -6,7 +6,7 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Most recent update: 23 July 2020 
+# Most recent update: 21 December 2020 
 #
 # Description: Processes VOG data files. Inserts VOG identifiers in header
 #    string of each fasta file.  
@@ -29,7 +29,7 @@ VERSION       = "vog99"
 ##### MAIN ################################################################
 
 if len(sys.argv) != 2:
-    print ("Usage: python dbPrep_vogTagFastas.py VOGsDir")
+    print ("Usage: python3 dbPrep_vogTagFastas.py VOGsDir")
     exit(0)
 VOG_DIR = sys.argv[1]
 

@@ -3,15 +3,14 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Most recent update: 22 December 2020
+# Most recent update: 28 December 2020
 #
-# Module comprising classes and data structures for comparing genomes
+# Module comprising classes and data structures for predicting tRNA genes. 
 #
 # Classes and Methods:
 #    class trna
 #       setParameters
 #       runTrnaScan
-#       write2gffFile
 #       printAll2file
 #       printParameters
 #       printResults
@@ -24,9 +23,10 @@
 
 import re, os, copy
 import subprocess
+import phate_annotation as annotation
 
-CODE_BASE_DIR    = ""
-OUTPUT_DIR       = ""
+CODE_BASE_DIR  = ""
+OUTPUT_DIR     = ""
 
 # Verbosity
 
@@ -62,7 +62,7 @@ SUCCESS = 0
 # Locations and files
 PHATE_PIPELINE_OUTPUT_DIR = os.environ["PHATE_PIPELINE_OUTPUT_DIR"] 
 
-# Acceptable arguments
+# Acceptable arguments for trnascan 
 USE_INFERNAL    = "-I"
 BOTH_COMPONENTS = "-H"
 QUIET_MODE      = "-q"
@@ -160,65 +160,6 @@ class trna(object):
             print ("phate_trna says, ERROR: trnascan-se execution failed.")
             return ERROR_CODE_1
         return SUCCESS
-
-    # This method is to be deprecated, now that tRNA genes are incorporated into the genome object
-    def x_write2gffFile(self,infile):   # FILE_H should be abs_path/phate_sequenceAnnotation_main.gff
-        if PHATE_MESSAGES:
-            print("phate_trna says, Running write2gffFile.")
-        # INFILE contains sequence annotations and exists populated or was created anew by phate_runPipeline.py
-        contig = ""; previousContig = ""; header = ""
-        if os.path.exists(self.outputFile):
-            fileSize = os.path.getsize(self.outputFile)
-            if fileSize == 0:
-                if PHATE_PROGRESS:
-                    print("phate_trna says, trnaOutFile is empty: no tRNA genes to add to GFF output")
-            else:
-                # Open Files; capture data
-                TRNA_OUTFILE_H = open(self.outputFile,'r')
-                tLines = TRNA_OUTFILE_H.read().splitlines()
-                TRNA_OUTFILE_H.close()
-                INFILE_H = open(infile,'a') # File might already hold annotations; append to existing data
-                # If starting with an empty gff file, then write header
-                fileSize = os.path.getsize(infile)
-                if fileSize == 0:
-                    header = "##gff-version 3"
-                    INFILE_H.write("%s\n" % (header))
-                # Parse data in trnascan results file
-                START_DATA = False
-                for tLine in tLines:
-                    if START_DATA:
-                        # Parse data
-                        fields = tLine.split('\t')
-                        sequenceName = fields[0]
-                        tRNAnumber   = fields[1]
-                        start        = fields[2]
-                        end          = fields[3]
-                        tRNAtype     = fields[4]
-                        antiCodon    = fields[5]
-                        intronStart  = fields[6]
-                        intronEnd    = fields[7]
-                        infScore     = fields[8]
-                        note         = fields[9]
-                        # Reformulate data and load into gff file
-                        sequenceName = sequenceName.rstrip()
-                        contig = sequenceName
-                        tRNAname = 'ID=' + sequenceName + '_' + tRNAnumber + ';'
-                        if intronStart == 0:
-                            intronStart = '.'
-                        if intronEnd == 0:
-                            intronEnd = '.'
-                        gffLine = sequenceName + '\t' + self.codeName + '\ttRNA\t' + start + '\t' + end + '\t' + infScore + '\t' + intronStart + '\t' + intronEnd + '\t' + tRNAname + note
-                        # Print header, if required
-                        if contig != previousContig:
-                            header = "##sequence-region;contig " + contig + " 0 0"
-                            INFILE_H.write("%s\n" % (header))
-                        INFILE_H.write("%s\n" % (gffLine))
-                        previousContig = contig
-                    else:
-                        if re.search('^-',tLine):
-                            START_DATA = True
-                INFILE_H.close()
-        return
 
     def printAll2file(self,FILE_H):
         if PHATE_MESSAGES:

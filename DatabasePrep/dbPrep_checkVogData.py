@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #######################################
 #
@@ -6,7 +6,7 @@
 #
 # Programmer: Carol L. Ecale Zhou
 #
-# Date: 19 October 2020
+# Last Update:  21 December 2020
 #
 # Summary: This script compares the vog.genes/proteins.all/fa files to vog.genes/proteins.tagged.all.fa files
 #   to determine why the latter files are smaller than the former.

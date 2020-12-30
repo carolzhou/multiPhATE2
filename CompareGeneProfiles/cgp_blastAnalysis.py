@@ -3,7 +3,7 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Date of last update:  17 December 2020
+# Date of last update:  29 December 2020
 #
 # Description:
 # Module comprising data structures and methods for blasting the genes and proteins
@@ -75,7 +75,14 @@ if PHATE_WARNINGS_STRING.lower() == 'true':
 #DEBUG = True
 DEBUG = False
 
-IDENTITY_CUTOFF = int(os.environ["CGP_IDENTITY_CUTOFF"])
+IDENTITY_CUTOFF         = 30 # default 
+IDENTITY_CUTOFF_GENE    = int(os.environ["CGP_IDENTITY_CUTOFF_GENE"])
+IDENTITY_CUTOFF_PROTEIN = int(os.environ["CGP_IDENTITY_CUTOFF_PROTEIN"])
+# Set generic identity cutoff to the lower of gene v. protein
+if IDENTITY_CUTOFF_GENE > IDENTITY_CUTOFF_PROTEIN:
+    IDENTITY_CUTOFF = IDENTITY_CUTOFF_PROTEIN
+else:
+    IDENTITY_CUTOFF = IDENTITY_CUTOFF_GENE
 
 # Default values used if user- or program-defined defaults not provided
 GENE_MATCH_IDENTITY_DEFAULT = 60 
@@ -750,7 +757,12 @@ class blast(object):
             print ("cgp_blastAnalysis says, ERROR: compareHits() errorCode:", errorCode)
         return newComparison
 
-    def recordHits(self,filename):
+    def recordHits(self,filename,mType):
+        # identity cutoff default is 60; change it accordingly to hit type & user preference
+        if mType.lower() == 'gene':
+            IDENTITY_CUTOFF = IDENTITY_CUTOFF_GENE
+        elif mType.lower() == 'protein':
+            IDENTITY_CUTOFF = IDENTITY_CUTOFF_PROTEIN
         HIT_FILE = open(filename,"r")
         newHitList = copy.deepcopy(self.blastHits) 
         fLines = HIT_FILE.read().splitlines()  # read lines into list, removing newlines
@@ -826,15 +838,15 @@ class blast(object):
         if "identity" in kvargs.keys():
             identity = str(kvargs["identity"])
         else:
-            identity = str(50)              # default
+            identity = str(30)              # default
         if "blastnIdentity" in kvargs.keys():
             blastnIdentity = str(kvargs["blastnIdentity"])
         else:
-            blastnIdentity = str(50)              # default
-        if "blastpIdentity" in kvargs.keys():
+            blastnIdentity = str(30)              # default
+        if "blastpIdentity" in kvargs.keys():  # Actually, blastp does not input the blast identity cutoff
             blastpIdentity = str(kvargs["blastpIdentity"])
         else:
-            blastpIdentity = str(50)              # default
+            blastpIdentity = str(30)              # default
         if "scoreEdge" in kvargs.keys():    # Best hit score edge
             scoreEdge = str(kvargs["scoreEdge"])
         else:

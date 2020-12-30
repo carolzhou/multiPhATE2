@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #####################################################################
 #
@@ -16,7 +16,9 @@
 #    (VOG fasta files) to re-write the fastas to include the VOG 
 #    identifier(s) at the front of the fasta header for each sequence.
 #
-# Usage:  python createVogFastaFile.py
+# Last Update: 21 December 2020
+#
+# Usage:  python3 createVogFastaFile.py
 #
 # Programmer:  CEZhou
 #

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #####################################################################
 #
@@ -6,7 +6,7 @@
 #
 # Programmer:  Carol Zhou
 #
-# Last Update: 19 October 2020
+# Last Update: 21 December 2020
 #
 # Description: This code captures the remaining 3% of pVOG sequences
 #    from the NR database, which could not be retrieved in the original
@@ -18,7 +18,7 @@
 #    using directy query from a local instance of the complete NR.
 #    Should be fast enough to do just 3% locally.
 #
-# Usage:  python phate_getLast3percent.py  (IMPORTANT: READ BELOW)
+# Usage:  python3 phate_getLast3percent.py  (IMPORTANT: READ BELOW)
 #    NOTE:  First run phate_createPvogFastaFile.py. This will search the
 #       NCBI phage subset database and tag the fasta headers with the
 #       pVOG information. Then, take the output from that code, 

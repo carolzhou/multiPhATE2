@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #####################################################################
 #
@@ -6,12 +6,12 @@
 #
 # Programmer:  CEZhou
 #
-# Last Update:  19 October 2020
+# Last Update:  21 December 2020
 #
 # Description: This code reads input files, AllFamilyProteinList.tab and NCBI_Phage.faa,
 #    and creates a file containing pVOG-tagged protein fastas.
 #
-# Usage:  python createPvogFastaFile.py
+# Usage:  python3 createPvogFastaFile.py
 #
 ####################################################################
 
