@@ -73,7 +73,7 @@ class trna(object):
     
     def __init__(self):
 
-        self.codeName                    = "trnascan-se"
+        self.codeName                    = "tRNAscan-SE"
         self.codeVersion                 = "2"       
         self.organismType                = "-B"     # default; Options:  -B (bacteria), -E (eukaryote), -A (archea), -M (mitochondria), -O (other)
         self.useInfernal                 = ""       # set to "-I" if input to setParameters() is True; use -I for bacteriophage 
