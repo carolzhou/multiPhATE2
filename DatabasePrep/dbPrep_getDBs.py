@@ -435,7 +435,7 @@ elif INTERACTIVE:
     if BLAST:
         print ("CAZy database: ('y'/'n')")
         cazy = input()
-        if re.search('Y|y|yes|Yes|YES',swissprot):
+        if re.search('Y|y|yes|Yes|YES',cazy):
             print ("Great, let's download the CAZy database")
             CAZY = True
         elif re.search('N|n|no|No|NO',cazy):
