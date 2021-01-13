@@ -132,6 +132,11 @@ Now, be sure that multiPhate.py and phate_runPipeline.py and associated files an
 
 You will need to acquire one or more of the databases listed below under [SUPPORING DATABASES](#supporting-databases) (Phantome and pVOGs are included in the multiPhATE distribution, so it is possible to begin with just those), and the 3rd party codes listed under SUPPORTING 3rd PARTY CODES. You will need to acquire at least one of the supported gene finders, but it is recommended to run as many of the four gene finders as is feasible so that the results can be more meaningfully compared. You will need to specifiy the locations of the supporting data sets and codes in the multiPhATE config file (see `multiPhate.config`), and you will need to locate your genome file(s) to the PipelineInput/ subdirectory. Once you have acquired the third-party codes and databases, you will be ready to configure the `multiPhate.config` file.
 
+Note that on some systems you may need to install the openssl and/or libiconv libraries, if they do not already exist on your system. To do this, you may install using Conda as follows:  
+
+$ conda install -c bioconda openssl=1.0  
+$ conda install -c anaconda libiconv  
+
 [Return to the Index](#index)
 
 #### HOW TO WRITE A CONFIGURATION FILE
