@@ -6,7 +6,7 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Last Update:  29 December 2020
+# Last Update:  13 January 2021
 #
 # Description: Script multiPhate.py is a driver program that runs the multiPhATE2 bacteriophage annotation system,
 #    which comprises four modules:  Gene Calling, PhATE, Compare Gene Profiles, and Genomics. See the README file
@@ -308,6 +308,9 @@ VOG_GENE_HEADER_FILENAME    = "vog.gene.headers.lst"  # The headers from the vog
 VOG_PROTEIN_HEADER_FILENAME = "vog.protein.headers.lst"  # The headers from the vog.proteins.tagged.all.fa file (computed by multiPhate.py)
 VOG_ANNOTATION_FILENAME     = "vog.annotations.tsv"  # The annotations associated with VOG identifiers (downloaded from VOG server)
 PVOG_HEADER_FILENAME        = "pVOGs.headers.lst"
+#TRNA_SCAN_CODE_NAME         = "trnascan-se"         # Evidently this code installs as lower case on some systems, upper case on others
+TRNA_SCAN_CODE_NAME         = "tRNAscan-SE"         # Set this as either all lower case or partial upper case.
+os.environ["PHATE_TRNA_SCAN_CODE_NAME"] = TRNA_SCAN_CODE_NAME # will be read by phate_trna.py
 
 # naming the custom gene caller
 # paths to subordinate codes; '' if installed globally (e.g., via conda)

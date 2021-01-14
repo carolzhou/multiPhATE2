@@ -3,7 +3,7 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Most recent update: 28 December 2020
+# Most recent update: 13 January 2021
 #
 # Module comprising classes and data structures for predicting tRNA genes. 
 #
@@ -55,6 +55,9 @@ PHATE_MESSAGES = True
 DEBUG = False
 #DEBUG = True
 
+# Code name
+TRNA_SCAN_CODE_NAME = os.environ["PHATE_TRNA_SCAN_CODE_NAME"]
+
 # Error codes
 ERROR_CODE_1 = "trnascan-se execution failed" 
 SUCCESS = 0
@@ -73,7 +76,7 @@ class trna(object):
     
     def __init__(self):
 
-        self.codeName                    = "trnascan-se"
+        self.codeName                    = TRNA_SCAN_CODE_NAME  # "tRNAscan-SE" or "trnascan-se", depends on the installation/OS; modify in multiPhate.py 
         self.codeVersion                 = "2"       
         self.organismType                = "-B"     # default; Options:  -B (bacteria), -E (eukaryote), -A (archea), -M (mitochondria), -O (other)
         self.useInfernal                 = ""       # set to "-I" if input to setParameters() is True; use -I for bacteriophage 
