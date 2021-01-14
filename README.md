@@ -132,11 +132,6 @@ Now, be sure that multiPhate.py and phate_runPipeline.py and associated files an
 
 You will need to acquire one or more of the databases listed below under [SUPPORING DATABASES](#supporting-databases) (Phantome and pVOGs are included in the multiPhATE distribution, so it is possible to begin with just those), and the 3rd party codes listed under SUPPORTING 3rd PARTY CODES. You will need to acquire at least one of the supported gene finders, but it is recommended to run as many of the four gene finders as is feasible so that the results can be more meaningfully compared. You will need to specifiy the locations of the supporting data sets and codes in the multiPhATE config file (see `multiPhate.config`), and you will need to locate your genome file(s) to the PipelineInput/ subdirectory. Once you have acquired the third-party codes and databases, you will be ready to configure the `multiPhate.config` file.
 
-Note that on some systems you may need to install the openssl and/or libiconv libraries, if they do not already exist on your system. To do this, you may install using Conda as follows:  
-
-$ conda install -c bioconda openssl=1.0  
-$ conda install -c anaconda libiconv  
-
 [Return to the Index](#index)
 
 #### HOW TO WRITE A CONFIGURATION FILE
@@ -165,7 +160,7 @@ You may configure the pipeline to perform gene finding only, or gene finding plu
 4) Gene Callers:
 The gene_caller option specifies which gene caller's results (ie, gene calls) will be used for subsequent functional annotation. The choices are:  '[phanotate](https://github.com/deprekate/PHANOTATE)', '[GeneMarkS](http://exon.gatech.edu/Genemark/)', '[prodigal](https://github.com/hyattpd/Prodigal)', or '[glimmer](http://ccb.jhu.edu/software/glimmer/index.shtml)'.  You must install each of the gene callers separately, although many of them can be [installed with conda](#conda-installation). For each gene caller you wish to have run, set that caller's parameter to 'true'. In the usual case, you will want to specify gene_caller='phanotate' for annotation of phage genomes. 
 
-You may also provide your own gene calls (referred to as "custom"), but your input file must conform to a gff format that is recognized by PhATE. Check the distribution for a sample custom gene-call file (Eb_P2.custom.gff, which resembles the output produced by Prodigal). A custom gene-call file must be named according to your genome's output subdirectory (e.g., myGenome.custom.gff) and placed in the PipelineInput/ directory. MultiPhATE2 will recognize your custom gene-call file and move it to the designated PipelineOutput subdirectory. If you select more than one gene caller (or select one and provide one of your own), then PhATE will compute the following gene-call sets: superset (non-redundant list of all gene-caller gene calls), consensus (set of calls that are in agreement among at least two gene callers), and commoncore (calls that are in agreement among all callers). You may select as the gene-call set to be forwarded for annotation any of the gene callers or 'superset', 'consensus', or 'commoncore'. Only one gene-call set will be annotated in a given multiPhATE run.
+You may also provide your own gene calls (referred to as "custom"), but your input file must conform to a gff format that is recognized by PhATE. Check the distribution for a sample custom gene-call file (Eb_P2.custom.gff, which resembles the output produced by Prodigal). Each custom gene-call file must be named according to the corresponding genome's output subdirectory (e.g., myGenome.custom.gff) and placed in the PipelineInput/ directory. MultiPhATE2 will recognize each custom gene-call file and move it to the designated PipelineOutput subdirectory. If running more than one genome and are including custom gene calls, then you must provide a custom gene-call file for each genome. If you select more than one gene caller (or select one and provide one of your own), then PhATE will compute the following gene-call sets: superset (non-redundant list of all gene-caller gene calls), consensus (set of calls that are in agreement among at least two gene callers), and commoncore (calls that are in agreement among all callers). You may select as the gene-call set to be forwarded for annotation any of the gene callers or 'superset', 'consensus', or 'commoncore'. Only one gene-call set will be annotated in a given multiPhATE run.
 
 5) Annotation:
 Set to 'true' each blast or hmm search process that you want to be run. Note that you must have acquired the associated database, and in the next section (Databases) you must configure the location of each database. You may also set the desired blast parameters. The `blast_identity` sets the _minimum_ identity that will be considered; any blast result below that threshold will be ignored. The `hit_count` parameters will determine how many top hits will be reported. (Note that recent releases of [blast+](https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE_TYPE=BlastDocs&DOC_TYPE=Download) suggest considering at least 5 hits, and will generate a warning message if you set the hit count to less than 5.) You may select hmm searches using [phmmer](https://www.ebi.ac.uk/Tools/hmmer/search/phmmer), [jackhmmer](https://www.ebi.ac.uk/Tools/hmmer/search/jackhmmer), or [hmmscan](https://www.ebi.ac.uk/Tools/hmmer/search/hmmscan). Currently hmm searches are performed only using the protein fasta databases or the pVOG protein and VOG protein profile database (future releases of multiPhate are expected to support additional databases).
@@ -307,7 +302,7 @@ clustalo - https://www.clustal.org/omega/ (conda)
 
 #### CONDA INSTALLATION
 
-If you prefer to run multiPhATE in a Conda environment, here are some tips for how to set it up. 
+It in HIGHLY RECOMMENDED to run multiPhATE2 in a Conda environment. Using Conda is advantageous because it avoids possible issues with having multiple versions of 3rd party softwares on your system, and Conda makes software installation and update relatively easy. Here are some tips for how to set it up. 
 
 1) First, download and install miniconda3 for Python 3.7 (https://conda.io/en/latest/miniconda.html). For more information about Conda, see https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html.  
 
@@ -332,7 +327,12 @@ Note: bioconda is supported on Linux and Mac operating systems, but so far not o
 
 6) Install conda packages within that environment:  `$ conda install python=3`
 
-Repeat for each of biopython, emboss, blast, glimmer, prodigal, hmmer, trnascan-se, wget, clustalo.  
+Note that on some systems you may need to install into your Conda environment the openssl and/or libiconv libraries, if they do not already exist on your system. To do this, you may install using Conda as follows:  
+
+$ conda install -c bioconda openssl=1.0  
+$ conda install -c anaconda libiconv  
+
+Repeat Conda installation for each of biopython, emboss, blast, glimmer, prodigal, hmmer, trnascan-se, wget, clustalo.  
 
 7) When running multiPhATE within your multiphate Conda environment, the pipeline will use the version of python and the third party codes installed within the multiphate environment, so there should be no clashes with other versions of these packages that may be installed elsewhere on your system. When you are finished running multiPhATE, you may exit from the multiphate Conda environment:  $ source deactivate
 
@@ -415,6 +415,7 @@ Note that genemarks is not available as a conda package, so this program, as wel
 * Issue 10: There are no results in phate_sequenceAnnotation_main.out for some of the database searches. Try this: Check the blastn/p cutoff values in your configuration file. If you are annotating a novel phage, it is quite possible that there will be little or no homology in some of the databases. Lower the cutoffs and see if that yields (more) hits. However, be aware that hits at low cutoff values may not yield reliable annotations (!).
 * Issue 11: The VOG Genes or VOG Proteins database is not returning meaningful annotations. Try this: Be sure that you are using the vog.genes.tagged.all.fa or vog.proteins.tagges.all.faa database. These "tagged" databases are computed using the dbPrep_getDBs.py script. This is necessary, because the original VOG fasta databases do not include the VOG identifiers in the headers. The dbPrep_getDBs.py script pulls the VOG identifier(s) for each fasta sequence and re-writes the header accordingly. Then, with these modified headers, multiPhATE2's blastn or blastp process can readily look up the annotation using the VOG identifier(s). The pre-processing can be done by hand using scripts in the DatabasePrep/ folder, but it is strongly recommended to use the option(s) available in dbPrep_getDBs.py.
 * Issue 12: When running blastp against the swissprot database that was downloaded using the script provided by blast+, blastp does not find the swissprot blastp-formatted database, or does not recognize the format. Solution: Download the Swissprot sequences from Uniprot (see SUPPORTING DATABASES, above), and use makeblastdb to format the database by hand ($ makeblastdb -in uniprot_sprot.fasta -dbtype prot).
+* Issue 13: Installation is failing due to possible issues with missing or unrecognized modules. You may need to install libiconv (conda install libiconv). If you see failure due to "from Bio import SeqIO", you may need to install this module using pip. Also, there may be incompatibility between the libssl package and blast versions under 2.6. In that case, try installing a later version of blast:  conda install blast>2.6.
 
 [Return to the Index](#index)
 
