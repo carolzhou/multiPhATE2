@@ -5,7 +5,7 @@
 #
 # programmer:  C. E. Zhou
 #
-# Most recent update:  21 December 2020
+# Most recent update:  15 January 2021
 #
 # Summary:  This script facilitates the downloading of databases to be used with multiPhATE.
 #
@@ -25,7 +25,7 @@ from pathlib import Path
 # CONSTANTS, BOOLEANS
 
 # Run interactive for user to input which data sets they want to install
-INTERACTIVE = True
+INTERACTIVE = True 
 # Run remote to pre-set download instructions and skip user input
 REMOTE = False 
 # Set verbost to true for remote processing if server is killing idle processes.
@@ -260,9 +260,9 @@ if REMOTE:
     BLAST               = True 
     NCBI_VIRUS_GENOME   = False 
     NCBI_VIRUS_PROTEIN  = False 
-    REFSEQ_PROTEIN      = False 
+    REFSEQ_PROTEIN      = True 
     SWISSPROT           = False 
-    NR                  = False
+    NR                  = False 
     PHANTOME            = False   # Provided in distribution
     PVOGS               = False   # Provided in distribution
     PVOG_HMMS           = False 
@@ -757,9 +757,9 @@ if REFSEQ_PROTEIN:
         ls_h = open("ls.out",'r')
         files = ls_h.read().splitlines()
         for filename in files:
-            if not re.search('md5', filename):
+            if re.search('gz', filename) and not re.search('md5', filename):
                 command = "gunzip -c " + filename + " | tar xopf -"
-                success = os.system(command)
+                success = os.system(command)  
         ls_h.close()
     except Exception:
         print ("WARNING: Error encountered in unpacking files")
