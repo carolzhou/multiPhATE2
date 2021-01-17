@@ -340,6 +340,7 @@ Repeat Conda installation for each of biopython, emboss, blast, glimmer, prodiga
 Note that genemarks is not available as a conda package, so this program, as well as the dependent databases, all need to be acquired/installed manually (or via dbPrep_getDBs.py) in any case.
 
 [Return to the Index](#index)
+
 [Return to How to Set up MultiPhATE on your Local Machine](#how-to-set-up-multi-phate-on-your-local-machine)
 
 #### MultiPHATE OUTPUT FILES 
