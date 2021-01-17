@@ -302,7 +302,7 @@ clustalo - https://www.clustal.org/omega/ (conda)
 
 #### CONDA INSTALLATION
 
-#conda
+# Conda
 
 It in HIGHLY RECOMMENDED to run multiPhATE2 in a Conda environment. Using Conda is advantageous because it avoids possible issues with having multiple versions of 3rd party softwares on your system, and Conda makes software installation and update relatively easy. Here are some tips for how to set it up. 
 
