@@ -3,7 +3,7 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Most recent update: 13 January 2021
+# Most recent update: 20 January 2021
 #
 # Module comprising classes and data structures for predicting tRNA genes. 
 #
@@ -69,6 +69,7 @@ PHATE_PIPELINE_OUTPUT_DIR = os.environ["PHATE_PIPELINE_OUTPUT_DIR"]
 USE_INFERNAL    = "-I"
 BOTH_COMPONENTS = "-H"
 QUIET_MODE      = "-q"
+ORGANISM_TYPE   = "-B"  # -B (bacteria), -E (eukaryote), -A (archea), -M (mitochondria), -O (other)
 
 # Class comparison organizes all genomic data and performs comparisons, ultimately yielding
 #   homology groups for each gene/protein in a reference genome.
@@ -78,7 +79,7 @@ class trna(object):
 
         self.codeName                    = TRNA_SCAN_CODE_NAME  # "tRNAscan-SE" or "trnascan-se", depends on the installation/OS; modify in multiPhate.py 
         self.codeVersion                 = "2"       
-        self.organismType                = "-B"     # default; Options:  -B (bacteria), -E (eukaryote), -A (archea), -M (mitochondria), -O (other)
+        self.organismType                = ORGANISM_TYPE  
         self.useInfernal                 = ""       # set to "-I" if input to setParameters() is True; use -I for bacteriophage 
         self.inputFile                   = ""       # PipelineInput/genomeFilename set by setParameters()
         self.outputFile                  = ""       # PipelineOutput/genomeName/filename set by setParameters()

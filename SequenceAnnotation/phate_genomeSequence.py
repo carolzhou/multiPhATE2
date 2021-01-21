@@ -4,7 +4,7 @@
 #
 # Programmer: Carol L. Ecale Zhou
 #
-# Most recent update: 28 December 2020
+# Most recent update: 20 January 2021 
 #
 # Description:
 # Module comprising data structures for organizing genome information
@@ -192,7 +192,7 @@ class genome(object):
         if PHATE_MESSAGES: 
             print("phate_genomeSequence says, Running processTrnaGeneCalls.")
         TRNA_GENES_FILE = ''; contig = ''; trnaNo = ''; begin = ''; end = ''; codon = ''; aCodon = ''; iBegin = ''; iEnd = ''; score = ''; annot = ''
-        ANNOTATION_FOUND = False
+        ANNOTATION_FOUND = False; codonAcodon = ""
         if isinstance(kvargs,dict):
             if "trnaGenesFile" in kvargs.keys():
                 TRNA_GENES_FILE = kvargs["trnaGenesFile"]
@@ -202,7 +202,7 @@ class genome(object):
             count = -3 
             for fLine in fLines:
                 count += 1   
-                ANNOTATION_FOUND = False
+                ANNOTATION_FOUND = False; codonAcodon = ""
                 if count > 0:  # skip 1st 3 lines of file
                     fields = fLine.split('\t')
                     if len(fields) >= 9:
@@ -215,6 +215,7 @@ class genome(object):
                         iBegin = fields[6]  # Intron Begin 
                         iEnd   = fields[7]  # Bounds End 
                         score  = fields[8]  # Inf Score 
+                        codonAcodon = "tRNA-" + codon + '(' + aCodon + ')'
                     if len(fields) == 10:
                         annot  = fields[9]  # Note field
                         if re.search('[\w\d]',annot):  # check whether annotation field actually contains meaningful text
@@ -241,7 +242,7 @@ class genome(object):
                         newTrna.start      = end
                         newTrna.end        = begin
                     else:
-                        newGene.strand     = 'x'
+                        newTrna.strand     = 'x'
                         newTrna.start      = begin
                         newTrna.end        = end
                         if PHATE_WARNINGS:
@@ -256,16 +257,16 @@ class genome(object):
                         newTrna.sequence = reverseComplement
 
                     # If an annotation was detected, create an annotation object, populate it, add to newTrna.
+                    newAnnot = copy.deepcopy(annotationObj) 
+                    newAnnot.source           = 'phate'
+                    newAnnot.method           = 'trnascan'
+                    newAnnot.annotationType   = 'trna'
+                    newAnnot.description      = codonAcodon 
+                    newAnnot.annotationString = codonAcodon
                     if ANNOTATION_FOUND:
-                        print("TESTING: trna annotation found: ",annot)
-                        newAnnot = copy.deepcopy(annotationObj) 
-                        newAnnot.source = 'phate'
-                        newAnnot.method = 'trnascan'
-                        newAnnot.annotationType = 'trna'
-                        newAnnot.description = annot
-                        newAnnot.annotationList.append(annot)
-                        newAnnot.annotationString = annot
-                        newTrna.annotationList.append(newAnnot)
+                        newAnnot.description      += '-' + annot
+                        newAnnot.annotationString += '-' + annot
+                    newTrna.annotationList.append(newAnnot)
 
                     # Record new trna
                     if PHATE_MESSAGES:
