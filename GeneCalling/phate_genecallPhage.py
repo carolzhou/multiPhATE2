@@ -4,7 +4,7 @@
 #
 # Programmers: Jeff Kimbrel, Carol Zhou
 #
-# Last update: 21 December 2020
+# Last update: 22 January 2021
 #
 # Description: Script phate_genecallPhage.py runs up to four gene callers: PHANOTATE, Prodigal, 
 #    Glimmer and GeneMarkS, on a genome fasta file. Outputs from these gene callers are converted to
@@ -546,8 +546,8 @@ logfile.write("%s\n" % ("Parsing genecall files into CGC format..."))
 callerCount = 0
 if GENEMARKS_CALLS:
     callerCount += 1
-    #systemCall('python ' + cgcPath + '/CGC_parser.py Genemarks ' + outputFolder + 'geneMarkS.gff ' + outputFolder + 'genemark.cgc')
-    systemCall(os.environ["PHATE_PYTHON"] + ' ' + cgcPath + '/CGC_parser.py Genemarks ' + outputFolder + 'geneMarkS.gff ' + outputFolder + 'genemark.cgc')
+    #systemCall('python ' + cgcPath + '/CGC_parser.py Genemarks ' + outputFolder + 'geneMarkS.gff ' + outputFolder + 'genemarks.cgc')
+    systemCall(os.environ["PHATE_PYTHON"] + ' ' + cgcPath + '/CGC_parser.py Genemarks ' + outputFolder + 'geneMarkS.gff ' + outputFolder + 'genemarks.cgc')
 if PRODIGAL_CALLS:
     callerCount += 1
     #systemCall('python ' + cgcPath + '/CGC_parser.py Prodigal ' + outputFolder + 'prodigal.genes.sco ' + outputFolder + 'prodigal.cgc')
@@ -586,7 +586,7 @@ else:
 # Lastly, convert cgc-formatted gene-call files to gff and write to output
 # For each gene caller, open and process its caller.cgc file, format to gff, then write to cgc_caller.gff
 if GENEMARKS_CALLS:
-    cgcFile = outputFolder + 'genemark'        + '.cgc'
+    cgcFile = outputFolder + 'genemarks'        + '.cgc'
     gffFile = outputFolder + 'phate_geneMarkS' + '.gff'
     Convert_cgc2gff(cgcFile,gffFile)
 

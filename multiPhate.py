@@ -6,7 +6,7 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Last Update:  13 January 2021
+# Last Update:  22 January 2021
 #
 # Description: Script multiPhate.py is a driver program that runs the multiPhATE2 bacteriophage annotation system,
 #    which comprises four modules:  Gene Calling, PhATE, Compare Gene Profiles, and Genomics. See the README file
@@ -368,7 +368,7 @@ os.environ["PHATE_CUSTOM_GENECALLER_NAME"]  = ""  # set from user's config file
 os.environ["PHATE_PHANOTATE_PATH"]          = ""   # should be installed globally now
 os.environ["PHATE_PRODIGAL_PATH"]           = ""   # global, if installed via conda
 os.environ["PHATE_GLIMMER_PATH"]            = ""   # global, if installed via conda
-os.environ["PHATE_GENEMARKS_PATH"]          = ""   # global, but not a conda package
+os.environ["PHATE_GENEMARKS_PATH"]          = ""   # might be global; user must provide location 
 os.environ["PHATE_tRNAscanSE_HOME"]         = ""   # global, if installed via conda
 os.environ["PHATE_EMBOSS_PHATE_HOME"]       = ""   # global, if installed via conda
 os.environ["PHATE_CGC_PATH"]                = BASE_DIR_DEFAULT + "CompareCalls/"
@@ -672,14 +672,14 @@ p_hmmbuild                    = re.compile("hmmbuild='(.*)'")   # hmmbuild creat
 p_hmmsearch                   = re.compile("hmmsearch='(.*)'")  # not yet in service; hmmscan is the program, hmmsearch uses hmmscan w/profile query 
 
 # DEPENDENT CODE LOCATIONS: These codes should be installed globally.
-p_blastPlusHome               = re.compile("blast_plus_home='(.*)'")
-p_embossHome                  = re.compile("emboss_home='(.*)'")
-p_tRNAscanSEhome              = re.compile("tRNAscanSE_home='(.*)'")
-p_glimmerHome                 = re.compile("glimmer_home='(.*)'")
-p_prodigalHome                = re.compile("prodigal_home='(.*)'")
-p_phanotateHome               = re.compile("phanotate_home='(.*)'")
-p_genemarkHome                = re.compile("genemark_home='(.*)'")
-p_hmmerHome                   = re.compile("hmmer_home='(.*)'")
+p_blastPlusHome               = re.compile("blast_plus_path='(.*)'")
+p_embossHome                  = re.compile("emboss_path='(.*)'")
+p_tRNAscanSEhome              = re.compile("tRNAscanSE_path='(.*)'")
+p_glimmerHome                 = re.compile("glimmer_path='(.*)'")
+p_prodigalHome                = re.compile("prodigal_path='(.*)'")
+p_phanotateHome               = re.compile("phanotate_path='(.*)'")
+p_genemarksHome               = re.compile("genemarks_path='(.*)'")
+p_hmmerHome                   = re.compile("hmmer_path='(.*)'")
 
 # PARALLELISM
 p_phateThreads                = re.compile("phate_threads='(.*)'")
@@ -800,6 +800,7 @@ for cLine in cLines:
 
     # gene calling
     match_genemarksCalls            = re.search(p_genemarksCalls,cLine)
+    match_genemarksHome             = re.search(p_genemarksHome,cLine)
     match_prodigalCalls             = re.search(p_prodigalCalls,cLine)
     match_glimmerCalls              = re.search(p_glimmerCalls,cLine)
     match_phanotateCalls            = re.search(p_phanotateCalls,cLine)
@@ -893,7 +894,7 @@ for cLine in cLines:
     match_glimmerHome               = re.search(p_glimmerHome,cLine)
     match_prodigalHome              = re.search(p_prodigalHome,cLine)
     match_phanotateHome             = re.search(p_phanotateHome,cLine)
-    match_genemarkHome              = re.search(p_genemarkHome,cLine)
+    match_genemarksHome             = re.search(p_genemarksHome,cLine)
     match_hmmerHome                 = re.search(p_hmmerHome,cLine)
 
     # paths to databases
@@ -1496,9 +1497,9 @@ for cLine in cLines:
         if match_phanotateHome.group(1) != '':
             os.environ["PHATE_PHANOTATE_PATH"] = match_phanotateHome.group(1)
 
-    elif match_genemarkHome:
-        if match_genemarkHome.group(1) != '':
-            os.environ["PHATE_GENEMARKS_PATH"] = match_genemarkHome.group(1)
+    elif match_genemarksHome:
+        if match_genemarksHome.group(1) != '':
+            os.environ["PHATE_GENEMARKS_PATH"] = match_genemarksHome.group(1)
 
     ##### DATABASE LOCATIONS #####
 
