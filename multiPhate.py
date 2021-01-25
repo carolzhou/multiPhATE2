@@ -6,7 +6,7 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Last Update:  22 January 2021
+# Last Update:  25 January 2021
 #
 # Description: Script multiPhate.py is a driver program that runs the multiPhATE2 bacteriophage annotation system,
 #    which comprises four modules:  Gene Calling, PhATE, Compare Gene Profiles, and Genomics. See the README file
@@ -1966,9 +1966,9 @@ if CHECK_USER_DATABASES:
         file2check = os.environ["PHATE_NR_BLAST_HOME"]
         if phmmerSearch or jackhmmerSearch:
             if not path.exists(file2check): 
-                print("multiPhate says, ERROR: Cannot locate sequence database ",os.environ["PHATE_NR_BLAST_HOME"]," HMM search will not be done for NR proteins.")
+                print("multiPhate says, WARNING: Cannot locate sequence database ",os.environ["PHATE_NR_BLAST_HOME"]," HMM search will not be done for NR proteins.")
 
-        file2check += '.pin'
+        file2check += '.00.pin'
         if blastpSearch:
             if not path.exists(file2check):
                 print("multiPhate says, ERROR: Cannot verify blast database for ",os.environ["PHATE_NR_BLAST_HOME"]," Please check your configuration file and Databases/ directory.")
