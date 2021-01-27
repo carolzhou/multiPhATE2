@@ -4,7 +4,7 @@
 #
 # Programmer: Carol L. Ecale Zhou
 #
-# Latest update: 28 December 2020
+# Latest update: 26 January 2021 
 #
 # Description: Module containing classes and methods for representing annotation results from various sources 
 #
@@ -465,43 +465,72 @@ class annotationRecord(object):
     # Parses the CAZy annotation file to capture enzyme description(s) for blast hits.
     def getECdescription4cazy(self,cazyAnnotationFile):
         # self.name is the subject hit header
-        dbxrefList = []; dbxrefCode = ""  # captures codes and annotations for CAZy hits
+        dbxrefList = []  # Once list of identifiers is found, this is returned to calling method.
         code = ""; codeList = []  # captures codes that are listed in the headers of CAZy hits 
         annotationCode = ""; annotationDescription = ""  # from cazy annotation file; these are captured for reporting
+        # Note that there are irregularities in the CAZy data set.
         # Headers look like this: ">AWI06117.1|GT2|AT46|" (with one or more codes, pipe-separated)
         # Headers can also look like this: ">AAD03276.1|GH104|4.2.2.n1|" (with an EC number following, with or w/o terminal '|') 
         # ...or even like this: ">AUH33181.1|CE14"  (without terminal pipe)
-        p_header = re.compile('\|([\w\d_^\.]+)\|') # Some headers have EC numbers following CAZy code   
+        p_header_1 = re.compile('\|([\w\d_^\.\|]+)+\|') # Some headers (99.5%) have one or more IDs, terminated with pipe  
+        p_header_2 = re.compile('\|([\w\d_^\.^\|]+)')   # Some headers (0.5%) have a single ID, not terminated with pipe   
+        idString = ""; idString_clean = ""; idList = []; identifier = ""
         CAZY_ANNOT_H = open(cazyAnnotationFile,'r')
         try:
             # Pull dbxref from header; find data line in cazyAnnotationFile; add to dbxrefList
-            match_header = re.search(p_header,self.name)
-            if match_header:
-                dbxrefCode = match_header.group(1)
-                codeList = dbxrefCode.split('|')
+            match_header_1 = re.search(p_header_1,self.name)
+            if match_header_1:
+                idString = match_header_1.group(0)
+                idString_clean = idString.lstrip('|')
+                idList = idString_clean.split('|')
+                if idList[-1] == '':
+                    idList.pop()
                 ANNOT_H = open(cazyAnnotationFile,'r')
                 aLines = ANNOT_H.read().splitlines()
-                for code in codeList:
-                    if code != "": 
-                        matchCode = code + '\t'
-                        for aLine in aLines:
-                            match_dbxref = re.search(matchCode,aLine)
-                            if match_dbxref:
-                                try:
-                                    (annotationCode,annotationDescription) = aLine.split('\t')
-                                    if code == annotationCode:  # Need to identify the identical one (else keep looking)
-                                        dbxrefList.append(annotationDescription)
-                                        break 
-                                    else:
-                                        continue
-                                except:
-                                    if PHATE_WARNINGS:
-                                        print("phate_annotation says, WARNING: No annotation found for dbxrefCode",dbxrefCode)
+                for identifier in idList:
+                    matchID = identifier + '\t'
+                    for aLine in aLines:
+                        match_identifier = re.search(matchID,aLine)
+                        if match_identifier:
+                            try:
+                                (annotationCode,annotationDescription) = aLine.split('\t')
+                                if identifier == annotationCode: # Need to identify the identical one (else keep looking)
+                                    dbxrefList.append(annotationDescription)
+                                    break
+                                else:
+                                    continue
+                            except:
+                                if PHATE_WARNINGS:
+                                    print("phate_annotation says, WARNING: No annotation found for identifier",identifier)
+                ANNOT_H.close()
+            elif match_header_2:
+                idString = match_header_2.group(0)
+                idString_clean = idString.lstrip('|')
+                idList.append(idString_clean)
+                ANNOT_H = open(cazyAnnotationFile,'r')
+                aLines = ANNOT_H.read().splitlines()
+                for identifier in idList:
+                    matchID = identifier + '\t'
+                    for aLine in aLines:
+                        match_identifier = re.search(matchID,aLine)
+                        if match_identifier:
+                            try:
+                                (annotationCode,annotationDescription) = aLine.split('\t')
+                                if identifier == annotationCode:
+                                    dbxrefList.append(annotationDescription)
+                                    break
+                                else:
+                                    continue
+                            except:
+                                if PHATE_WARNINGS:
+                                    print("phate_annotation says, WARNING: No annotation found for identifier",identifier)
                 ANNOT_H.close()
             else:
-                print("phate_annotation says, WARNING: getECdescription4cazy saw an unexpected subject hit header:",self.name)
+                if PHATE_WARNINGS:
+                    print("phate_annotation says, WARNING: getECdescription4cazy saw an unexpected subject hit header:",self.name)
         except:
-            print("phate_annotation says, WARNING: Cannot identify dbxref for subject header",self.name)
+            if PHATE_WARNINGS:
+                print("phate_annotation says, WARNING: Cannot identify dbxref for subject header",self.name)
         CAZY_ANNOT_H.close()
         return dbxrefList
 
@@ -604,6 +633,7 @@ class annotationRecord(object):
         FILE_HANDLE.write("%s%s%s" % ("Annotation source:",self.source,"\n"))
         FILE_HANDLE.write("%s%s%s" % ("Method:",self.method,"\n"))
         FILE_HANDLE.write("%s%s%s" % ("Contig:",self.contig,"\n"))
+        FILE_HANDLE.write("%s%s%s" % ("Description:",self.description,"\n"))
         FILE_HANDLE.write("%s%s%s" % ("Annotations:",self.annotationList,"\n"))
 
     def printAll(self):

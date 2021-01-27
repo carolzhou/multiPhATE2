@@ -107,7 +107,7 @@ python3 multiPhate.py multiPhate.config
 
 #### HOW TO SET UP MULTI-PHATE ON YOUR LOCAL MACHINE
 
-It is strongly recommended that you read through this narrative before installing multiPhATE, as you will find here complete installation instructions. Then, in the [INSTALLATION CHECKLIST](#installation-and-set-up-checklist) section (below) there is essentially a short summary of the procedure. It is also strongly recommended that multiPhATE2 be run in a Conda environment (see below under [Conda Installation](#conda-installation)). 
+It is strongly recommended that you read through this narrative before installing multiPhATE, as you will find here complete installation instructions. Then, in the [INSTALLATION CHECKLIST](#installation-and-set-up-checklist) section (below) there is essentially a short summary of the procedure. It is also strongly recommended that multiPhATE2 be run in a Conda environment (see below under [Conda Installation](#conda-installation)). Once you have set up multiPhATE2, you might like to visit the project wiki pages and read the multiPhATE2 use cases. 
 
 First, create a working directory on your computer for running multiPhATE. Then, acquire the multiPhATE package from github. This can be done either by downloading a zip file directly from the multiPhATE repository, or by cloning the repository. The first method is recommended, but the second is certainly an option:
 
