@@ -3,7 +3,7 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Most recent update: 08 December 2020
+# Most recent update: 01 February 2021
 #
 # Module comprising classes and data structures for comparing genomes
 #
@@ -125,9 +125,9 @@ if PHATE_PROGRESS_STRING.lower() == 'true':
     PHATE_PROGRESS = True
 
 # Override
-PHATE_PROGRESS = True
-PHATE_WARNINGS = True
-PHATE_MESSAGES = True
+#PHATE_PROGRESS = True
+#PHATE_WARNINGS = True
+#PHATE_MESSAGES = True
 
 DEBUG = False
 #DEBUG = True

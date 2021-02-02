@@ -429,8 +429,6 @@ ERROR_LOG = open(errorLog,"a")
 ERROR_LOG.write("%s%s\n" % ("Reading command-line input at ",today.read()))
 
 argCount = len(sys.argv)
-print("TESTING: cgp_compareGeneProfiles_main says, argCount is ",argCount)
-print("TESTING: cgp_compareGeneProfiles_main says, sys.argv is ",sys.argv)
 if PHATE_PROGRESS:
     print ("cgp_compareGeneProfiles_main says, Reading input arguments")
 if PHATE_MESSAGES:
@@ -457,7 +455,6 @@ if argCount in ACCEPTABLE_ARG_COUNT:
         GetConfig(configString)
 
     if argCount == 9 or argCount == 11 or argCount == 13 or argCount == 15:
-        print("TESTING: cgp_compareGeneProfiles_main says, checking input parameters")
         if PHATE_PROGRESS:
             print ("cgp_compareGeneProfiles_main says, Reading input parameters")
         for i in range(argCount):
@@ -475,10 +472,8 @@ if argCount in ACCEPTABLE_ARG_COUNT:
             if sys.argv[i] == "-k":
                 # set kludge: 1 -> makeblastdb; 2 -> blast; 12 -> makeblastdb and blast
                 kludge = sys.argv[i+1]
-                print("TESTING: cgp_compareGeneProfiles_main says, Just read kludge, which is ",kludge)
             if sys.argv[i] == "-S":
                 subdir = sys.argv[i+1]  # also a kludge
-                print("TESTING: cgp_compareGeneProfiles_main says, Just read subdir, which is ",subdir)
         if PHATE_PROGRESS:
             print ("  genomeFile1 is", files["genomeFile1"])
             print ("  genomeFile2 is", files["genomeFile2"])
@@ -914,7 +909,6 @@ if PHATE_PROGRESS:
     print ("cgp_compareGeneProfiles_main says, Blast database creation complete.")
 
 if kludge == '1':
-    print("TESTING: cgp_compareGeneProfiles says, KLUDGE: exiting after makeblastdb")
     exit(0)
 
 #####################################################################################

@@ -191,7 +191,8 @@ LOGFILE.write("%s%s\n" % ("inFileList is:",inFileList))
 
 ##### Threading method 
 def cgp_threaded(command):
-    print(f'cgp_wrapper says, Running {command} on PID {os.getpid()}')
+    if PHATE_PROGRESS:
+        print(f'cgp_wrapper says, Running {command} on PID {os.getpid()}')
     result = os.system(command)
 
 ##### For each set, execute compareGeneProfiles_main.py
