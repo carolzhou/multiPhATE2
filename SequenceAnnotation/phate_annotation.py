@@ -4,7 +4,7 @@
 #
 # Programmer: Carol L. Ecale Zhou
 #
-# Latest update: 26 January 2021 
+# Latest update: 02 February 2021 
 #
 # Description: Module containing classes and methods for representing annotation results from various sources 
 #
@@ -585,46 +585,55 @@ class annotationRecord(object):
 
     # Return annotations as a semicolon-delimited string
     def returnGFFannotationRecord(self,FILE_HANDLE):
+
+        # Note:  some data sets (e.g., CAZy) have multiple etries delimited by ';'. Because GFF uses ';' as a
+        # delimiter, it is necessary to remove the ';' and replace it with something else (i.e., '|'). Else
+        # downstream programs interpreting multiPhATE2's GFF output will choke.
+        description = re.sub(';','|',self.description)  
+
+        # Load annotations into list 
         self.annotationString = ''; annot = ''; annotationList = []
         if self.annotationType.lower() == 'gene':
             annot = '(gene) ' + self.start + '/' + self.end + '/' + self.strand + ' ' + self.method 
             annotationList.append(annot)
         elif self.annotationType.lower() == 'functional':
-            annot = '(function - ' + self.method + ') ' + self.description
+            annot = '(function - ' + self.method + ') ' + description
             annotationList.append(annot)
         elif self.annotationType.lower() == 'homology':
             homologName = self.name
             newName = re.sub(';','',homologName)  # Remove embedded ';' because GFF uses this delimiter
-            description = self.description
-            newDescription = re.sub(';','',description)
-            annot = '(homology - ' + self.method + ') ' + newName + ' ' + newDescription
+            annot = '(homology - ' + self.method + ') ' + newName + ' ' + description
             annotationList.append(annot)
         elif self.annotationType.lower() == 'hmm search':
-            annot = '(hmm search - ' + self.method + ') ' + self.name + ' ' + self.description
+            annot = '(hmm search - ' + self.method + ') ' + self.name + ' ' + description
             annotationList.append(annot)
         elif self.annotationType.lower() == 'profile search':
             # Note: descriptions for many pVOG group members can be voluminous; best to report name (pVOGid) only
-            annot = '(profile search - ' + self.method + ') ' + self.name + ' ' + self.description  
+            annot = '(profile search - ' + self.method + ') ' + self.name + ' ' + description  
             annotationList.append(annot)
         elif self.annotationType.lower() == 'cds':
-            annot = '(cds - ' + self.method + ') ' + self.description
+            annot = '(cds - ' + self.method + ') ' + description
             annotationList.append(annot)
         elif self.annotationType.lower() == 'mrna':
-            annot = '(mrna - ' + self.method + ') ' + self.description
+            annot = '(mrna - ' + self.method + ') ' + description
             annotationList.append(annot)
         elif self.annotationType.lower() == 'trna':
             if self.description:
-                annotationList.append(self.description)
+                annotationList.append(description)
         elif self.annotationType.lower() == 'polypeptide':
-            annot = '(polypeptide - ' + self.method + ') ' + self.description
+            annot = '(polypeptide - ' + self.method + ') ' + description
             annotationList.append(annot)
         else:
             annot = '(unk type - ' + self.method + ') ' + self.description
             annotationList.append(annot)
+
+        # Construct annotation string and print to file
         if len(annotationList) > 0:
             for i in range(0, len(annotationList)):
                 if i > 0:
-                    self.annotationString += '; ' + annotationList[i]
+                    self.annotationString += '|, ' + annotationList[i]
+                    #self.annotationString += '; ' + annotationList[i]
+                    #self.annotationString += ' :: ' + annotationList[i]
                 else:
                     self.annotationString += annotationList[i]
         FILE_HANDLE.write("%s" % (self.annotationString))
