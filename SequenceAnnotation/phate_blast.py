@@ -6,7 +6,7 @@
 #
 # Programmer:  Carol Zhou
 #
-# Last Update:  08 December 2020
+# Last Update:  03 February 2021
 # 
 # Classes and Methods:
 #    multiBlast
@@ -862,7 +862,7 @@ class multiBlast(object):
                                 # create dynamic file name
                                 countA += 1 
                                 outfilePVOG = self.pVOGsOutDir + "pvogGroup_" + str(count) + '_' + str(countA) + '.faa' 
-                                # open file and write current fasta pluse each corresponding pVOG fasta
+                                # open file and write current fasta plus each corresponding pVOG fasta
                                 outfilePVOG_h = open(outfilePVOG,'w')
                                 outfilePVOG_h.write("%c%s\n%s\n" % ('>',fasta.header,fasta.sequence)) # write the current peptide fasta,
                                 self.writePVOGsequences2file(outfilePVOG_h,pVOGlines,pVOG)                  # followed by the pVOG group

@@ -3,7 +3,7 @@
 #
 # Programmer: Carol L. Ecale Zhou
 #
-# Most recent update: 23 December 2020
+# Most recent update: 02 February 2021
 # 
 # Module containing classes and methods for representing a multi-fasta sequence and associated methods
 # Classes and methods: 
@@ -525,7 +525,6 @@ class fasta(object):
         GFF_source     = GFF_SOURCE              # column 2
         GFF_score      = GFF_SCORE               # column 6 (used for trna genes predicted by trnascan)
 
-        #if self.moleculeType == 'peptide' or self.moleculeType == 'protein' or self.sequenceType == 'aa' or feature == 'CDS':
         if self.moleculeType == 'peptide' or self.moleculeType == 'protein' or self.sequenceType == 'aa' or feature == 'CDS':
             GFF_type    = "CDS"                  # column 3
             GFF_start   = str(self.parentStart)  # column 4
@@ -557,20 +556,17 @@ class fasta(object):
         FILE_HANDLE.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t" % (contigName,GFF_source,GFF_type,GFF_start,GFF_end,GFF_score,GFF_strand,GFF_phase))
 
         # Write identifier to column 9
-        FILE_HANDLE.write("%s%s" % (GFF_identifier, ';'))
+        #FILE_HANDLE.write("%s%s" % (GFF_identifier, ';'))
+        FILE_HANDLE.write("%s" % (GFF_identifier))
 
         # Column 9 has many sub-fields, continuing with the annotation homologies
         count = 1
         if len(self.annotationList) > 0:
             for annotation in self.annotationList:
                 annotNo = "annot" + str(count) + '='
-                if FIRST:
-                    FILE_HANDLE.write("%s" % (annotNo))
-                    annotation.returnGFFannotationRecord(FILE_HANDLE)
-                    FIRST = False
-                else:
-                    FILE_HANDLE.write("%s%s" % ('; ',annotNo))
-                    annotation.returnGFFannotationRecord(FILE_HANDLE)
+                FILE_HANDLE.write("%s%s" % ('; ',annotNo))
+                #FILE_HANDLE.write("%s%s" % (' :: ',annotNo))  # not!
+                annotation.returnGFFannotationRecord(FILE_HANDLE)
                 count += 1
         FILE_HANDLE.write("\n" % ())
 
