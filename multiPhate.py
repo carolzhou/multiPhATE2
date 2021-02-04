@@ -68,7 +68,8 @@ DO_DB_CHECK_ONLY = True         # Halt execution after checking user's databases
 #DO_DB_CHECK_ONLY = False 
 
 TEST_NUMBER = '0'
-MESSAGE = ""
+#MESSAGE = ""
+MESSAGE = "DBs: cazy, phantome; 3 genomes; full workflow"
 #MESSAGE = ": allDBs; allSearches; 9 phate processes; 10 blast threads; 36 cgp processes; 9 genomes"
 
 timeLog = "./time.log"
@@ -2529,6 +2530,8 @@ if runCGP and not translateOnly and (len(genomeList) > 1):
             command = "rm " + PIPELINE_OUTPUT_DIR + "compareGeneProfiles_main.report"
             result = os.system(command)
             command = "rm " + PIPELINE_OUTPUT_DIR + "compareGeneProfiles_main.summary"
+            result = os.system(command)
+            command = "rm " + PIPELINE_OUTPUT_DIR + "compareGeneProfiles_main.paralogs"
             result = os.system(command)
         except:
             print("multiPhate says, ERROR: cannot move CGP results to output directory")
