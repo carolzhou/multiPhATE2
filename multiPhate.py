@@ -6,7 +6,7 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Last Update:  25 January 2021
+# Last Update:  04 February 2021
 #
 # Description: Script multiPhate.py is a driver program that runs the multiPhATE2 bacteriophage annotation system,
 #    which comprises four modules:  Gene Calling, PhATE, Compare Gene Profiles, and Genomics. See the README file
@@ -533,7 +533,7 @@ p_config                      = re.compile("config")
 p_outputSubdir                = re.compile("output_subdir='(.*)'")
 p_genomeFile                  = re.compile("genome_file='(.*)'")
 p_genomeType                  = re.compile("genome_type='(.*)'")
-p_genomeName                  = re.compile("genome_name='(.*)'")
+#p_genomeName                  = re.compile("genome_name='(.*)'")
 p_genomeSpecies               = re.compile("genome_species='(.*)'")
 
 # GENOME INFORMATION
@@ -763,7 +763,7 @@ if fileError:
 ##### Read input parameters from configuration file; capture user's parameter choices
 
 FIRST_GENOME = True
-DATA_ITEMS_NUM = 6
+DATA_ITEMS_NUM = 4 
 genomeDataDict = {
     "genomeNumber"  : "",
     "genomeFile"    : "",
@@ -792,8 +792,8 @@ for cLine in cLines:
     match_genomeFile                = re.search(p_genomeFile,cLine)
     match_genomeType                = re.search(p_genomeType,cLine)
     match_genomeSpecies             = re.search(p_genomeSpecies,cLine)
-    match_genomeName                = re.search(p_genomeName,cLine)
-    match_outputSubdir              = re.search(p_outputSubdir,cLine)
+    #match_genomeName                = re.search(p_genomeName,cLine)
+    #match_outputSubdir              = re.search(p_outputSubdir,cLine)
     match_end                       = re.search(p_end,cLine)
 
     # tRNA prediction
@@ -999,13 +999,22 @@ for cLine in cLines:
         FIRST_GENOME = False
 
     elif match_genomeFile:
+        # read user genome filename string and compute genome name.
         value = match_genomeFile.group(1)
         if value != '':
             GENOME_FILE = value
+            if re.search('\.fasta|\.fa|\.fnt|\.fna',GENOME_FILE):
+                match_valueRoot = re.search('([\w\d\_\-\.]+)\.[fasta|fa|fnt|fna]',GENOME_FILE)
+                valueRoot = match_valueRoot.group(1)
+                nextGenomeData["genomeName"] = valueRoot
+            else:
+                print("multiPhATE says, ERROR: Please check your genome filename; should end in .fasta, .fa, .fnt, or .fna")
+                exit(0)
         else:
             GENOME_FILE = "unknown"
             if PHATE_WARNINGS:
                 print("multiPhate says, WARNING:  GENOME_FILE is", GENOME_FILE)
+
         # Check whether genome file exists in PipelineInput/ directory
         inFileCheck = os.path.join(PIPELINE_INPUT_DIR,GENOME_FILE)
         if path.exists(inFileCheck):
@@ -1015,6 +1024,23 @@ for cLine in cLines:
             exit(0)
         if not HPC:
             LOG.write("%s%s\n" % ("GENOME_FILE is ",GENOME_FILE))
+
+        # Compute name for output subdir
+        nextGenomeData["outputSubdir"] = valueRoot + '/'
+
+        # Double check that user's output subdir has legal characters
+        value = nextGenomeData["outputSubdir"]
+        hasBadChars = re.search('[^(\w\d\_\-\.\/)]',value)  # Let's insist on chars that are safe
+        if hasBadChars or value == '' or value == '/':
+            print("multiPhate says, ERROR: Value, ",value,", not valid. Please check your configuration file. Use alpha-numerics.")
+            exit(0)
+        else:
+            # Ensure that dir name ends with single slash
+            value = value.rstrip('/')
+            value = value + '/'
+            nextGenomeData["outputSubdir"] = value
+
+        # Update number of items read so far
         genomeDataItems += 1
 
     elif match_genomeType:
@@ -1038,12 +1064,12 @@ for cLine in cLines:
             LOG.write("%s%s\n" % ("genomeSpecies is ",genomeSpecies))
         genomeDataItems += 1
 
-    elif match_genomeName:
-        genomeName = match_genomeName.group(1)
-        nextGenomeData["genomeName"] = genomeName
-        if not HPC:
-            LOG.write("%s%s\n" % ("genome name is ",genomeName))
-        genomeDataItems += 1
+    #elif match_genomeName:
+    #    genomeName = match_genomeName.group(1)
+    #    nextGenomeData["genomeName"] = genomeName
+    #    if not HPC:
+    #        LOG.write("%s%s\n" % ("genome name is ",genomeName))
+    #    genomeDataItems += 1
 
     elif match_checkUserDatabases: # Determine whether user is asking only for databases check
         value = match_checkUserDatabases.group(1)
@@ -1071,18 +1097,18 @@ for cLine in cLines:
         if match_softwareDir.group(1) != '':
             os.environ["PHATE_SOFTWARE_DIR"] = match_softwareDir.group(1)
 
-    elif match_outputSubdir: #*** Note that if the output dir is not read before subdir; depends on user not changing order in config - Clean this up!
-        value = match_outputSubdir.group(1)
-        hasBadChars = re.search('[^(\w\d\_\-\.\/)]',value)  # Let's insist on chars that are safe
-        if hasBadChars or value == '' or value == '/':
-            print("multiPhate says, ERROR: Genome PhATE output subdir, ",value,", not valid. Please check your configuration file.")
-            exit(0)
-        else:
-            # Ensure that dir name ends with single slash
-            value = value.rstrip('/')
-            value = value + '/'
-            nextGenomeData["outputSubdir"] = value
-            genomeDataItems += 1
+    #elif match_outputSubdir: 
+    #    value = match_outputSubdir.group(1)
+    #    hasBadChars = re.search('[^(\w\d\_\-\.\/)]',value)  # Let's insist on chars that are safe
+    #    if hasBadChars or value == '' or value == '/':
+    #        print("multiPhate says, ERROR: Value, ",value,", not valid. Please check your configuration file. Use alpha-numerics.")
+    #        exit(0)
+    #    else:
+    ##        # Ensure that dir name ends with single slash
+    #        value = value.rstrip('/')
+    #        value = value + '/'
+    #        nextGenomeData["outputSubdir"] = value
+    #        genomeDataItems += 1
 
     elif match_end:  # List of genomes complete; record last genome's data
         if genomeDataItems != DATA_ITEMS_NUM:
