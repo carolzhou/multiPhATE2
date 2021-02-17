@@ -6,7 +6,7 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Last Update:  04 February 2021
+# Last Update:  17 February 2021
 #
 # Description: Script multiPhate.py is a driver program that runs the multiPhATE2 bacteriophage annotation system,
 #    which comprises four modules:  Gene Calling, PhATE, Compare Gene Profiles, and Genomics. See the README file
@@ -62,14 +62,14 @@ from os import path
 import datetime
 import time
 
-CHECK_USER_DATABASES = True     # Verify that user's databases are in place and path/file is correct
-#CHECK_USER_DATABASES = False 
-DO_DB_CHECK_ONLY = True         # Halt execution after checking user's databases
-#DO_DB_CHECK_ONLY = False 
+#CHECK_USER_DATABASES = True     # Verify that user's databases are in place and path/file is correct
+CHECK_USER_DATABASES = False 
+#DO_DB_CHECK_ONLY = True         # Halt execution after checking user's databases
+DO_DB_CHECK_ONLY = False 
 
 TEST_NUMBER = '0'
-#MESSAGE = ""
-MESSAGE = "DBs: cazy, phantome; 3 genomes; full workflow"
+MESSAGE = " "
+#MESSAGE = "DBs: cazy, phantome; 3 genomes; full workflow"
 #MESSAGE = ": allDBs; allSearches; 9 phate processes; 10 blast threads; 36 cgp processes; 9 genomes"
 
 timeLog = "./time.log"

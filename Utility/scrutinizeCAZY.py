@@ -4,7 +4,7 @@
 # script scrutinizeCAZY.py
 #
 # programmer: C. Zhou
-# date of last update: 26 January 2021
+# date of last update: 12 February 2021
 #
 # purpose: There are inconsistencies in the CAZY database headers, and more variablility than
 #   I may have anticipated. This script walks through the 1.3M headers from the CAZY sequence
@@ -26,7 +26,7 @@ print("Scrutinizing CAZY headers")
 count_yes = 0; count_no = 0; count_ids = 0; count_multiple = 0
 total = 1386849
 idList = []; idString = ""
-HEADERS_H = open("./CAZyDB.07312019.headers",'r')
+HEADERS_H = open("../../Databases/CAZY/CAZyDB.07312019.headers",'r')
 MISSED_H  = open("./missedHeaders.lst",'w')
 hLines = HEADERS_H.read().splitlines()
 for hLine in hLines:

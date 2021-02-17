@@ -4,7 +4,7 @@
 #
 # Programmer: Carol L. Ecale Zhou
 #
-# Latest update: 02 February 2021 
+# Latest update: 12 February 2021 
 #
 # Description: Module containing classes and methods for representing annotation results from various sources 
 #
@@ -40,6 +40,7 @@
 # THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.PDF FOR DETAILS.
 
 import re, os, subprocess
+import sys
 import platform
 
 DEBUG = False
@@ -472,13 +473,15 @@ class annotationRecord(object):
         # Headers look like this: ">AWI06117.1|GT2|AT46|" (with one or more codes, pipe-separated)
         # Headers can also look like this: ">AAD03276.1|GH104|4.2.2.n1|" (with an EC number following, with or w/o terminal '|') 
         # ...or even like this: ">AUH33181.1|CE14"  (without terminal pipe)
-        p_header_1 = re.compile('\|([\w\d_^\.\|]+)+\|') # Some headers (99.5%) have one or more IDs, terminated with pipe  
-        p_header_2 = re.compile('\|([\w\d_^\.^\|]+)')   # Some headers (0.5%) have a single ID, not terminated with pipe   
+        p_header_1 = re.compile('\|([\w\d_^\.\|]+)+\|')   # captures multiple IDs, followed by pipe 
+        p_header_2 = re.compile('\|([\w\d_^\.^\|]+)')     # captures single ID, not followed by pipe 
+
         idString = ""; idString_clean = ""; idList = []; identifier = ""
         CAZY_ANNOT_H = open(cazyAnnotationFile,'r')
         try:
             # Pull dbxref from header; find data line in cazyAnnotationFile; add to dbxrefList
             match_header_1 = re.search(p_header_1,self.name)
+            match_header_2 = re.search(p_header_2,self.name)
             if match_header_1:
                 idString = match_header_1.group(0)
                 idString_clean = idString.lstrip('|')
@@ -528,9 +531,9 @@ class annotationRecord(object):
             else:
                 if PHATE_WARNINGS:
                     print("phate_annotation says, WARNING: getECdescription4cazy saw an unexpected subject hit header:",self.name)
-        except:
+        except Exception as e:
             if PHATE_WARNINGS:
-                print("phate_annotation says, WARNING: Cannot identify dbxref for subject header",self.name)
+                print("phate_annotation says, WARNING: Cannot identify dbxref for subject header",self.name,"error is:",str(e))
         CAZY_ANNOT_H.close()
         return dbxrefList
 

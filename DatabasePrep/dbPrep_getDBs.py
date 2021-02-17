@@ -5,7 +5,7 @@
 #
 # programmer:  C. E. Zhou
 #
-# Most recent update:  15 January 2021
+# Most recent update:  29 January 2021
 #
 # Summary:  This script facilitates the downloading of databases to be used with multiPhATE.
 #

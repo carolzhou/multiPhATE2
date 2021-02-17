@@ -3,7 +3,7 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Most recent update: 01 February 2021
+# Most recent update: 13 February 2021
 #
 # Module comprising classes and data structures for comparing genomes
 #
@@ -307,7 +307,7 @@ class comparison(object):
 
             # First genome listed is the reference (was listed first in user's config file)
             if genomeList:
-                if PHATE_PROGRESS:
+                if PHATE_MESSAGES:
                     print("genomics_compareGenomes says, reference genome is: ",self.referenceGenome)
                 #self.referenceGenome = genomeList[0]
             else:
@@ -340,7 +340,7 @@ class comparison(object):
             (genome1,genome2) = self.findGenomes(directory)
             reportFile  = os.path.join(CGP_RESULTS_DIR,directory,CGP_REPORT_FILE)
             paralogFile = os.path.join(CGP_RESULTS_DIR,directory,CGP_PARALOG_FILE)
-            if PHATE_PROGRESS:
+            if PHATE_MESSAGES:
                 print("genomics_compareGenomes says, Parsing report file",reportFile,"for mutual and singular best hits, and loners.")
             self.loadBestHits(genome1,genome2,reportFile)
             self.loadParalogs(paralogFile)
@@ -791,33 +791,39 @@ class comparison(object):
         return
 
     def addMutualBestHit(self,hitList,hit,item1,item2,item3,item4,item5):
-        print("genomics_comparGenomes says, Adding hit ",hit," to mutualBestHitList:")
-        print("other data: ",item1,' ',item2,' ',item3,' ',item4,' ',item5)
-        for hitString in hitList:
-            print("   ",hitString)
+        if PHATE_MESSAGES:
+            print("genomics_comparGenomes says, Adding hit ",hit," to mutualBestHitList:")
+            print("other data: ",item1,' ',item2,' ',item3,' ',item4,' ',item5)
+            for hitString in hitList:
+                print("   ",hitString)
         hitList.append(hit)
-        print(" yielding,")
-        for hitString in hitList:
-            print("   ",hitString)
-        print('\n')
+        if PHATE_MESSAGES:
+            print(" yielding,")
+            for hitString in hitList:
+                print("   ",hitString)
+            print('\n')
         return
 
     def addSingularBestHit(self,hitList,hit,item1,item2,item3,item4,item5):
-        print("genomics_comparGenomes says, Adding hit ",hit," to singularBestHitList ",hitList)
-        print("other data: ",item1,' ',item2,' ',item3,' ',item4,' ',item5)
-        for hitString in hitList:
-            print("   ",hitString)
+        if PHATE_MESSAGES:
+            print("genomics_comparGenomes says, Adding hit ",hit," to singularBestHitList ",hitList)
+            print("other data: ",item1,' ',item2,' ',item3,' ',item4,' ',item5)
+            for hitString in hitList:
+                print("   ",hitString)
         hitList.append(hit)
-        print(" yielding,")
-        for hitString in hitList:
-            print("   ",hitString)
-        print('\n')
+        if PHATE_MESSAGES:
+            print(" yielding,")
+            for hitString in hitList:
+                print("   ",hitString)
+            print('\n')
         return
 
     def addLoner(self,lonerList,loner):
-        print("genomics_compareGenomes says, Adding loner ",loner," to lonerList ",lonerList)
+        if PHATE_MESSAGES:
+            print("genomics_compareGenomes says, Adding loner ",loner," to lonerList ",lonerList)
         lonerList.append(loner)
-        print("resulting list: ",lonerList,'\n')
+        if PHATE_MESSAGES:
+            print("resulting list: ",lonerList,'\n')
         return
 
     #===== COMPARISON GENOMIC METHODS
