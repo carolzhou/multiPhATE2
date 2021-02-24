@@ -413,6 +413,9 @@ class annotationRecord(object):
             elif dbName.lower() == 'refseqprotein':
                 pass
 
+            elif dbName.lower() == 'customprotein':
+                pass
+
             elif dbName.lower() == 'pvogs': # self.name = hit header, which contains VOGid and NCBIid + function description
                 # If >1 VOGid, no matter, as it's a single protein sequence, with membership in >1 group.
                 description = ''
