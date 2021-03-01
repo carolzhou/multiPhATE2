@@ -228,7 +228,7 @@ NCBI Swissprot - Download from Uniprot: `wget ftp://ftp.uniprot.org/pub/database
 
 KEGG associated files - T40000.pep, T40000.nuc, vg_enzyme.list, vg_genome.list, vg_ko.list, vg_ncbi-geneid.list, vg_ncbi-proteinid.list, vg_pfam.list, vg_rs.list, vg_tax.list, vg_uniprot.list
 
-Phantome protein fasta sequences - http://www.phantome.org/Downloads/phage_proteins_nnnnnnnnn.fasta. (A version of Phantome is included in the multiPhATE distribution.) !!! URL NEEDS UPDATE.
+Phantome protein fasta sequences - A version of Phantome is included in the multiPhATE distribution.
 
 pVOGs prepared database (pVOGs.faa) - included in PhATE distribution. This data set was derived by C. Zhou from the pVOGs fasta database. For use in PhATE, the sequence fasta headers have been modified to include the pVOG identifiers (all groups to which each sequence belongs). This re-formatting facilitates pVOG group identification and construction of the alignment-ready fasta files. Codes for reconstructing this modified data set are included in the PhATE distribution. Note that the pVOGs are not mutually exclusive, meaning that a sequence may have membership in more than one VOG group. The codes included in the phate distribution will combine identifiers that belong to a given sequence and list all the VOG identifiers in the fasta header. In this way, the pVOG fasta database used in PhATE is also non-redundant. See documentation in DatabasePrep/dbPrep_createPvogFastaFile.py for instructions how to update your local pVOGs data set for use in PhATE, but you can start with the pVOGs.faa file included in the PhATE distribution. Combine the pVOG fasta sequences into a single file and format for hmmscan profile search as follows:
 
@@ -290,11 +290,11 @@ PHANOTATE - https://github.com/deprekate/PHANOTATE. (optional) (install using pi
 
 jackhmmer, phmmer, hmmscan - https://www.eddylab.org/software.html or http://www.hmmer.org/download.html. Download HMMER; hmm search codes are included in this package (optional) (conda - hmmer) 
 
-tRNAscan-SE - https://www.eddylab.org/software.html - select tRNAscan-SE download link (conda)
+tRNAscan-SE - https://www.eddylab.org/software.html - select tRNAscan-SE download link (optional; required if running tRNA gene predictions) (conda)
 
-wget - https://www.cyberciti.biz/faq/howto-install-wget-om-mac-os-x-mountain-lion-mavericks-snow-leopard/ https://www.tecmint.com/install-wget-in-linux/ (conda)
+wget - https://www.cyberciti.biz/faq/howto-install-wget-om-mac-os-x-mountain-lion-mavericks-snow-leopard/ https://www.tecmint.com/install-wget-in-linux/ (optional; used for downloading 3rd-party codes) (conda)
 
-clustalo - https://www.clustal.org/omega/ (conda)
+clustalo - https://www.clustal.org/omega/ (optional; required for CGP/Genmics modules) (conda)
 
 [Return to the Index](#index)
 
