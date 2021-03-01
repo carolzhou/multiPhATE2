@@ -292,7 +292,7 @@ jackhmmer, phmmer, hmmscan - https://www.eddylab.org/software.html or http://www
 
 tRNAscan-SE - https://www.eddylab.org/software.html - select tRNAscan-SE download link (optional; required if running tRNA gene predictions) (conda)
 
-wget - https://www.cyberciti.biz/faq/howto-install-wget-om-mac-os-x-mountain-lion-mavericks-snow-leopard/ https://www.tecmint.com/install-wget-in-linux/ (optional; used for downloading 3rd-party codes) (conda)
+wget - https://www.cyberciti.biz/faq/howto-install-wget-om-mac-os-x-mountain-lion-mavericks-snow-leopard/ https://www.tecmint.com/install-wget-in-linux/ (optional; used for downloading databases) (conda)
 
 clustalo - https://www.clustal.org/omega/ (optional; required for CGP/Genmics modules) (conda)
 
