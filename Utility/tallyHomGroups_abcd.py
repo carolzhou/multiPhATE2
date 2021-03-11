@@ -6,7 +6,7 @@
 #
 # Programmer:  Carol Zhou
 #
-# Last Update: 07 March 2021
+# Last Update: 11 March 2021
 #
 #######################################################################################
 
@@ -162,27 +162,27 @@ for fileName in fileList:
 
         # Doublets
         if A and B and not C and not D:
-            A_B_count_nt += 1
+            A_B_count_aa += 1
         if A and C and not B and not D:
-            A_C_count_nt += 1
+            A_C_count_aa += 1
         if A and D and not B and not C:
-            A_D_count_nt += 1
+            A_D_count_aa += 1
         if B and C and not A and not D:
-            B_C_count_nt += 1
+            B_C_count_aa += 1
         if B and D and not A and not C:
-            B_D_count_nt += 1
+            B_D_count_aa += 1
         if C and D and not A and not B:
-            C_D_count_nt += 1
+            C_D_count_aa += 1
 
         # Singlets
         if A and not (A or C or D):
-            A_count_nt += 1
+            A_count_aa += 1
         if B and not (A or C or D):
-            B_count_nt += 1
+            B_count_aa += 1
         if C and not (A or B or D):
-            C_count_nt += 1
+            C_count_aa += 1
         if D and not (A or B or C):
-            D_count_nt += 1
+            D_count_aa += 1
 
 print("Data presented below are computed based on the input PipelineOutput data sets.")
 print("Record the data that corresponds to the reference genome only. For other genomes,")
