@@ -485,7 +485,8 @@ class Comparison(object):
                         FIRST = False
                     else:
                         geneNo += 1
-                        self.ProcessAgreement(agreeList,geneNo,FILE_H)
+                        if len(agreeList) > 1:
+                            self.ProcessAgreement(agreeList,geneNo,FILE_H)
                         agreeList = [] # reset
 
                 agreeList.append(geneCall)
@@ -497,7 +498,8 @@ class Comparison(object):
 
             # Print final agreeList
             geneNo += 1
-            self.ProcessAgreement(agreeList,geneNo,FILE_H)
+            if len(agreeList) > 1:
+                self.ProcessAgreement(agreeList,geneNo,FILE_H)
 
         # Common Core genes are identical among gene callers
         elif dataSet.lower() == 'common_core' or dataSet.lower() == 'commoncore' or dataSet.lower() == 'common-core':
