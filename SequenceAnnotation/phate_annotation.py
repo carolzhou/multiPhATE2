@@ -125,7 +125,8 @@ class annotationRecord(object):
     def getPVOGassociationList(self):
         return(self.VOGlist)
 
-    def enterGFFdata(self,gff):  # Input a dict object with key/values as specified
+    def enterGFFdata(self,gff):  
+        p_id = re.compile('^ID=')
         if isinstance(gff,dict):
             self.source          = gff["source"]
             self.method          = gff["method"]
@@ -137,6 +138,9 @@ class annotationRecord(object):
             self.readingFrame    = gff["readingFrame"]
             annotList = gff["annotation"].split(';')
             for annot in annotList:
+                match_id = re.search(p_id,annot)
+                #if not match_id: # Avoid adding ID= annotation from user's input gff gene-call file
+                #    self.annotationList.append(annot)
                 self.annotationList.append(annot)
             self.category        = "sequence"
             return True
@@ -631,7 +635,9 @@ class annotationRecord(object):
             annotationList.append(annot)
         else:
             annot = '(unk type - ' + self.method + ') ' + self.description
-            annotationList.append(annot)
+            match_id = re.search('ID=',annot)
+            if not match_id:
+                annotationList.append(annot)
 
         # Construct annotation string and print to file
         if len(annotationList) > 0:
