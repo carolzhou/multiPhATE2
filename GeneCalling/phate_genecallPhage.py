@@ -309,7 +309,7 @@ def Convert_gff2cgc(gffFile,cgcFile):
         if match_contigLine:
             contig = match_contigLine.group(1)
             continue
-        fields    = line.split('\t')
+        fields    = fLine.split('\t')
         contig    = fields[0]  # contig as listed in user's genome fasta file
         source    = fields[1]  # gene caller or source (e.g., NCBI)
         feature   = fields[2]  # 'cds' or 'CDS'
@@ -511,12 +511,9 @@ if CUSTOM_CALLS:
     if PHATE_MESSAGES:
         print("\n######## CUSTOM CALLS #########")
     try:
-        errorMsg = Convert_gff2cgc(customCallsGff,customCallsCgc)
-        logfile.write("%s\n" % ("Completed converting custom calls gff file to cgc format."))
-    except:
-        logfile.write("%s%s%s\n" % ("ERROR in phate_genecallPhage.py in Covert_gff2cgc(), input files: ",customCallsGff,customCallsCgc))
+        Convert_gff2cgc(customCallsGff,customCallsCgc)
+    except (RuntimeError):
         print ("ERROR in phate_genecallPhage.py, running Convert_gff2cgc(), ", customCallsGff, customCallsCgc)
-    logfile.write("%s\n" % ("CUSTOM CALLS - need to be converted to cgc format."))
 
 ########## RESULTS ##########
 

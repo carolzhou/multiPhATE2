@@ -1,4 +1,4 @@
-# multiPhATE v.2.0.1 
+# multiPhATE v.2.0.2 
 /MultiPhATE/ - multiPhATE2 - https://github.com/carolzhou/multiPhATE2.git  
 
 This code was developed by Carol L. Ecale Zhou and Jeffrey Kimbrel at Lawrence Livermore National Laboratory.
