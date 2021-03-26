@@ -17,6 +17,7 @@
 # THIS CODE IS COVERED BY THE GPL3 LICENSE. SEE INCLUDED FILE GPL-3.pdf FOR DETAILS.
 
 import re, sys, os
+sys.stdout.flush()
 
 # Help strings
 HELP_STRING = """\nThis script pulls the annotation field from a genome's PhATE phate_sequenceAnnotation_main.gff file.\nInput the gene or protein identifier, followed by the full path to the genome's PhATE output subdirectory.\nNote: Use this script for printing the annotation of a single gene/protein.\nIf processing a list of genes/proteins, use getAnnotations4list.py.\nFor more information, type: python getAnnotations.py usage, or format.\n"""
@@ -106,7 +107,7 @@ for aLine in aLines:
 # Report
 #print("Annotation(s) for gene identifier,",geneID,": ")
 #print(annotationString)
-print(geneID,'\t',annotationString)
+print(geneID,'\t',annotationString,flush=True)
 
 # Clean up
 ANNOT_H.close()
