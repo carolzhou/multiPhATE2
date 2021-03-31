@@ -75,7 +75,7 @@ import string
 import dbPrep_annotation
 import re
 import os
-#from Bio import SeqIO  #*** BioPython is on mpath but not yet on mpath-dev - cez
+#from Bio import SeqIO  
 
 DEBUG = False  # For maximal verbosity
 
