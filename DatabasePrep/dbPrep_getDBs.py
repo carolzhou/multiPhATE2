@@ -957,13 +957,13 @@ if VOGS:
             print ("Reformatting sequence headers with VOG identifiers.")
             print ("This may take a long time (perhap hours).")
             try:
-                #command = "python dbPrep_vogTagFastas.py " + VOGsDir 
-                command = os.environ["PHATE_PYTHON"] + " dbPrep_vogTagFastas.py " + VOGsDir 
+                command = "python3 dbPrep_vogTagFastas.py " + VOGsDir 
+                #command = os.environ["PHATE_PYTHON"] + " dbPrep_vogTagFastas.py " + VOGsDir 
                 success = os.system(command)
                 OK2FORMAT4BLAST = True
             except:
-                #command = "python dbPrep_vogTagFastas.py " + VOGsDir
-                command = os.environ["PHATE_PYTHON"] +  " dbPrep_vogTagFastas.py " + VOGsDir
+                command = "python3 dbPrep_vogTagFastas.py " + VOGsDir
+                #command = os.environ["PHATE_PYTHON"] +  " dbPrep_vogTagFastas.py " + VOGsDir
                 success = os.system(command)
                 OK2FORMAT4BLAST = True
         except:
