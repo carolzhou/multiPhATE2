@@ -6,7 +6,7 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Last Update:  17 February 2021
+# Last Update:  16 March 2021
 #
 # Description: Script multiPhate.py is a driver program that runs the multiPhATE2 bacteriophage annotation system,
 #    which comprises four modules:  Gene Calling, PhATE, Compare Gene Profiles, and Genomics. See the README file
@@ -525,6 +525,7 @@ p_softwareDir                 = re.compile("software_dir='(.*)'")
 # GENERAL
 p_comment                     = re.compile("^#")
 p_blank                       = re.compile("^$")
+p_whiteSpace                  = re.compile("^(\s)+$")
 p_help                        = re.compile("help")
 p_input                       = re.compile("input")
 p_usage                       = re.compile("usage")
@@ -782,6 +783,7 @@ cLines = CONFIG.read().splitlines()
 for cLine in cLines:
     match_comment                   = re.search(p_comment,cLine)
     match_blank                     = re.search(p_blank,cLine)
+    match_whiteSpace                = re.search(p_whiteSpace,cLine)
 
     # configurations check
     match_checkUserDatabases        = re.search(p_checkUserDatabases,cLine)
@@ -972,7 +974,7 @@ for cLine in cLines:
 
     ##### Capture list of genomes and associated data #####
 
-    if (match_comment or match_blank):
+    if (match_comment or match_blank or match_whiteSpace):
         pass
 
     elif match_genomeList:  # Capture all genomes listed; for each, gather genome file, genome type, species, name, output subdir
@@ -1557,11 +1559,12 @@ for cLine in cLines:
         os.environ["PHATE_VOG_GENE_HEADER_FILE"] = os.path.join(PHATE_VOG_GENE_BASE_DIR,VOG_GENE_HEADER_FILENAME)
         os.environ["PHATE_VOG_ANNOTATION_FILE"]  = os.path.join(PHATE_VOG_GENE_BASE_DIR,VOG_ANNOTATION_FILENAME)
         # Create Vog Gene headers file
-        try:
-            command = "grep '>' " + os.environ["PHATE_VOG_GENE_BLAST_HOME"] + ' > ' + os.environ["PHATE_VOG_GENE_HEADER_FILE"]
-            success = os.system(command)
-        except:
-            print ("multiPhate says, ERROR: Could not create PHATE_VOG_GENE_HEADER_FILE")
+        if match_vogGeneDBpath.group(1) != '':
+            try:
+                command = "grep '>' " + os.environ["PHATE_VOG_GENE_BLAST_HOME"] + ' > ' + os.environ["PHATE_VOG_GENE_HEADER_FILE"]
+                success = os.system(command)
+            except:
+                print ("multiPhate says, ERROR: Could not create PHATE_VOG_GENE_HEADER_FILE")
 
     elif match_vogProteinDBpath:   
         os.environ["PHATE_VOG_PROTEIN_BLAST_HOME"] = match_vogProteinDBpath.group(1)
@@ -1570,11 +1573,12 @@ for cLine in cLines:
         os.environ["PHATE_VOG_PROTEIN_HEADER_FILE"]     = os.path.join(PHATE_VOG_PROTEIN_BASE_DIR,VOG_PROTEIN_HEADER_FILENAME)
         os.environ["PHATE_VOG_ANNOTATION_FILE"] = os.path.join(PHATE_VOG_PROTEIN_BASE_DIR,VOG_ANNOTATION_FILENAME)
         # Create Vog Protein headers file
-        try:
-            command = "grep '>' " + os.environ["PHATE_VOG_PROTEIN_BLAST_HOME"] + ' > ' + os.environ["PHATE_VOG_PROTEIN_HEADER_FILE"]
-            success = os.system(command)
-        except:
-            print ("multiPhate says, ERROR: Could not create PHATE_VOG_PROTEIN_HEADER_FILE")
+        if match_vogProteinDBpath.group(1) != '':
+            try:
+                command = "grep '>' " + os.environ["PHATE_VOG_PROTEIN_BLAST_HOME"] + ' > ' + os.environ["PHATE_VOG_PROTEIN_HEADER_FILE"]
+                success = os.system(command)
+            except:
+                print ("multiPhate says, ERROR: Could not create PHATE_VOG_PROTEIN_HEADER_FILE")
 
     elif match_phantomeDBpath:
         os.environ["PHATE_PHANTOME_BLAST_HOME"] = match_phantomeDBpath.group(1)
