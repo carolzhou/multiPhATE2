@@ -6,7 +6,7 @@
 #
 # Programmer:  C. E. Zhou
 #
-# Latest update:  21 December 2020
+# Latest update:  08 March 2021
 #
 # Description: This driver code runs the Genomics module, which identifies gene correspondences
 #    among genomes that have been compared using CompareGeneProfiles (CGP), creates fasta
@@ -48,7 +48,7 @@ if PHATE_PROGRESS_STRING.lower() == 'true':
 # Override
 #PHATE_PROGRESS = True
 #PHATE_MESSAGES = True
-#PHATE_WARNINGS = True
+PHATE_WARNINGS = True
 
 # Environmental Variables
 GENOMICS_RESULTS_DIR = os.environ["PHATE_GENOMICS_RESULTS_DIR"]
