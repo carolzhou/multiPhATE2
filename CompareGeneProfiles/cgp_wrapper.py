@@ -137,7 +137,7 @@ else:
 
 ##### Threading
 
-if str(cgpThreads).lower() == 'all' or str(cgpThreads).lower == 'max':
+if str(cgpThreads).lower() == 'all' or str(cgpThreads).lower() == 'max':
     THREADING_ON = True
     cgpThreads = os.cpu_count()
 if int(float(cgpThreads)) >= 1: # Compatible with what's on github repo
