@@ -256,7 +256,7 @@ class homology(object):  # holds comparative information between 2 gene/protein 
             hit.computeCoverage(seqLength2[hit.queryHeader],seqLength1[hit.subjectHeader])
         for hit in self.singularHits["set1"]:
             hit.computeCoverage(seqLength1[hit.queryHeader],seqLength2[hit.subjectHeader])
-        for hit in self.singluarHits["set2"]:
+        for hit in self.singularHits["set2"]:
             hit.computeCoverage(seqLength2[hit.queryHeader],seqLength1[hit.subjectHeader])
 
     def mergeAll(self,seqList1,seqList2):  
