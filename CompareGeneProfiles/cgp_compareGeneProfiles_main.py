@@ -790,7 +790,7 @@ def ExtractGeneCalls(genomeX,lines):
             # Add new gene and new protein to genome
             genomeX.addGene(newGene)
             genomeX.addProtein(newProtein)
-            genomeX.cleanUpAfterEMBOSS()
+            genomeX.cleanUpAfterEmboss()
 
 #########################################################################################
 # Extract gene sequences from genomes based on annotation file gene calls...
