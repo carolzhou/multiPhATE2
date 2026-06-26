@@ -752,7 +752,7 @@ class blast(object):
                     hit1.hitType = "singular best"
                 elif hit2.subjectHeader == hit1.queryHeader:  # hit2's top (but not mutual)
                     newComparison.singularHits["set2"].append(hit2)
-                    hit2.hitType = "singlular best"
+                    hit2.hitType = "singular best"
         if errorCode:
             print ("cgp_blastAnalysis says, ERROR: compareHits() errorCode:", errorCode)
         return newComparison
