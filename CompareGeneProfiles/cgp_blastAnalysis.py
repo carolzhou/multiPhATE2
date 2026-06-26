@@ -687,7 +687,7 @@ class blast(object):
             if "proteinParalogMatchCoverage" in kvargs.keys():
                 coverage = kvargs["proteinParalogMatchCoverage"]
             else:
-                coverage = PROTEIN_PARALOG_MATCH_IDENTITY_DEFAULT
+                coverage = PROTEIN_PARALOG_MATCH_COVERAGE_DEFAULT
         else:
             return False
 
