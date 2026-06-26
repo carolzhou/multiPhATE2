@@ -575,7 +575,7 @@ class fasta(object):
         if len(self.annotationList) > 0:
             for annotation in self.annotationList:
                 annotNo = "annot" + str(count) + '='
-                if fIRST:
+                if FIRST:
                     FILE_HANDLE.write("%s" % (annotNo))
                     annotation.returnGFFannotationRecord(FILE_HANDLE)
                     FIRST = False
