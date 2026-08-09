@@ -18,5 +18,5 @@
 
 import time
 while True:
-    time.sleep(100)
+    time.sleep(500)
     print("Staying active...")

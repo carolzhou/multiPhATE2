@@ -3,7 +3,7 @@
 #
 # Programmer:  Carol L. Ecale Zhou
 #
-# Most recent update: 13 February 2021
+# Most recent update: 08 March 2021
 #
 # Module comprising classes and data structures for comparing genomes
 #
@@ -478,20 +478,20 @@ class comparison(object):
         for pLine in pLines:
 
             # Skip lines not to be processed in this method
-            match_genome   = re.search('PARALOGS',          pLine)
-            match_gene     = re.search('Gene\sParalogs',    pLine)
-            match_protein  = re.search('Protein\sParalogs', pLine)
-            match_header   = re.search('^header:',           pLine)
-            match_hitLine  = re.search('^query:',            pLine)
-            match_coverage = re.search('^coverage:',        pLine)
+            match_genome   = re.search('PARALOGS\sfor\sgenome(.*)',pLine)
+            match_gene     = re.search('Gene\sParalogs',           pLine)
+            match_protein  = re.search('Protein\sParalogs',        pLine)
+            match_header   = re.search('^header:',                 pLine) # gene that may have a qualified paralog
+            match_hitLine  = re.search('^query:',                  pLine) # blast hit data; identity is qualifying data 
+            match_coverage = re.search('^coverage:',               pLine) # coverage of hit: qualifying data
 
             # Determine which genome's paralogs are being reported
             if match_genome:
-                match_path = re.search('PARALOGS\sfor\sgenome\s(.*)',pLine)
-                genomePathString = match_path.group(1)
+                genomePathString = match_genome.group(1)
                 if genomePathString:
                     genomeFileString = os.path.basename(genomePathString)
                     (genomeName,extension) = genomeFileString.split('.')
+                    #print("TESTING: recording paralogs for genome",genomeName)
                     dataArgs["genome1"] = genomeName
                 else:
                     if PHATE_WARNINGS:
@@ -499,9 +499,11 @@ class comparison(object):
 
             # Determine whether it's a gene versus protein paralog
             elif match_gene:
-                GENE = True
+                GENE    = True
+                PROTEIN = False  # If Gene data follows, then (previous) protein data has completed
             elif match_protein:
                 PROTEIN = True
+                GENE    = False  # Once Protein data starts, gene data has completed
 
             # Parse paralog data; add to paralog list 
             elif match_hitLine:
@@ -531,12 +533,13 @@ class comparison(object):
                 (preamble,coverage) = match_coverage.group(0).split(':')
 
                 # Insert data record into genome object
+                #print("TESTING: adding paralog to genome:",dataArgs)
                 self.addParalog2genome(dataArgs)
 
                 # Reset data structures
                 dataArgs = { 
-                    "genome1"      : "",   # the fasta file name
-                    "genome2"      : "",   # not used for paralog hit 
+                    "genome1"      : genomeName,   # the fasta file name; don't reset this
+                    "genome2"      : "",           # not used for paralog hit 
                     "contig1"      : "",   
                     "contig2"      : "",   
                     "gene1"        : "",
@@ -549,9 +552,9 @@ class comparison(object):
                     "annotations2" : "",
                     "hitType"      : "",
                     }
-                GENE       = False
-                PROTEIN    = False
-                genomeName = ""
+                #GENE       = False
+                #PROTEIN    = False
+                #genomeName = ""
                 query      = ""
                 subject    = ""
                 coverage   = 0.0

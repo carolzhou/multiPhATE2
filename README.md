@@ -478,6 +478,7 @@ Feel free to report bugs or problems, or to suggest future improvements, by post
 15) PhATE now runs trnascan-se and reports predicted trna genes to the output gff file.
 16) MultiPhATE runs a database checker to verify user's database locations, for ease of installation.
 17) The multiPhATE2 github repository now has wiki pages, which present case studies illustrating how to use multiPhATE2.
+18) multiPhATE2 now imports external annotations listed in the 9th column of the custom gene-call gff file.
 
 multiPhATE2 v.2.0
 
